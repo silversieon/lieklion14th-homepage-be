@@ -35,9 +35,16 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.data:spring-data-redis'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // Email
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // Swagger openapi-ui
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.1'

@@ -1,0 +1,69 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
+package com.likelionskuniv.website.domain.auth.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationConfirmReqeust;
+import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationSendRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationStatusRequest;
+
+import backend.boilerplate.response.BaseResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@RequestMapping("/api")
+@Tag(name = "Auth", description = "비로그인 사용자의 인증 기능을 제공하는 컨트롤러 API")
+public interface AuthController {
+
+  @Operation(
+      summary = "[ 일반 사용자 | 토큰 X | 이메일 인증 코드 전송 ]",
+      description =
+          """
+            **Parameters**  \n
+            email: 인증 코드를 받을 사람의 이메일 주소   \n
+            10 ~ 15초 정도 소요. \n
+            비동기로 처리되지만 완료될 때까지 대기 후 결과 반환   \n
+
+            **Returns** \n
+            인증 코드 전송 성공/실패 여부   \n
+            """)
+  @PostMapping("/v1/auth/email/verify/request")
+  ResponseEntity<BaseResponse<Void>> requestVerification(
+      @RequestBody EmailVerificationSendRequest request);
+
+  @Operation(
+      summary = "[ 일반 사용자 | 토큰 X | 이메일 인증 코드 검증 ]",
+      description =
+          """
+           **Parameters**  \n
+           email: 인증을 받을 사람의 이메일 주소  \n
+           code: 이메일로 발송된 인증 코드  \n
+           두 값이 일치하면 인증 성공  \n
+
+           **Returns**  \n
+           이메일 인증 코드 검증 성공/실패 여부
+           """)
+  @PostMapping("/v1/auth/email/verify/confirm")
+  ResponseEntity<BaseResponse<Void>> confirmVerification(
+      @RequestBody EmailVerificationConfirmReqeust request);
+
+  @Operation(
+      summary = "[ 관리자 | 토큰 O | 이메일 검증 상태 확인 (토큰 검증 넣을 예정) ]",
+      description =
+          """
+           **Parameters**  \n
+           email: 검증 상태를 확인할 이메일 주소  \n
+
+           **Returns**  \n
+           검증 성공 여부 문자열 \n
+           (success는 성공 여부 관계 없이 true)
+           """)
+  @PostMapping("/v1/auth/email/verify/status")
+  ResponseEntity<BaseResponse<Void>> checkVerification(
+      @RequestBody EmailVerificationStatusRequest request);
+}

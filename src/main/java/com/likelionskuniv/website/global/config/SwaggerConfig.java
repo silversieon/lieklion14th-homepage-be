@@ -4,29 +4,30 @@
 package com.likelionskuniv.website.global.config;
 
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.likelionskuniv.website.global.config.property.ServerProperties;
+import com.likelionskuniv.website.global.config.property.SwaggerProperties;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+@RequiredArgsConstructor
 public class SwaggerConfig {
 
-  @Value("${server.servlet.context-path:}")
-  private String contextPath;
-
-  @Value("${swagger.server.profile}")
-  private String profileUrl;
-
-  @Value("${swagger.server.name}")
-  private String profileName;
+  private final ServerProperties serverProperties;
+  private final SwaggerProperties swaggerProperties;
 
   @Bean
   public OpenAPI customOpenAPI() {
-    Server server = new Server().url(profileUrl + contextPath).description(profileName + " Server");
+    Server server =
+        new Server()
+            .url(swaggerProperties.getUrl() + serverProperties.getContextPath())
+            .description(swaggerProperties.getName() + " Server");
 
     return new OpenAPI()
         .addServersItem(server)
