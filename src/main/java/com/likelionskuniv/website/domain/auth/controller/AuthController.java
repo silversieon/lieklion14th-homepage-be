@@ -3,6 +3,8 @@
  */
 package com.likelionskuniv.website.domain.auth.controller;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,13 +13,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationConfirmReqeust;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationStatusRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.LoginRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.SignUpRequest;
+import com.likelionskuniv.website.domain.auth.dto.response.LoginResponse;
 
 import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RequestMapping("/api")
-@Tag(name = "Auth", description = "비로그인 사용자의 인증 기능을 제공하는 컨트롤러 API")
+@Tag(name = "Auth", description = "비로그인 사용자 관련 기능을 제공하는 API")
 public interface AuthController {
 
   @Operation(
@@ -34,7 +39,7 @@ public interface AuthController {
             """)
   @PostMapping("/v1/auth/email/verify/request")
   ResponseEntity<BaseResponse<Void>> requestVerification(
-      @RequestBody EmailVerificationSendRequest request);
+      @Valid @RequestBody EmailVerificationSendRequest request);
 
   @Operation(
       summary = "[ 일반 사용자 | 토큰 X | 이메일 인증 코드 검증 ]",
@@ -50,7 +55,7 @@ public interface AuthController {
            """)
   @PostMapping("/v1/auth/email/verify/confirm")
   ResponseEntity<BaseResponse<Void>> confirmVerification(
-      @RequestBody EmailVerificationConfirmReqeust request);
+      @Valid @RequestBody EmailVerificationConfirmReqeust request);
 
   @Operation(
       summary = "[ 관리자 | 토큰 O | 이메일 검증 상태 확인 (토큰 검증 넣을 예정) ]",
@@ -65,5 +70,38 @@ public interface AuthController {
            """)
   @PostMapping("/v1/auth/email/verify/status")
   ResponseEntity<BaseResponse<Void>> checkVerification(
-      @RequestBody EmailVerificationStatusRequest request);
+      @Valid @RequestBody EmailVerificationStatusRequest request);
+
+  @Operation(
+      summary = "[ 일반 사용자 | 토큰 X | 회원가입 ]",
+      description =
+          """
+          **Parameters**  \n
+          email: 사용자 이메일 주소  \n
+          password: 사용자 비밀번호 \n
+          name: 이름(본명) \n
+          department: 학과 \n
+          studentNumber: 학번  \n
+          phoneNumber: 전화번호  \n
+
+          **Returns**  \n
+          회원가입 성공 여부
+          """)
+  @PostMapping("/v1/auth/register")
+  ResponseEntity<BaseResponse<Void>> register(@Valid @RequestBody SignUpRequest request);
+
+  @Operation(
+      summary = "[ 일반 사용자 | 토큰 X | 로그인 ]",
+      description =
+          """
+          **Parameters**  \n
+          email: 사용자 이메일 주소  \n
+          password: 사용자 비밀번호 \n
+
+          **Returns**  \n
+          accessToken: JWT 액세스 토큰 \n
+          refreshToken: JWT 리프레시 토큰 \n
+          """)
+  @PostMapping("/v1/auth/login")
+  ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request);
 }

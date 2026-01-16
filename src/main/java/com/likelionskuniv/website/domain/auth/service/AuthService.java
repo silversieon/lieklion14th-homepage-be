@@ -7,6 +7,9 @@ import java.util.concurrent.CompletableFuture;
 
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationConfirmReqeust;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationStatusRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.LoginRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.SignUpRequest;
+import com.likelionskuniv.website.domain.auth.dto.response.TokenResponse;
 
 public interface AuthService {
 
@@ -33,4 +36,19 @@ public interface AuthService {
    * @return 성공 여부
    */
   boolean checkVerificationEmail(EmailVerificationStatusRequest request);
+
+  /**
+   * [ 사용자 회원가입 메서드 ]
+   *
+   * @param request 회원가입 요청을 위한 사용자 정보를 담은 요청 객체
+   */
+  void signUp(SignUpRequest request);
+
+  /**
+   * [ 사용자 로그인 메서드 ]
+   *
+   * @param request 로그인 요청을 위한 이메일, 비밀번호를 담은 요청 객체
+   * @return accessToken, refreshToken을 담은 TokenResponse 객체
+   */
+  TokenResponse login(LoginRequest request);
 }
