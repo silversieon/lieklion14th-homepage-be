@@ -3,6 +3,7 @@
  */
 package com.likelionskuniv.website.domain.auth.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,12 +12,16 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder
 @AllArgsConstructor
-@Schema(title = "EmailVerificationStatusRequest: 이메일 검증 상태 확인 요청 DTO")
-public class EmailVerificationStatusRequest {
+@Builder
+@Schema(title = "LoginRequest: 로그인 요청 DTO")
+public class LoginRequest {
 
   @Pattern(regexp = "^[A-Za-z0-9._%+-]+@skuniv\\.ac\\.kr$")
-  @Schema(description = "이메일 검증 상태를 확인할 이메일 주소", example = "likelion@skuniv.ac.kr")
+  @Schema(description = "사용자 이메일", example = "likelion@skuniv.ac.kr")
   private String email;
+
+  @NotBlank
+  @Schema(description = "사용자 비밀번호", example = "lion1234!")
+  private String password;
 }

@@ -3,6 +3,10 @@
  */
 package com.likelionskuniv.website.domain.auth.controller;
 
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,8 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationConfirmReqeust;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.likelionskuniv.website.domain.auth.dto.request.EmailVerificationStatusRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.LoginRequest;
+import com.likelionskuniv.website.domain.auth.dto.request.SignUpRequest;
+import com.likelionskuniv.website.domain.auth.dto.response.LoginResponse;
+import com.likelionskuniv.website.domain.auth.dto.response.TokenResponse;
 import com.likelionskuniv.website.domain.auth.exception.AuthErrorCode;
+import com.likelionskuniv.website.domain.auth.mapper.AuthMapper;
 import com.likelionskuniv.website.domain.auth.service.AuthService;
+import com.likelionskuniv.website.global.jwt.JwtCookieWriter;
 
 import backend.boilerplate.exception.CustomException;
 import backend.boilerplate.response.BaseResponse;
@@ -24,14 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthControllerImpl implements AuthController {
 
   private final AuthService authService;
+  private final JwtCookieWriter jwtCookieWriter;
+  private final AuthMapper authMapper;
 
   @Override
   public ResponseEntity<BaseResponse<Void>> requestVerification(
-      @RequestBody EmailVerificationSendRequest request) {
-    String email = request.getEmail();
-    validateEmail(email);
+      @Valid @RequestBody EmailVerificationSendRequest request) {
     try {
-      authService.sendVerificationEmail(email).get();
+      authService.sendVerificationEmail(request.getEmail()).get();
 
       return ResponseEntity.status(201).body(BaseResponse.success(201, "인증 코드 전송에 성공했습니다.", null));
     } catch (Exception e) {
@@ -42,7 +52,7 @@ public class AuthControllerImpl implements AuthController {
 
   @Override
   public ResponseEntity<BaseResponse<Void>> confirmVerification(
-      @RequestBody EmailVerificationConfirmReqeust request) {
+      @Valid @RequestBody EmailVerificationConfirmReqeust request) {
     boolean isConfirm = authService.confirmVerificationCode(request);
     if (isConfirm) {
       return ResponseEntity.status(201).body(BaseResponse.success(201, "인증 코드 검증에 성공했습니다.", null));
@@ -53,7 +63,7 @@ public class AuthControllerImpl implements AuthController {
 
   @Override
   public ResponseEntity<BaseResponse<Void>> checkVerification(
-      @RequestBody EmailVerificationStatusRequest request) {
+      @Valid @RequestBody EmailVerificationStatusRequest request) {
     boolean isVerified = authService.checkVerificationEmail(request);
     if (isVerified) {
       return ResponseEntity.status(200).body(BaseResponse.success(200, "검증된 이메일입니다.", null));
@@ -62,10 +72,24 @@ public class AuthControllerImpl implements AuthController {
     }
   }
 
-  private void validateEmail(String email) {
-    if (!email.matches("^[A-Za-z0-9._%+-]+@skuniv\\.ac\\.kr$")) {
-      log.error("[Auth] 유효하지 않은 이메일 값 입력 - 이메일: {}", email);
-      throw new CustomException(AuthErrorCode.INVALID_INPUT_EMAIL);
-    }
+  @Override
+  public ResponseEntity<BaseResponse<Void>> register(@Valid @RequestBody SignUpRequest request) {
+    authService.signUp(request);
+    return ResponseEntity.status(201).body(BaseResponse.success(201, "회원가입에 성공했습니다.", null));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<LoginResponse>> login(
+      @Valid @RequestBody LoginRequest request) {
+    TokenResponse tokenResponse = authService.login(request);
+
+    ResponseCookie refreshCookie =
+        jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken());
+
+    return ResponseEntity.status(200)
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+        .body(
+            BaseResponse.success(
+                200, "로그인에 성공했습니다.", authMapper.toLoginResponse(tokenResponse.getAccessToken())));
   }
 }
