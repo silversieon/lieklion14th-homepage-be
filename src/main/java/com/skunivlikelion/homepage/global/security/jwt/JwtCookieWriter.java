@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skunivlikelion.homepage.global.jwt;
+package com.skunivlikelion.homepage.global.security.jwt;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ public class JwtCookieWriter {
   private final JwtProperties jwtProperties;
 
   public ResponseCookie addRefreshTokenToCookie(String refreshToken) {
-    return ResponseCookie.from("refreshToken", refreshToken)
+    return ResponseCookie.from(TokenType.REFRESH_TOKEN.toString(), refreshToken)
         .httpOnly(true)
         .secure(true)
         .path("/api")

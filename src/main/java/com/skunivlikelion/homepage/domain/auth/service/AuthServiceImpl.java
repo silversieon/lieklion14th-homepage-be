@@ -15,6 +15,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +30,14 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationConf
 import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStatusRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
+import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
-import com.skunivlikelion.homepage.global.jwt.JwtProvider;
-import com.skunivlikelion.homepage.global.jwt.TokenType;
+import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
+import com.skunivlikelion.homepage.global.security.jwt.TokenType;
 
 import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -47,12 +55,19 @@ public class AuthServiceImpl implements AuthService {
   private final JwtProvider jwtProvider;
   private final AuthMapper authMapper;
 
+  private static final String EMAIL_VERIFICATION_CODE = "EmailVerification:";
+  private static final String VERIFIED_EMAIL_CODE = "VerifiedEmail:";
+  private static final String TEMPORARY_PASSWORD_CHARS =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  private final AuthenticationManager authenticationManager;
+  private final UserDetailsService userDetailsService;
+
   @Override
   @Async("emailExecutor")
   public CompletableFuture<Boolean> sendVerificationEmail(String email) {
     try {
       String verificationCode = generateVerificationCode();
-      String redisKey = "EmailVerification:" + email;
+      String redisKey = EMAIL_VERIFICATION_CODE + email;
 
       MimeMessage mimeMessage = emailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -125,23 +140,23 @@ public class AuthServiceImpl implements AuthService {
   public boolean confirmVerificationCode(EmailVerificationConfirmReqeust reqeust) {
     String email = reqeust.getEmail();
     String code = reqeust.getCode();
-    String redisKey = "EmailVerification:" + email;
+    String redisKey = EMAIL_VERIFICATION_CODE + email;
     String savedCode = redisTemplate.opsForValue().get(redisKey);
 
     if (savedCode != null && savedCode.equals(code)) {
       redisTemplate.delete(redisKey);
-      redisTemplate.opsForValue().set("VerifiedEmail:" + email, "true", 24, TimeUnit.HOURS);
+      redisTemplate.opsForValue().set(VERIFIED_EMAIL_CODE + email, "true", 24, TimeUnit.HOURS);
       log.info("[Auth] 인증 코드 검증 성공 - 인증된 이메일: {}", email);
       return true;
     }
-    log.warn("[Auth] 인증 코드 검증 실패 - 인증 실패 이메일: {}", email);
+    log.info("[Auth] 인증 코드 검증 실패 - 인증 실패 이메일: {}", email);
     return false;
   }
 
   @Override
   public boolean checkVerificationEmail(EmailVerificationStatusRequest request) {
     String email = request.getEmail();
-    String redisKey = "VerifiedEmail:" + email;
+    String redisKey = VERIFIED_EMAIL_CODE + email;
     return Boolean.TRUE.toString().equals(redisTemplate.opsForValue().get(redisKey));
   }
 
@@ -149,7 +164,7 @@ public class AuthServiceImpl implements AuthService {
   @Transactional
   public void signUp(SignUpRequest request) {
     String email = request.getEmail();
-    String redisKey = "VerifiedEmail:" + email;
+    String redisKey = VERIFIED_EMAIL_CODE + email;
     if (redisTemplate.opsForValue().get(redisKey) == null) {
       log.error("[Auth] 검증되지 않은 이메일 입력 - 이메일: {}", email);
       throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
@@ -162,7 +177,7 @@ public class AuthServiceImpl implements AuthService {
             email, studentNumber, phoneNumber);
     if (duplicatedObj.isPresent()) {
       User duplicatedUser = duplicatedObj.get();
-      log.warn(
+      log.info(
           "[Auth] 중복된 값을 입력한 회원가입 - 입력 이메일: {}, 입력 학번: {}, 입력 전화번호: {}",
           email,
           studentNumber,
@@ -193,24 +208,60 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional(readOnly = true)
   public TokenResponse login(LoginRequest request) {
-    String email = request.getEmail();
-    User user = userRepository.findByEmail(email);
-    if (user == null) {
-      log.warn("[Auth] 존재하지 않는 이메일 입력 - 이메일: {}", email);
+    try {
+      UsernamePasswordAuthenticationToken authenticationToken =
+          new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+      Authentication authentication = authenticationManager.authenticate(authenticationToken);
+      TokenResponse tokenResponse = jwtProvider.generateTokenResponse(authentication);
+
+      log.info("[Auth] 사용자 로그인 성공 - 이메일: {}", request.getEmail());
+      return tokenResponse;
+    } catch (BadCredentialsException | UsernameNotFoundException e) {
+      log.info("[Auth] 로그인 실패 - 이메일: {}", request.getEmail());
+      throw new CustomException(AuthErrorCode.LOGIN_FAIL);
+    }
+  }
+
+  @Override
+  @Transactional
+  public PasswordReissueResponse reissuePassword(EmailVerificationConfirmReqeust reqeust) {
+    String email = reqeust.getEmail();
+    if (!userRepository.existsByEmail(email)) {
+      log.info("[Auth] 존재하지 않는 이메일 입력 - 이메일: {}", email);
       throw new CustomException(AuthErrorCode.NOT_FOUND_EMAIL);
     }
 
-    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-      log.warn("[Auth] 비밀번호 불일치 - 입력 이메일: {}", email);
-      throw new CustomException(AuthErrorCode.INCORRECT_PASSWORD);
+    String code = reqeust.getCode();
+    String redisKey = EMAIL_VERIFICATION_CODE + email;
+    String savedCode = redisTemplate.opsForValue().get(redisKey);
+    if (savedCode == null || !savedCode.equals(code)) {
+      log.info("[Auth] 인증 코드 검증 실패 - 인증 실패 이메일: {}", email);
+      throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
     }
 
-    String accessToken = jwtProvider.generateToken(email, TokenType.ACCESS_TOKEN);
-    String refreshToken = jwtProvider.generateToken(email, TokenType.REFRESH_TOKEN);
-    jwtProvider.saveRefreshToken(refreshToken, email);
+    User user = userRepository.findByEmail(email);
+    String temporaryPassword = generateTemporaryPassword();
+    user.reissuePassword(passwordEncoder.encode(temporaryPassword));
+    redisTemplate.delete(redisKey);
 
-    log.info("[Auth] 사용자 로그인 성공 - 이메일: {}", email);
-    return authMapper.toTokenResponse(accessToken, refreshToken);
+    log.info("[Auth] 임시 비밀번호 발급 성공 - 재발급된 이메일: {}", email);
+    return authMapper.toPasswordResetResponse(email, temporaryPassword);
+  }
+
+  @Override
+  public TokenResponse refresh(String refreshToken) {
+    String email = jwtProvider.getEmailFromToken(refreshToken);
+    if (!jwtProvider.validateTokenType(refreshToken, TokenType.REFRESH_TOKEN)
+        || !jwtProvider.validateRefreshToken(refreshToken)) {
+      log.info("[Auth] 유효하지 않은 JWT 토큰을 통한 리프레시 요청");
+      throw new CustomException(AuthErrorCode.UNAUTHORIZED_JWT);
+    }
+
+    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+    Authentication authentication =
+        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+    jwtProvider.addToBlackList(refreshToken);
+    return jwtProvider.generateTokenResponse(authentication);
   }
 
   private String generateVerificationCode() {
@@ -220,5 +271,15 @@ public class AuthServiceImpl implements AuthService {
       code.append(random.nextInt(10));
     }
     return code.toString();
+  }
+
+  private String generateTemporaryPassword() {
+    StringBuilder temporaryPassword = new StringBuilder();
+    Random random = new Random();
+    for (int i = 0; i < 12; i++) {
+      temporaryPassword.append(
+          TEMPORARY_PASSWORD_CHARS.charAt(random.nextInt(TEMPORARY_PASSWORD_CHARS.length())));
+    }
+    return temporaryPassword.toString();
   }
 }

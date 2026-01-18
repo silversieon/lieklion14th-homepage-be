@@ -20,7 +20,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+
+import com.skunivlikelion.homepage.global.security.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SecurityConfig {
 
   private final CorsConfig corsConfig;
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,7 +50,8 @@ public class SecurityConfig {
     http.csrf(AbstractHttpConfigurer::disable)
         .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
         .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
   }
 
   /** 예외 처리: 권한 부족 처리 */
@@ -72,8 +77,6 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                 .permitAll()
-                .requestMatchers("/api/**")
-                .permitAll()
                 .requestMatchers("/error")
                 .permitAll()
                 .requestMatchers("/actuator/prometheus")
@@ -82,6 +85,8 @@ public class SecurityConfig {
                 .hasRole("ADMIN")
                 .requestMatchers(RegexRequestMatcher.regexMatcher(".*/dev/.*"))
                 .hasRole("DEVELOPER")
+                .requestMatchers("/api/**")
+                .permitAll()
                 .anyRequest()
                 .authenticated());
   }
