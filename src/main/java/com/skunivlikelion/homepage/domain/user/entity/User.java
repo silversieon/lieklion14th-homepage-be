@@ -68,4 +68,8 @@ public class User extends BaseTimeEntity {
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<ClubMember> clubMembers = new ArrayList<>();
+
+  public void reissuePassword(String temporaryPassword) {
+    this.password = temporaryPassword;
+  }
 }

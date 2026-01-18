@@ -9,6 +9,7 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationConf
 import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStatusRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
+import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 
 public interface AuthService {
@@ -51,4 +52,20 @@ public interface AuthService {
    * @return accessToken, refreshToken을 담은 TokenResponse 객체
    */
   TokenResponse login(LoginRequest request);
+
+  /**
+   * [ 사용자 비밀번호 찾기 메서드 ] 비밀번호 재발급 형식
+   *
+   * @param reqeust 비밀번호 재발급을 요청할 이메일, 인증 코드를 담은 요청 객체
+   * @return 이메일, 재발급된 비밀번호가 담긴 응답 객체
+   */
+  PasswordReissueResponse reissuePassword(EmailVerificationConfirmReqeust reqeust);
+
+  /**
+   * [ 사용자 토큰 리프레시 메서드 ]
+   *
+   * @param refreshToken 토큰 재발급 요청에 사용될 리프레시 토큰
+   * @return 재발급된 accessToken, refreshToken을 담은 TokenResponse 객체
+   */
+  TokenResponse refresh(String refreshToken);
 }

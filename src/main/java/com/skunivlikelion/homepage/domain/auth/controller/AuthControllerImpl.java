@@ -3,6 +3,7 @@
  */
 package com.skunivlikelion.homepage.domain.auth.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpHeaders;
@@ -17,11 +18,14 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStat
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.response.LoginResponse;
+import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
+import com.skunivlikelion.homepage.domain.auth.dto.response.RefreshResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
-import com.skunivlikelion.homepage.global.jwt.JwtCookieWriter;
+import com.skunivlikelion.homepage.global.security.jwt.JwtCookieWriter;
+import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
 
 import backend.boilerplate.exception.CustomException;
 import backend.boilerplate.response.BaseResponse;
@@ -36,6 +40,7 @@ public class AuthControllerImpl implements AuthController {
   private final AuthService authService;
   private final JwtCookieWriter jwtCookieWriter;
   private final AuthMapper authMapper;
+  private final JwtProvider jwtProvider;
 
   @Override
   public ResponseEntity<BaseResponse<Void>> requestVerification(
@@ -66,9 +71,11 @@ public class AuthControllerImpl implements AuthController {
       @Valid @RequestBody EmailVerificationStatusRequest request) {
     boolean isVerified = authService.checkVerificationEmail(request);
     if (isVerified) {
-      return ResponseEntity.status(200).body(BaseResponse.success(200, "검증된 이메일입니다.", null));
+      return ResponseEntity.status(200)
+          .body(BaseResponse.success(200, "[Verified] 검증된 이메일입니다.", null));
     } else {
-      return ResponseEntity.status(200).body(BaseResponse.success(200, "검증되지 않은 이메일입니다.", null));
+      return ResponseEntity.status(200)
+          .body(BaseResponse.success(200, "[WARN] 검증되지 않은 이메일입니다.", null));
     }
   }
 
@@ -91,5 +98,28 @@ public class AuthControllerImpl implements AuthController {
         .body(
             BaseResponse.success(
                 200, "로그인에 성공했습니다.", authMapper.toLoginResponse(tokenResponse.getAccessToken())));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<PasswordReissueResponse>> reissuePassword(
+      @Valid @RequestBody EmailVerificationConfirmReqeust request) {
+    return ResponseEntity.status(200)
+        .body(BaseResponse.success(200, "비밀번호 찾기에 성공했습니다.", authService.reissuePassword(request)));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<RefreshResponse>> refresh(HttpServletRequest request) {
+    String refreshToken = jwtProvider.extractRefreshToken(request);
+    TokenResponse tokenResponse = authService.refresh(refreshToken);
+    ResponseCookie refreshCookie =
+        jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken());
+
+    return ResponseEntity.status(200)
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+        .body(
+            BaseResponse.success(
+                200,
+                "토큰 재발급에 성공했습니다.",
+                authMapper.toRefreshResponse(tokenResponse.getAccessToken())));
   }
 }

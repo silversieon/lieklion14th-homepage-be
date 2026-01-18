@@ -3,9 +3,11 @@
  */
 package com.skunivlikelion.homepage.domain.auth.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,8 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStat
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.response.LoginResponse;
+import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
+import com.skunivlikelion.homepage.domain.auth.dto.response.RefreshResponse;
 
 import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +30,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface AuthController {
 
   @Operation(
-      summary = "[ 일반 사용자 | 토큰 X | 이메일 인증 코드 전송 ]",
+      summary = "[ 사용자 | 토큰 X | 이메일 인증 코드 전송 ]",
       description =
           """
             **Parameters**  \n
@@ -42,7 +46,7 @@ public interface AuthController {
       @Valid @RequestBody EmailVerificationSendRequest request);
 
   @Operation(
-      summary = "[ 일반 사용자 | 토큰 X | 이메일 인증 코드 검증 ]",
+      summary = "[ 사용자 | 토큰 X | 이메일 인증 코드 검증 ]",
       description =
           """
            **Parameters**  \n
@@ -58,7 +62,7 @@ public interface AuthController {
       @Valid @RequestBody EmailVerificationConfirmReqeust request);
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 이메일 검증 상태 확인 (토큰 검증 넣을 예정) ]",
+      summary = "[ 관리자 | 토큰 O | 이메일 검증 상태 확인 ]",
       description =
           """
            **Parameters**  \n
@@ -68,12 +72,13 @@ public interface AuthController {
            검증 성공 여부 문자열 \n
            (success는 성공 여부 관계 없이 true)
            """)
-  @PostMapping("/v1/auth/email/verify/status")
+  @PreAuthorize("hasRole('ADMIN')")
+  @PostMapping("/v1/admin/auth/email/verify/status")
   ResponseEntity<BaseResponse<Void>> checkVerification(
       @Valid @RequestBody EmailVerificationStatusRequest request);
 
   @Operation(
-      summary = "[ 일반 사용자 | 토큰 X | 회원가입 ]",
+      summary = "[ 사용자 | 토큰 X | 회원가입 ]",
       description =
           """
           **Parameters**  \n
@@ -91,7 +96,7 @@ public interface AuthController {
   ResponseEntity<BaseResponse<Void>> register(@Valid @RequestBody SignUpRequest request);
 
   @Operation(
-      summary = "[ 일반 사용자 | 토큰 X | 로그인 ]",
+      summary = "[ 사용자 | 토큰 X | 로그인 ]",
       description =
           """
           **Parameters**  \n
@@ -100,8 +105,35 @@ public interface AuthController {
 
           **Returns**  \n
           accessToken: JWT 액세스 토큰 \n
-          refreshToken: JWT 리프레시 토큰 \n
+          (쿠키에 전달) refreshToken: JWT 리프레시 토큰 \n
           """)
   @PostMapping("/v1/auth/login")
   ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request);
+
+  @Operation(
+      summary = "[ 사용자 | 토큰 X | 비밀번호 재발급 ]",
+      description =
+          """
+          **Parameters**  \n
+          email: 인증을 받을 사람의 이메일 주소  \n
+          code: 이메일로 발송된 인증 코드  \n
+          두 값이 일치하면 인증 성공  \n
+
+          **Returns**  \n
+          email: 인증된 사람의 이메일 주소 \n
+          newPassword: 임시 발급된 비밀번호  \n
+          """)
+  @PostMapping("/v1/auth/password/reissue")
+  ResponseEntity<BaseResponse<PasswordReissueResponse>> reissuePassword(
+      @Valid @RequestBody EmailVerificationConfirmReqeust request);
+
+  @Operation(
+      summary = "[ 사용자 | 토큰 O | 토큰 재발급 ]",
+      description =
+          """
+          **Returns**  \n
+          accessToken: JWT 액세스 토큰 \n
+          """)
+  @PostMapping("/v1/auth/refresh")
+  ResponseEntity<BaseResponse<RefreshResponse>> refresh(HttpServletRequest request);
 }
