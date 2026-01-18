@@ -5,9 +5,9 @@ plugins {
     id 'com.diffplug.spotless' version '6.19.0'
 }
 
-group = 'com.likelionskuniv'
+group = 'com.skunivlikelion'
 version = '0.0.1-SNAPSHOT'
-description = 'likelionskuniv-website'
+description = 'skunivlikelion-homepage'
 
 java {
     toolchain {
