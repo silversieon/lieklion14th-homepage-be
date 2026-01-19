@@ -1,0 +1,61 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
+package com.skunivlikelion.homepage.domain.application.form.entity;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+
+import com.skunivlikelion.homepage.domain.semester.entity.Semester;
+
+import backend.boilerplate.common.BaseTimeEntity;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Builder
+public class ApplicationForm extends BaseTimeEntity {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  @OneToOne
+  @JoinColumn(name = "semester_id", nullable = false, unique = true)
+  private Semester semester;
+
+  @Column(nullable = false)
+  private LocalDateTime openAt;
+
+  @Column(nullable = false)
+  private LocalDateTime closeAt;
+
+  @Column(nullable = false)
+  private LocalDateTime applicationResultAt;
+
+  @Column(nullable = false)
+  private LocalDateTime finalResultAt;
+
+  public void update(
+      LocalDateTime openAt,
+      LocalDateTime closeAt,
+      LocalDateTime applicationResultAt,
+      LocalDateTime finalResultAt) {
+    this.openAt = openAt;
+    this.closeAt = closeAt;
+    this.applicationResultAt = applicationResultAt;
+    this.finalResultAt = finalResultAt;
+  }
+}
