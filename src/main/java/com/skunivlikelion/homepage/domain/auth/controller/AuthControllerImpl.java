@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,9 +17,7 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationSend
 import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStatusRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
-import com.skunivlikelion.homepage.domain.auth.dto.response.LoginResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
-import com.skunivlikelion.homepage.domain.auth.dto.response.RefreshResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
@@ -67,6 +65,7 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<Void>> checkVerification(
       @Valid @RequestBody EmailVerificationStatusRequest request) {
     boolean isVerified = authService.checkVerificationEmail(request);
@@ -86,18 +85,19 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<LoginResponse>> login(
+  public ResponseEntity<BaseResponse<TokenResponse>> login(
       @Valid @RequestBody LoginRequest request) {
     TokenResponse tokenResponse = authService.login(request);
-
-    ResponseCookie refreshCookie =
-        jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken());
-
+    HttpHeaders tokenHeaders = new HttpHeaders();
+    tokenHeaders.add(
+        HttpHeaders.SET_COOKIE,
+        jwtCookieWriter.addAccessTokenToCookie(tokenResponse.getAccessToken()).toString());
+    tokenHeaders.add(
+        HttpHeaders.SET_COOKIE,
+        jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken()).toString());
     return ResponseEntity.status(200)
-        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-        .body(
-            BaseResponse.success(
-                200, "로그인에 성공했습니다.", authMapper.toLoginResponse(tokenResponse.getAccessToken())));
+        .headers(tokenHeaders)
+        .body(BaseResponse.success(200, "로그인에 성공했습니다.", tokenResponse));
   }
 
   @Override
@@ -108,18 +108,18 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<RefreshResponse>> refresh(HttpServletRequest request) {
+  public ResponseEntity<BaseResponse<TokenResponse>> refresh(HttpServletRequest request) {
     String refreshToken = jwtProvider.extractRefreshToken(request);
     TokenResponse tokenResponse = authService.refresh(refreshToken);
-    ResponseCookie refreshCookie =
-        jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken());
-
+    HttpHeaders tokenHeaders = new HttpHeaders();
+    tokenHeaders.add(
+        HttpHeaders.SET_COOKIE,
+        jwtCookieWriter.addAccessTokenToCookie(tokenResponse.getAccessToken()).toString());
+    tokenHeaders.add(
+        HttpHeaders.SET_COOKIE,
+        jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken()).toString());
     return ResponseEntity.status(200)
-        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-        .body(
-            BaseResponse.success(
-                200,
-                "토큰 재발급에 성공했습니다.",
-                authMapper.toRefreshResponse(tokenResponse.getAccessToken())));
+        .headers(tokenHeaders)
+        .body(BaseResponse.success(200, "토큰 재발급에 성공했습니다.", tokenResponse));
   }
 }

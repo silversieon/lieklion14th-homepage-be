@@ -18,8 +18,17 @@ public class JwtCookieWriter {
 
   private final JwtProperties jwtProperties;
 
+  public ResponseCookie addAccessTokenToCookie(String accessToken) {
+    return ResponseCookie.from(TokenType.ACCESS_TOKEN.name(), accessToken)
+        .httpOnly(true)
+        .secure(true)
+        .path("/api")
+        .maxAge(jwtProperties.getAccessTokenValidityInSeconds())
+        .build();
+  }
+
   public ResponseCookie addRefreshTokenToCookie(String refreshToken) {
-    return ResponseCookie.from(TokenType.REFRESH_TOKEN.toString(), refreshToken)
+    return ResponseCookie.from(TokenType.REFRESH_TOKEN.name(), refreshToken)
         .httpOnly(true)
         .secure(true)
         .path("/api")
