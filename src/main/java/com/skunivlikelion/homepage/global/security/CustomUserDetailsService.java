@@ -8,11 +8,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     User user = userRepository.findByEmail(email);
     if (user == null) {
       log.info("[Auth] Security: 해당 이메일을 가진 사용자가 없습니다. - 이메일: {}", email);
-      throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
+      throw UsernameNotFoundException.fromUsername(email);
     }
     return new CustomUserDetails(user);
   }
