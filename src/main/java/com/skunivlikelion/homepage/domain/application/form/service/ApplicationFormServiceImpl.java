@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.skunivlikelion.homepage.domain.application.form.dto.request.ApplicationFormUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
+import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.mapper.ApplicationFormMapper;
@@ -94,6 +95,14 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                   return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
                 });
 
+    if (found.isHasQuestions()) {
+      log.warn(
+          "[ApplicationForm] 모집 공고 삭제 실패: 등록된 지원서 질문 존재 - semester={}, formId={}",
+          semester,
+          found.getId());
+      throw new CustomException(ApplicationFormErrorCode.CANNOT_DELETE_FORM_WITH_QUESTIONS);
+    }
+
     applicationFormRepository.delete(found);
     log.info("[ApplicationForm] 모집 공고 삭제 완료 - semester={}, id={}", semester, found.getId());
   }
@@ -124,6 +133,22 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     List<ApplicationFormResponse> result = applicationFormMapper.toResponseList(forms);
 
     log.info("[ApplicationForm] 모집 공고 내림차순 전체 조회 완료 - count={}", result.size());
+    return result;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<ApplicationFormSummaryResponse> getApplicationFormSummariesForQuestionRegistration() {
+    LocalDateTime now = LocalDateTime.now();
+
+    List<ApplicationForm> forms =
+        applicationFormRepository
+            .findAllAvailableForQuestionRegistrationWithSemesterOrderBySemesterDesc(now);
+
+    List<ApplicationFormSummaryResponse> result =
+        applicationFormMapper.toSummaryResponseList(forms);
+
+    log.info("[ApplicationForm] 질문 등록용 모집 공고 제목 목록 조회 완료 - count={}", result.size());
     return result;
   }
 

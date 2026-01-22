@@ -30,7 +30,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface SemesterController {
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 기수 생성]",
+      summary = "[ 관리자 | 토큰 O | 기수 생성 ]",
       description =
           """
               **Parameters**  \n
@@ -44,7 +44,7 @@ public interface SemesterController {
       @Valid @RequestBody SemesterRequest request);
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 기수 삭제]",
+      summary = "[ 관리자 | 토큰 O | 기수 삭제 ]",
       description =
           """
               **Parameters**  \n
@@ -57,7 +57,7 @@ public interface SemesterController {
   ResponseEntity<BaseResponse<Void>> deleteSemester(@PathVariable @Positive Long semester);
 
   @Operation(
-      summary = "[사용자 | 토큰 X | 등록된 기수 내림차순 조회]",
+      summary = " [ 사용자 | 토큰 X | 등록된 기수 내림차순 조회 ]",
       description = """
           **Returns**  \n
           등록된 모든 기수 내림차순 목록

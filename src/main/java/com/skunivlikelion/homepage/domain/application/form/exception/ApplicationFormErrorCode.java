@@ -17,7 +17,10 @@ public enum ApplicationFormErrorCode implements BaseErrorCode {
   ALREADY_EXIST_APPLICATION_FORM("APPFORM4003", "해당 기수의 모집 공고가 이미 존재합니다.", HttpStatus.BAD_REQUEST),
 
   NOT_FOUND_APPLICATION_FORM("APPFORM4041", "해당 기수의 모집 공고가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
-  NOT_FOUND_SEMESTER("APPFORM4042", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND);
+  NOT_FOUND_SEMESTER("APPFORM4042", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
+
+  CANNOT_DELETE_FORM_WITH_QUESTIONS(
+      "APPFORM4092", "등록된 지원서 질문이 있는 모집 공고는 삭제할 수 없습니다.", HttpStatus.CONFLICT);
 
   private final String code;
   private final String message;
