@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.skunivlikelion.homepage.domain.application.form.dto.request.ApplicationFormUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
+import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
 
 public interface ApplicationFormService {
 
@@ -51,4 +52,12 @@ public interface ApplicationFormService {
    * @return 모집 공고 응답 DTO 리스트
    */
   List<ApplicationFormResponse> getAllApplicationForms();
+
+  /**
+   * [ 질문 등록용 모집 공고 제목 목록 조회 메서드 ] - 질문이 아직 등록되지 않은 공고 & 마감되지 않은 공고(closeAt > now)만 조회 - 질문 등록 화면의
+   * 공고 선택 토글에 사용
+   *
+   * @return 모집 공고 요약(title, closeAt) 리스트
+   */
+  List<ApplicationFormSummaryResponse> getApplicationFormSummariesForQuestionRegistration();
 }

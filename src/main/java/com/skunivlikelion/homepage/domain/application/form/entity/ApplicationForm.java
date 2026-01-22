@@ -48,6 +48,10 @@ public class ApplicationForm extends BaseTimeEntity {
   @Column(nullable = false)
   private LocalDateTime finalResultAt;
 
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean hasQuestions = false;
+
   public void update(
       LocalDateTime openAt,
       LocalDateTime closeAt,
@@ -57,5 +61,13 @@ public class ApplicationForm extends BaseTimeEntity {
     this.closeAt = closeAt;
     this.applicationResultAt = applicationResultAt;
     this.finalResultAt = finalResultAt;
+  }
+
+  public void markHasQuestions() {
+    this.hasQuestions = true;
+  }
+
+  public void unmarkHasQuestions() {
+    this.hasQuestions = false;
   }
 }

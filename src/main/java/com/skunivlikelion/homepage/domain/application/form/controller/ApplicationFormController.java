@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.skunivlikelion.homepage.domain.application.form.dto.request.ApplicationFormUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
+import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
 
 import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,7 +32,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface ApplicationFormController {
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 모집 공고 등록]",
+      summary = "[ 관리자 | 토큰 O | 모집 공고 등록 ]",
       description =
           """
               **Parameters**  \n
@@ -50,7 +51,7 @@ public interface ApplicationFormController {
       @Valid @RequestBody ApplicationFormUpsertRequest request);
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 모집 공고 수정]",
+      summary = "[ 관리자 | 토큰 O | 모집 공고 수정 ]",
       description =
           """
               **Parameters**  \n
@@ -69,7 +70,7 @@ public interface ApplicationFormController {
       @Valid @RequestBody ApplicationFormUpsertRequest request);
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 모집 공고 삭제]",
+      summary = "[ 관리자 | 토큰 O | 모집 공고 삭제 ]",
       description =
           """
               **Parameters**  \n
@@ -82,7 +83,7 @@ public interface ApplicationFormController {
   ResponseEntity<BaseResponse<Void>> deleteApplicationForm(@PathVariable @Positive Long semester);
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 모집 공고 기수별 조회]",
+      summary = "[ 관리자 | 토큰 O | 모집 공고 기수별 조회 ]",
       description =
           """
               **Parameters**  \n
@@ -96,7 +97,7 @@ public interface ApplicationFormController {
       @PathVariable @Positive Long semester);
 
   @Operation(
-      summary = "[관리자 | 토큰 O | 모집 공고 내림차순 전체 조회]",
+      summary = "[ 관리자 | 토큰 O | 모집 공고 내림차순 전체 조회 ]",
       description =
           """
               **Returns**  \n
@@ -104,4 +105,15 @@ public interface ApplicationFormController {
               """)
   @GetMapping("/v1/admin/applications/forms")
   ResponseEntity<BaseResponse<List<ApplicationFormResponse>>> getAllApplicationForms();
+
+  @Operation(
+      summary = "[ 관리자 | 토큰 O | 질문 미등록 모집 공고 목록 조회 ]",
+      description =
+          """
+              **Returns**  \n
+              진행중/진행완료 기수와 마감일 목록
+              """)
+  @GetMapping("/v1/admin/applications/forms/summaries")
+  ResponseEntity<BaseResponse<List<ApplicationFormSummaryResponse>>>
+      getApplicationFormSummariesForQuestionRegistration();
 }

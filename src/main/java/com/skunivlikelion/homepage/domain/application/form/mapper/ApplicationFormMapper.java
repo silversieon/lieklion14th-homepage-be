@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.skunivlikelion.homepage.domain.application.form.dto.request.ApplicationFormUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
+import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 
@@ -50,5 +51,19 @@ public class ApplicationFormMapper {
 
   public List<ApplicationFormResponse> toResponseList(List<ApplicationForm> entities) {
     return entities.stream().map(this::toResponse).toList();
+  }
+
+  public ApplicationFormSummaryResponse toSummaryResponse(ApplicationForm entity) {
+    Long semester = entity.getSemester().getSemester();
+    return ApplicationFormSummaryResponse.builder()
+        .semester(semester)
+        .title(semester + "기")
+        .closeAt(entity.getCloseAt())
+        .build();
+  }
+
+  public List<ApplicationFormSummaryResponse> toSummaryResponseList(
+      List<ApplicationForm> entities) {
+    return entities.stream().map(this::toSummaryResponse).toList();
   }
 }
