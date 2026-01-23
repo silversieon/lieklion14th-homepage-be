@@ -4,7 +4,7 @@
 package com.skunivlikelion.homepage.domain.user.enums;
 
 public enum UserRole {
-  GUEST,
+  USER,
   ADMIN,
   DEVELOPER;
 }

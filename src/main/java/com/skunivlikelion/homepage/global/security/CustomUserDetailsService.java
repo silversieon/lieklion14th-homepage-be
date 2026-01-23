@@ -23,11 +23,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-    User user = userRepository.findByEmail(email);
-    if (user == null) {
-      log.info("[Auth] Security: 해당 이메일을 가진 사용자가 없습니다. - 이메일: {}", email);
-      throw UsernameNotFoundException.fromUsername(email);
-    }
+    User user =
+        userRepository
+            .findByEmail(email)
+            .orElseThrow(
+                () -> {
+                  log.info("[Auth] Security: 해당 이메일을 가진 사용자가 없습니다. - 이메일: {}", email);
+                  return new UsernameNotFoundException(email);
+                });
     return new CustomUserDetails(user);
   }
 }

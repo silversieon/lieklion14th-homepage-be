@@ -31,4 +31,11 @@ public interface SemesterService {
    * @return 등록된 모든 기수 정보를 담은 응답 DTO 리스트
    */
   List<SemesterResponse> getAllSemesters();
+
+  /**
+   * [ 기수 존재 여부 확인 메서드 ] 해당 기수의 존재 여부를 반환
+   *
+   * @param semester 확인할 기수
+   */
+  void checkSemesterExist(Long semester);
 }

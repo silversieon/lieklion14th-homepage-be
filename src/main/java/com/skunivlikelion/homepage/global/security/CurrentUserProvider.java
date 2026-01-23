@@ -1,0 +1,74 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
+package com.skunivlikelion.homepage.global.security;
+
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+
+import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
+import com.skunivlikelion.homepage.domain.user.entity.User;
+import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+
+import backend.boilerplate.exception.CustomException;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 현재 응답을 요청한 사용자의 정보를 반환하는 Provider 입니다.
+ *
+ * @since 2026.01.22
+ * @see CustomUserDetails
+ * @see JwtAuthenticationFilter
+ * @author Keum Si Eon
+ */
+@Component
+@RequiredArgsConstructor
+public class CurrentUserProvider {
+
+  private final UserRepository userRepository;
+
+  /**
+   * 현재 로그인된 사용자의 식별자를 반환합니다.
+   *
+   * @return userId: 로그인된 사용자 식별자
+   */
+  public Long getUserId() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    isAuthenticated(auth);
+
+    return getCurrentCustomUserDetails(getCurrentUserDetails(auth.getPrincipal())).getUserId();
+  }
+
+  /**
+   * 현재 로그인된 사용자 객체를 반환합니다.
+   *
+   * @return User: 로그인된 사용자 객체
+   */
+  public User getCurrentUser() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    isAuthenticated(auth);
+
+    return userRepository
+        .findByEmail(getCurrentUserDetails(auth.getPrincipal()).getUsername())
+        .orElseThrow(() -> new CustomException(AuthErrorCode.NOT_FOUND_EMAIL));
+  }
+
+  private void isAuthenticated(Authentication auth) {
+    if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+      throw new CustomException(AuthErrorCode.UNAUTHORIZED);
+    }
+  }
+
+  private UserDetails getCurrentUserDetails(Object principal) {
+    if (principal instanceof UserDetails ud) return ud;
+    else throw new CustomException(AuthErrorCode.UNAUTHORIZED);
+  }
+
+  private CustomUserDetails getCurrentCustomUserDetails(UserDetails userDetails) {
+    if (userDetails instanceof CustomUserDetails customUserDetails) return customUserDetails;
+    else throw new CustomException(AuthErrorCode.UNAUTHORIZED);
+  }
+}

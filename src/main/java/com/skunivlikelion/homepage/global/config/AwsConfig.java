@@ -10,8 +10,9 @@ import com.skunivlikelion.homepage.global.config.property.AwsProperties;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -24,7 +25,10 @@ public class AwsConfig {
 
   @Bean
   public AwsCredentialsProvider awsCredentialsProvider() {
-    return DefaultCredentialsProvider.builder().build();
+    return StaticCredentialsProvider.create(
+        AwsBasicCredentials.create(
+            awsProperties.getCredentials().getAccessKey(),
+            awsProperties.getCredentials().getSecretKey()));
   }
 
   @Bean
