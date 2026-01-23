@@ -3,16 +3,9 @@
  */
 package com.skunivlikelion.homepage.domain.user.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
-import com.skunivlikelion.homepage.domain.user.enums.Part;
+import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
 
 import lombok.AllArgsConstructor;
@@ -32,15 +25,23 @@ public class ClubMember {
   private Long id;
 
   @Column(nullable = false)
-  private Integer semester;
+  private Long semester;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private Part part;
+  private Track track;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private Position position;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
+
+  public void updateClubMemberRecord(Long semester, Position position, Track track) {
+    this.semester = semester;
+    this.position = position;
+    this.track = track;
+  }
 }

@@ -84,7 +84,7 @@ public class SecurityConfig {
                 .requestMatchers(RegexRequestMatcher.regexMatcher(".*/admin/.*"))
                 .hasRole("ADMIN")
                 .requestMatchers(RegexRequestMatcher.regexMatcher(".*/dev/.*"))
-                .hasRole("DEVELOPER")
+                .hasAnyRole("DEVELOPER", "ADMIN")
                 .requestMatchers("/api/**")
                 .permitAll()
                 .anyRequest()

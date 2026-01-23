@@ -20,6 +20,7 @@ public enum AuthErrorCode implements BaseErrorCode {
   UNAUTHORIZED_JWT("AUTH4012", "유효하지 않은 JWT 토큰입니다.", HttpStatus.UNAUTHORIZED),
   INCORRECT_PASSWORD("AUTH4013", "비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
   LOGIN_FAIL("AUTH4014", "로그인에 실패했습니다.", HttpStatus.UNAUTHORIZED),
+  UNAUTHORIZED("AUTH4015", "로그인 되지 않은 사용자입니다.", HttpStatus.UNAUTHORIZED),
   NOT_FOUND_EMAIL("AUTH4041", "존재하지 않는 이메일 값입니다.", HttpStatus.NOT_FOUND),
   INTERNAL_SERVER_ERROR_EMAIL("AUTH5001", "인증 코드 발송에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
 

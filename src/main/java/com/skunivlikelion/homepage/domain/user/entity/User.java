@@ -47,7 +47,7 @@ public class User extends BaseTimeEntity {
 
   @Builder.Default
   @Enumerated(EnumType.STRING)
-  private UserRole userRole = UserRole.GUEST;
+  private UserRole userRole = UserRole.USER;
 
   @Column(nullable = false)
   private String name;
@@ -63,13 +63,19 @@ public class User extends BaseTimeEntity {
 
   private String profileImageUrl;
 
-  private String interview;
-
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<ClubMember> clubMembers = new ArrayList<>();
 
   public void reissuePassword(String temporaryPassword) {
     this.password = temporaryPassword;
+  }
+
+  public void updateProfileImage(String profileImageUrl) {
+    this.profileImageUrl = profileImageUrl;
+  }
+
+  public void updatePassword(String encodedNewPassword) {
+    this.password = encodedNewPassword;
   }
 }

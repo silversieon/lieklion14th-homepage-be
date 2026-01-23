@@ -3,8 +3,6 @@
  */
 package com.skunivlikelion.homepage.global.s3.service;
 
-import java.io.IOException;
-
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.global.s3.enums.PathName;
@@ -26,9 +24,8 @@ public interface S3Service {
    * @param pathName 이미지를 넣을 폴더 경로
    * @param file 이미지
    * @return 업로드한 이미지의 s3 url
-   * @throws IOException 입출력 예외 처리
    */
-  String uploadFile(PathName pathName, MultipartFile file) throws IOException;
+  String uploadFile(PathName pathName, MultipartFile file);
 
   /**
    * keyName을 인자로 받아 해당 이미지 파일을 s3에서 삭제하는 메서드
@@ -43,5 +40,5 @@ public interface S3Service {
    * @param imageUrl s3 이미지 url
    * @return keyName 문자열
    */
-  String extractKetNameFromUrl(String imageUrl);
+  String extractKeyNameFromUrl(String imageUrl);
 }

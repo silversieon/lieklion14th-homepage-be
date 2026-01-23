@@ -75,4 +75,13 @@ public class SemesterServiceImpl implements SemesterService {
     log.info("[Semester] 전체 기수 조회 완료 - count={}", result.size());
     return result;
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public void checkSemesterExist(Long semesterId) {
+    if (!semesterRepository.existsBySemester(semesterId)) {
+      log.warn("[Semester] 해당 기수가 존재하지 않음 - semester={}", semesterId);
+      throw new CustomException(SemesterErrorCode.NOT_FOUND_SEMESTER);
+    }
+  }
 }

@@ -13,12 +13,17 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.skunivlikelion.homepage.domain.user.entity.User;
 
+import lombok.Getter;
+
+@Getter
 public class CustomUserDetails implements UserDetails {
 
   private final User user;
+  private final Long userId;
 
   public CustomUserDetails(User user) {
     this.user = user;
+    this.userId = user.getId();
   }
 
   @Override

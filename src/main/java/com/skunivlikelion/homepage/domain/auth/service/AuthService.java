@@ -68,4 +68,13 @@ public interface AuthService {
    * @return 재발급된 accessToken, refreshToken을 담은 TokenResponse 객체
    */
   TokenResponse refresh(String refreshToken);
+
+  /**
+   * [ 고유한 값들 검증 메서드 ] 회원가입, 생성 상황에서 고유한 값들 검증
+   *
+   * @param email 사용자 이메일
+   * @param studentNumber 사용자 학번
+   * @param phoneNumber 사용자 전화번호
+   */
+  void validateUniqueValues(String email, String studentNumber, String phoneNumber);
 }

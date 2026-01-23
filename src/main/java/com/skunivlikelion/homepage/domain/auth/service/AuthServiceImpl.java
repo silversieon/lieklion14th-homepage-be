@@ -163,42 +163,21 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public void signUp(SignUpRequest request) {
-    String email = request.getEmail();
-    String redisKey = VERIFIED_EMAIL_CODE + email;
+    String redisKey = VERIFIED_EMAIL_CODE + request.getEmail();
     if (redisTemplate.opsForValue().get(redisKey) == null) {
-      log.error("[Auth] 검증되지 않은 이메일 입력 - 이메일: {}", email);
+      log.error("[Auth] 검증되지 않은 이메일 입력 - 이메일: {}", request.getEmail());
       throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
-    }
-
-    String studentNumber = request.getStudentNumber();
-    String phoneNumber = request.getPhoneNumber();
-    Optional<User> duplicatedObj =
-        userRepository.findFirstByEmailOrStudentNumberOrPhoneNumber(
-            email, studentNumber, phoneNumber);
-    if (duplicatedObj.isPresent()) {
-      User duplicatedUser = duplicatedObj.get();
-      log.info(
-          "[Auth] 중복된 값을 입력한 회원가입 - 입력 이메일: {}, 입력 학번: {}, 입력 전화번호: {}",
-          email,
-          studentNumber,
-          phoneNumber);
-      if (email.equals(duplicatedUser.getEmail()))
-        throw new CustomException(AuthErrorCode.ALREADY_EXIST_EMAIL);
-      if (studentNumber.equals(duplicatedUser.getStudentNumber()))
-        throw new CustomException(AuthErrorCode.ALREADY_EXIST_STUDENTNUMBER);
-      if (phoneNumber.equals(duplicatedUser.getPhoneNumber()))
-        throw new CustomException(AuthErrorCode.ALREADY_EXIST_PHONENUMBER);
     }
 
     String encodedPassword = passwordEncoder.encode(request.getPassword());
     User user =
         User.builder()
-            .email(email)
+            .email(request.getEmail())
             .password(encodedPassword)
             .name(request.getName())
             .department(request.getDepartment())
-            .studentNumber(studentNumber)
-            .phoneNumber(phoneNumber)
+            .studentNumber(request.getStudentNumber())
+            .phoneNumber(request.getPhoneNumber())
             .build();
     User savedUser = userRepository.save(user);
     redisTemplate.delete(redisKey);
@@ -239,7 +218,10 @@ public class AuthServiceImpl implements AuthService {
       throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
     }
 
-    User user = userRepository.findByEmail(email);
+    User user =
+        userRepository
+            .findByEmail(email)
+            .orElseThrow(() -> new CustomException(AuthErrorCode.NOT_FOUND_EMAIL));
     String temporaryPassword = generateTemporaryPassword();
     user.reissuePassword(passwordEncoder.encode(temporaryPassword));
     redisTemplate.delete(redisKey);
@@ -281,5 +263,26 @@ public class AuthServiceImpl implements AuthService {
           TEMPORARY_PASSWORD_CHARS.charAt(random.nextInt(TEMPORARY_PASSWORD_CHARS.length())));
     }
     return temporaryPassword.toString();
+  }
+
+  @Override
+  public void validateUniqueValues(String email, String studentNumber, String phoneNumber) {
+    Optional<User> duplicatedObj =
+        userRepository.findFirstByEmailOrStudentNumberOrPhoneNumber(
+            email, studentNumber, phoneNumber);
+    if (duplicatedObj.isPresent()) {
+      User duplicatedUser = duplicatedObj.get();
+      log.info(
+          "[Auth] 중복된 값을 입력한 회원가입 - 입력 이메일: {}, 입력 학번: {}, 입력 전화번호: {}",
+          email,
+          studentNumber,
+          phoneNumber);
+      if (email.equals(duplicatedUser.getEmail()))
+        throw new CustomException(AuthErrorCode.ALREADY_EXIST_EMAIL);
+      if (studentNumber.equals(duplicatedUser.getStudentNumber()))
+        throw new CustomException(AuthErrorCode.ALREADY_EXIST_STUDENTNUMBER);
+      if (phoneNumber.equals(duplicatedUser.getPhoneNumber()))
+        throw new CustomException(AuthErrorCode.ALREADY_EXIST_PHONENUMBER);
+    }
   }
 }

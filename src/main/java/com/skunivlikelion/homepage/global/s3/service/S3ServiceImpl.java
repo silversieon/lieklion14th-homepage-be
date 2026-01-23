@@ -3,7 +3,6 @@
  */
 package com.skunivlikelion.homepage.global.s3.service;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -41,20 +40,24 @@ public class S3ServiceImpl implements S3Service {
   }
 
   @Override
-  public String uploadFile(PathName pathName, MultipartFile file) throws IOException {
+  public String uploadFile(PathName pathName, MultipartFile file) {
     validateFile(file);
     String keyName = createKeyName(pathName, file.getOriginalFilename());
-    s3Client.putObject(
-        PutObjectRequest.builder()
-            .bucket(awsProperties.getS3().getBucket())
-            .key(keyName)
-            .contentType(file.getContentType())
-            .contentLength(file.getSize())
-            .build(),
-        RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+    try {
+      s3Client.putObject(
+          PutObjectRequest.builder()
+              .bucket(awsProperties.getS3().getBucket())
+              .key(keyName)
+              .contentType(file.getContentType())
+              .contentLength(file.getSize())
+              .build(),
+          RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-    log.info("[S3] 파일 업로드 성공 - keyName: {}", keyName);
-    return createBucketImageUrl(keyName);
+      log.info("[S3] 파일 업로드 성공 - keyName: {}", keyName);
+      return createBucketImageUrl(keyName);
+    } catch (Exception e) {
+      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
+    }
   }
 
   @Override
@@ -74,7 +77,7 @@ public class S3ServiceImpl implements S3Service {
   }
 
   @Override
-  public String extractKetNameFromUrl(String imageUrl) {
+  public String extractKeyNameFromUrl(String imageUrl) {
     if (!imageUrl.startsWith(getBucketUrl())) {
       log.error("[S3] 이미지 URL 방식이 잘못 되었습니다. - imageUrl: {}", imageUrl);
       throw new CustomException(S3ErrorCode.FILE_URL_INVALID);
