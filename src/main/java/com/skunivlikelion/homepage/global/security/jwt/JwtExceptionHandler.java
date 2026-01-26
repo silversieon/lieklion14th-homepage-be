@@ -20,7 +20,15 @@ public class JwtExceptionHandler {
   public ResponseEntity<BaseResponse<Object>> handleMalformedJwtException(
       MalformedJwtException ex) {
     log.warn("MalformedJwtException 오류 발생: {}", ex.getMessage());
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-        .body(BaseResponse.error(401, "유효하지 않은 JWT 값 입력"));
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(BaseResponse.error(400, "유효하지 않은 JWT 값 입력"));
+  }
+
+  @ExceptionHandler({IllegalArgumentException.class})
+  public ResponseEntity<BaseResponse<Object>> handleIllegalAccessException(
+      IllegalArgumentException ex) {
+    log.warn("IllegalArgumentException 오류 발생: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(BaseResponse.error(400, "유효하지 않은 입력 요청 발생"));
   }
 }

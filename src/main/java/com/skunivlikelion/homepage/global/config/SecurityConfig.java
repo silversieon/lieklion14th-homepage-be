@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -25,8 +26,10 @@ import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 import com.skunivlikelion.homepage.global.security.JwtAuthenticationFilter;
 
+import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Configuration
@@ -36,6 +39,7 @@ public class SecurityConfig {
 
   private final CorsConfig corsConfig;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final ObjectMapper objectMapper;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -56,19 +60,40 @@ public class SecurityConfig {
 
   /** 예외 처리: 권한 부족 처리 */
   private void configureExceptionHandling(HttpSecurity http) throws Exception {
-    http.exceptionHandling(e -> e.accessDeniedHandler(this::handleAccessDenied));
+    http.exceptionHandling(
+        e ->
+            e.accessDeniedHandler(this::handleAccessDenied)
+                .authenticationEntryPoint(this::handleUnauthorizedOrForbidden));
+  }
+
+  private void handleUnauthorizedOrForbidden(
+      HttpServletRequest request,
+      HttpServletResponse response,
+      org.springframework.security.core.AuthenticationException e)
+      throws IOException {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.setCharacterEncoding("UTF-8");
+
+    BaseResponse<Object> body = BaseResponse.error(401, "인증이 필요합니다.");
+
+    log.warn("[Auth] Security: 인증 필요: {}, {}", request.getMethod(), request.getRequestURI());
+    response.getWriter().write(objectMapper.writeValueAsString(body));
+    response.getWriter().flush();
   }
 
   private void handleAccessDenied(
       HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
       throws IOException {
     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    response.setContentType("application/json;charset=UTF-8");
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.setCharacterEncoding("UTF-8");
 
-    response
-        .getWriter()
-        .write("{\"success\": false, \"code\": 403, \"message\": \"접근 권한이 없습니다.\"}");
-    log.warn("권한 부족: {}, {}", request.getMethod(), request.getRequestURI());
+    BaseResponse<Object> baseResponse = BaseResponse.error(403, "접근 권한이 없습니다.");
+
+    log.warn("[Auth] Security: 권한 부족: {}, {}", request.getMethod(), request.getRequestURI());
+    response.getWriter().write(objectMapper.writeValueAsString(baseResponse));
+    response.getWriter().flush();
   }
 
   /** 권한 설정 */
@@ -81,12 +106,16 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers("/actuator/prometheus")
                 .permitAll()
+                .requestMatchers(
+                    "/api/v1/auth/**",
+                    "/api/v1/users/club-members/",
+                    "/api/v1/semesters",
+                    "/api/v1/projects")
+                .permitAll()
                 .requestMatchers(RegexRequestMatcher.regexMatcher(".*/admin/.*"))
                 .hasRole("ADMIN")
                 .requestMatchers(RegexRequestMatcher.regexMatcher(".*/dev/.*"))
                 .hasAnyRole("DEVELOPER", "ADMIN")
-                .requestMatchers("/api/**")
-                .permitAll()
                 .anyRequest()
                 .authenticated());
   }

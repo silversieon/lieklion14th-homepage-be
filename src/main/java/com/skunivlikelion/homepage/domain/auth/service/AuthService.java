@@ -12,6 +12,13 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 인증 관련 Service interface 입니다.
+ *
+ * @see com.skunivlikelion.homepage.domain.auth.controller.AuthController
+ * @since 2026.01.24
+ * @author Keum Si Eon
+ */
 public interface AuthService {
 
   /**
