@@ -1,0 +1,56 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
+package com.skunivlikelion.homepage.domain.interview.schedule.controller;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
+import com.skunivlikelion.homepage.domain.interview.schedule.service.InterviewScheduleService;
+
+import backend.boilerplate.response.BaseResponse;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
+public class InterviewScheduleControllerImpl implements InterviewScheduleController {
+
+  private final InterviewScheduleService interviewScheduleService;
+
+  @Override
+  public ResponseEntity<BaseResponse<InterviewScheduleResponse>> createInterviewSchedule(
+      @PathVariable @Positive Long semester,
+      @RequestParam Track track,
+      @Valid @RequestBody InterviewScheduleCreateRequest request) {
+
+    InterviewScheduleResponse response =
+        interviewScheduleService.createInterviewSchedule(semester, track, request);
+
+    return ResponseEntity.status(201)
+        .body(BaseResponse.success(201, "면접 일정 생성에 성공했습니다.", response));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getAdminInterviewSchedules(
+      Long semester, Track track, LocalDate dateFrom, LocalDate dateTo) {
+
+    List<InterviewScheduleResponse> result =
+        interviewScheduleService.getAdminInterviewSchedules(semester, track, dateFrom, dateTo);
+
+    return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 조회에 성공했습니다.", result));
+  }
+}
