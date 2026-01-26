@@ -3,6 +3,7 @@
  */
 package com.skunivlikelion.homepage;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -10,5 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 class WebsiteApplicationTests {
 
   @Test
-  void contextLoads() {}
+  void contextLoads() {
+    boolean a = true;
+    Assertions.assertTrue(a);
+  }
 }

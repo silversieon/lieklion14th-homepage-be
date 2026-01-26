@@ -22,11 +22,7 @@ import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
 import com.skunivlikelion.homepage.global.config.property.JwtProperties;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -129,10 +125,12 @@ public class JwtProvider {
       log.info("[Jwt] 잘못된 JWT 서명입니다.");
     } catch (ExpiredJwtException e) {
       log.info("[Jwt] 만료된 JWT 토큰입니다.");
+      throw e;
     } catch (UnsupportedJwtException e) {
       log.info("[Jwt] 지원되지 않는 JWT 토큰입니다.");
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException | JwtException e) {
       log.info("[Jwt] JWT 토큰이 잘못되었습니다.");
+      throw e;
     }
     return false;
   }

@@ -4,7 +4,6 @@
 package com.skunivlikelion.homepage.domain.auth.service;
 
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +33,7 @@ import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueRespo
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
+import com.skunivlikelion.homepage.domain.auth.util.AuthGenerator;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
@@ -54,25 +54,24 @@ public class AuthServiceImpl implements AuthService {
   private final UserRepository userRepository;
   private final JwtProvider jwtProvider;
   private final AuthMapper authMapper;
+  private final AuthGenerator authGenerator;
+  private final AuthenticationManager authenticationManager;
+  private final UserDetailsService userDetailsService;
 
   private static final String EMAIL_VERIFICATION_CODE = "EmailVerification:";
   private static final String VERIFIED_EMAIL_CODE = "VerifiedEmail:";
-  private static final String TEMPORARY_PASSWORD_CHARS =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-  private final AuthenticationManager authenticationManager;
-  private final UserDetailsService userDetailsService;
 
   @Override
   @Async("emailExecutor")
   public CompletableFuture<Boolean> sendVerificationEmail(String email) {
     try {
-      String verificationCode = generateVerificationCode();
+      String verificationCode = authGenerator.generateVerificationCode();
       String redisKey = EMAIL_VERIFICATION_CODE + email;
 
       MimeMessage mimeMessage = emailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-      helper.setFrom("keumsiun0503@gmail.com");
+      helper.setFrom("skunivlikelion@gmail.com");
       helper.setTo(email);
       helper.setSubject("서경대학교 멋쟁이사자처럼 : 본인확인 인증코드");
 
@@ -166,8 +165,9 @@ public class AuthServiceImpl implements AuthService {
     String redisKey = VERIFIED_EMAIL_CODE + request.getEmail();
     if (redisTemplate.opsForValue().get(redisKey) == null) {
       log.error("[Auth] 검증되지 않은 이메일 입력 - 이메일: {}", request.getEmail());
-      throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
+      throw new CustomException(AuthErrorCode.NOT_VERIFICATED_EMAIL);
     }
+    validateUniqueValues(request.getEmail(), request.getStudentNumber(), request.getPhoneNumber());
 
     String encodedPassword = passwordEncoder.encode(request.getPassword());
     User user =
@@ -215,14 +215,14 @@ public class AuthServiceImpl implements AuthService {
     String savedCode = redisTemplate.opsForValue().get(redisKey);
     if (savedCode == null || !savedCode.equals(code)) {
       log.info("[Auth] 인증 코드 검증 실패 - 인증 실패 이메일: {}", email);
-      throw new CustomException(AuthErrorCode.UNAUTHORIZED_EMAIL);
+      throw new CustomException(AuthErrorCode.NOT_VERIFICATED_EMAIL);
     }
 
     User user =
         userRepository
             .findByEmail(email)
             .orElseThrow(() -> new CustomException(AuthErrorCode.NOT_FOUND_EMAIL));
-    String temporaryPassword = generateTemporaryPassword();
+    String temporaryPassword = authGenerator.generateTemporaryPassword();
     user.reissuePassword(passwordEncoder.encode(temporaryPassword));
     redisTemplate.delete(redisKey);
 
@@ -231,38 +231,20 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public TokenResponse refresh(String refreshToken) {
-    String email = jwtProvider.getEmailFromToken(refreshToken);
     if (!jwtProvider.validateTokenType(refreshToken, TokenType.REFRESH_TOKEN)
         || !jwtProvider.validateRefreshToken(refreshToken)) {
-      log.info("[Auth] 유효하지 않은 JWT 토큰을 통한 리프레시 요청");
-      throw new CustomException(AuthErrorCode.UNAUTHORIZED_JWT);
+      log.info("[Auth] 유효하지 않은 리프레시 토큰을 통한 리프레시 요청");
+      throw new CustomException(AuthErrorCode.UNAUTHORIZED_TOKEN);
     }
+    String email = jwtProvider.getEmailFromToken(refreshToken);
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
     Authentication authentication =
         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     jwtProvider.addToBlackList(refreshToken);
     return jwtProvider.generateTokenResponse(authentication);
-  }
-
-  private String generateVerificationCode() {
-    Random random = new Random();
-    StringBuilder code = new StringBuilder();
-    for (int i = 0; i < 6; i++) {
-      code.append(random.nextInt(10));
-    }
-    return code.toString();
-  }
-
-  private String generateTemporaryPassword() {
-    StringBuilder temporaryPassword = new StringBuilder();
-    Random random = new Random();
-    for (int i = 0; i < 12; i++) {
-      temporaryPassword.append(
-          TEMPORARY_PASSWORD_CHARS.charAt(random.nextInt(TEMPORARY_PASSWORD_CHARS.length())));
-    }
-    return temporaryPassword.toString();
   }
 
   @Override

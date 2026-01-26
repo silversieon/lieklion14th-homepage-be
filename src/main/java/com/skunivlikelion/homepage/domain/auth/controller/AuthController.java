@@ -24,6 +24,14 @@ import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 인증 관련 Controller interface 입니다.
+ *
+ * @since 2026.01.24
+ * @see com.skunivlikelion.homepage.domain.auth.service.AuthService
+ * @author Keum Si Eon
+ * @version latest: 1
+ */
 @RequestMapping("/api")
 @Tag(name = "Auth", description = "사용자 인증 및 검증 관련 기능을 제공하는 API")
 public interface AuthController {
