@@ -4,7 +4,9 @@
 package com.skunivlikelion.homepage.domain.interview.schedule.service;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,7 @@ import com.skunivlikelion.homepage.domain.application.record.repository.Applicat
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSchedule;
 import com.skunivlikelion.homepage.domain.interview.schedule.exception.InterviewScheduleErrorCode;
@@ -91,7 +94,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<InterviewScheduleResponse> getAdminInterviewSchedules(
+  public AdminInterviewScheduleResponse getAdminInterviewSchedules(
       Long semester, Track track, LocalDate dateFrom, LocalDate dateTo) {
 
     log.info(
@@ -101,10 +104,63 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         dateFrom,
         dateTo);
 
+    validateSemesterExists(semester);
+
     List<InterviewSchedule> schedules =
         interviewScheduleRepository.findAdminSchedules(semester, track, dateFrom, dateTo);
 
-    return interviewScheduleMapper.toResponseList(schedules);
+    if (schedules.isEmpty()) {
+      return new AdminInterviewScheduleResponse(semester.intValue(), List.of());
+    }
+
+    Set<Long> scheduleIds =
+        schedules.stream().map(InterviewSchedule::getId).collect(Collectors.toSet());
+
+    Set<Long> bookedIds = interviewBookingRepository.findBookedScheduleIds(scheduleIds);
+
+    Map<Track, Map<LocalDate, List<InterviewSchedule>>> grouped =
+        schedules.stream()
+            .collect(
+                Collectors.groupingBy(
+                    InterviewSchedule::getTrack,
+                    Collectors.groupingBy(InterviewSchedule::getDate)));
+
+    List<AdminInterviewScheduleResponse.TrackGroup> trackGroups =
+        grouped.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                trackEntry -> {
+                  Track t = trackEntry.getKey();
+                  Map<LocalDate, List<InterviewSchedule>> byDate = trackEntry.getValue();
+
+                  List<AdminInterviewScheduleResponse.DateGroup> dateGroups =
+                      byDate.entrySet().stream()
+                          .sorted(Map.Entry.comparingByKey())
+                          .map(
+                              dateEntry -> {
+                                LocalDate d = dateEntry.getKey();
+
+                                List<AdminInterviewScheduleResponse.TimeSlot> times =
+                                    dateEntry.getValue().stream()
+                                        .sorted(
+                                            Comparator.comparing(InterviewSchedule::getStartTime))
+                                        .map(
+                                            s ->
+                                                new AdminInterviewScheduleResponse.TimeSlot(
+                                                    s.getStartTime(),
+                                                    s.getEndTime(),
+                                                    bookedIds.contains(s.getId())))
+                                        .toList();
+
+                                return new AdminInterviewScheduleResponse.DateGroup(d, times);
+                              })
+                          .toList();
+
+                  return new AdminInterviewScheduleResponse.TrackGroup(t.name(), dateGroups);
+                })
+            .toList();
+
+    return new AdminInterviewScheduleResponse(semester.intValue(), trackGroups);
   }
 
   @Override
@@ -139,7 +195,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                       InterviewScheduleErrorCode.NOT_FOUND_APPLICATION_RECORD);
                 });
 
-    if (!record.isPassed()) {
+    if (!record.isInterviewPassed()) {
       log.warn(
           "[InterviewSchedule] 서류 불합격자 접근 차단 - userId={}, semester={}, track={}",
           userId,
