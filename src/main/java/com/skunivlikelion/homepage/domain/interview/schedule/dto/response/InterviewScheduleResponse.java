@@ -36,4 +36,7 @@ public class InterviewScheduleResponse {
 
   @Schema(description = "종료 시간", example = "18:30:00")
   private LocalTime endTime;
+
+  @Schema(description = "예약 여부(booking 존재 여부로 계산, true=예약됨)", example = "false")
+  private boolean booked;
 }

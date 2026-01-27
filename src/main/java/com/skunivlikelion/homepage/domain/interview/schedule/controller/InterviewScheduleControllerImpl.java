@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class InterviewScheduleControllerImpl implements InterviewScheduleController {
 
   private final InterviewScheduleService interviewScheduleService;
@@ -50,6 +48,16 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
 
     List<InterviewScheduleResponse> result =
         interviewScheduleService.getAdminInterviewSchedules(semester, track, dateFrom, dateTo);
+
+    return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 조회에 성공했습니다.", result));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getUserInterviewSchedules(
+      Long semester, LocalDate dateFrom, LocalDate dateTo) {
+
+    List<InterviewScheduleResponse> result =
+        interviewScheduleService.getUserInterviewSchedules(semester, dateFrom, dateTo);
 
     return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 조회에 성공했습니다.", result));
   }
