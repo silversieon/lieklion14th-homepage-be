@@ -70,4 +70,39 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
               where f.semester.semester = :semester
           """)
   Optional<ApplicationForm> findBySemester(@Param("semester") Long semester);
+
+  @Query(
+      """
+          select (count(af) > 0)
+          from ApplicationForm af
+          where :newOpenAt <= af.finalResultAt
+            and :newFinalResultAt >= af.openAt
+          """)
+  boolean existsOverlappedApplicationForm(
+      @Param("newOpenAt") LocalDateTime newOpenAt,
+      @Param("newFinalResultAt") LocalDateTime newFinalResultAt);
+
+  // 수정하기 전을 제외하고 모집 기간이 겹치는지 확인
+  @Query(
+      """
+          select (count(af) > 0)
+          from ApplicationForm af
+          where af.id <> :excludeId
+            and :newOpenAt <= af.finalResultAt
+            and :newFinalResultAt >= af.openAt
+          """)
+  boolean existsOverlappedApplicationFormExcludingId(
+      @Param("excludeId") Long excludeId,
+      @Param("newOpenAt") LocalDateTime newOpenAt,
+      @Param("newFinalResultAt") LocalDateTime newFinalResultAt);
+
+  @Query(
+      """
+          select af
+          from ApplicationForm af
+          join fetch af.semester s
+          where af.openAt <= :now
+            and af.finalResultAt >= :now
+          """)
+  Optional<ApplicationForm> findCurrentApplicationForm(@Param("now") LocalDateTime now);
 }

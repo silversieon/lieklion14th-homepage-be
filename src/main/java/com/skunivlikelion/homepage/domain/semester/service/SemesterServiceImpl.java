@@ -5,6 +5,7 @@ package com.skunivlikelion.homepage.domain.semester.service;
 
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,23 +48,21 @@ public class SemesterServiceImpl implements SemesterService {
   }
 
   @Override
-  public void deleteSemester(Long semesterId) {
-    Semester found =
-        semesterRepository
-            .findById(semesterId)
-            .orElseThrow(
-                () -> {
-                  log.warn("[Semester] 기수 삭제 실패 - 존재하지 않는 기수 - semester={}", semesterId);
-                  return new CustomException(SemesterErrorCode.NOT_FOUND_SEMESTER);
-                });
+  public void deleteSemester(Long semesterValue) {
 
-    if (applicationFormRepository.existsBySemester_Semester(semesterId)) {
-      log.info("[Semester] 기수 삭제 실패 - 참조된 모집 공고 존재 - semester={}", semesterId);
-      throw new CustomException(SemesterErrorCode.SEMESTER_IN_USE);
+    if (!semesterRepository.existsBySemester(semesterValue)) {
+      log.warn("[Semester] 기수 삭제 실패: 존재하지 않는 기수 - semester={}", semesterValue);
+      throw new CustomException(SemesterErrorCode.NOT_FOUND_SEMESTER);
     }
 
-    semesterRepository.delete(found);
-    log.info("[Semester] 기수 삭제 완료 - semester={}", semesterId);
+    try {
+      int deleted = semesterRepository.deleteBySemesterNative(semesterValue);
+      log.info("[Semester] 기수 삭제 완료 - semester={}", semesterValue);
+
+    } catch (DataIntegrityViolationException e) {
+      log.info("[Semester] 기수 삭제 실패: 참조 중(FK) - semester={}", semesterValue);
+      throw new CustomException(SemesterErrorCode.SEMESTER_IN_USE);
+    }
   }
 
   @Override

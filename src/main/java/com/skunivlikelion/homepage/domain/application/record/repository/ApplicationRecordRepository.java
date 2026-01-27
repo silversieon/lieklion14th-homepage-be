@@ -66,16 +66,8 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
               u.department,
               u.studentNumber,
               r.track,
-              r.isPassed,
-              case
-                when (:semester is not null and exists (
-                  select 1
-                  from ClubMember cm
-                  where cm.user.id = u.id
-                    and cm.semester = :semester
-                )) then true
-                else false
-              end
+              r.isDocumentPassed,
+              r.isInterviewPassed
           )
           from ApplicationRecord r
           join r.user u
