@@ -24,4 +24,14 @@ public interface ApplicationQuestionRepository extends JpaRepository<Application
   @Modifying(flushAutomatically = true)
   @Query("delete from ApplicationQuestion q where q.applicationForm.id = :applicationFormId")
   void deleteAllByApplicationFormId(@Param("applicationFormId") Long applicationFormId);
+
+  @Query(
+      """
+          select q
+          from ApplicationQuestion q
+          where q.applicationForm.id = :formId
+            and q.id in :questionIds
+      """)
+  List<ApplicationQuestion> findAllByFormIdAndQuestionIds(
+      @Param("formId") Long formId, @Param("questionIds") List<Long> questionIds);
 }

@@ -29,6 +29,9 @@ public class ApplicationSummaryListResponse {
   @Schema(title = "ApplicationSummaryItem: 지원서 카드")
   public static class ApplicationSummaryItem {
 
+    @Schema(description = "모집 공고 식별자", example = "1")
+    private Long applicationFormId;
+
     @Schema(description = "기수", example = "12")
     private Long semester;
 

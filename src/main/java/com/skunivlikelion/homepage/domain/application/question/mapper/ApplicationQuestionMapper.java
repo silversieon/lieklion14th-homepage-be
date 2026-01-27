@@ -66,6 +66,7 @@ public class ApplicationQuestionMapper {
                     Collectors.mapping(
                         q ->
                             QuestionItemResponse.builder()
+                                .questionId(q.getId())
                                 .orderNumber(q.getOrderNumber())
                                 .content(q.getContent())
                                 .build(),
@@ -99,6 +100,7 @@ public class ApplicationQuestionMapper {
                 .map(
                     q ->
                         QuestionItemResponse.builder()
+                            .questionId(q.getId())
                             .orderNumber(q.getOrderNumber())
                             .content(q.getContent())
                             .build())
@@ -109,6 +111,7 @@ public class ApplicationQuestionMapper {
   public ApplicationSummaryItem toApplicationSummaryItem(ApplicationForm form) {
     Long semester = form.getSemester().getSemester();
     return ApplicationSummaryItem.builder()
+        .applicationFormId(form.getId())
         .semester(semester)
         .title(semester + "기 아기사자 모집 지원서")
         .closeAt(form.getCloseAt())
