@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 
 public interface InterviewScheduleService {
@@ -24,17 +25,15 @@ public interface InterviewScheduleService {
       Long semester, Track track, InterviewScheduleCreateRequest request);
 
   /**
-   * [ 관리자 | 면접 일정 조회 ]
+   * [ 관리자 | 면접 일정 조회(기수별/그룹 응답) ]
    *
-   * <p>필터 미입력(null) 시 전체 조회
-   *
-   * @param semester 기수 (Optional)
+   * @param semester 기수 (Required, PathVariable)
    * @param track 트랙 (Optional)
-   * @param dateFrom 조회 시작 날짜 (Optional, yyyy-MM-dd)
-   * @param dateTo 조회 종료 날짜 (Optional, yyyy-MM-dd)
-   * @return 조회된 면접 일정 목록 (정렬: date ASC, startTime ASC)
+   * @param dateFrom 조회 시작 날짜 (Optional)
+   * @param dateTo 조회 종료 날짜 (Optional)
+   * @return 트랙→날짜→시간(times) 그룹 응답
    */
-  List<InterviewScheduleResponse> getAdminInterviewSchedules(
+  AdminInterviewScheduleResponse getAdminInterviewSchedules(
       Long semester, Track track, LocalDate dateFrom, LocalDate dateTo);
 
   /**
@@ -54,4 +53,13 @@ public interface InterviewScheduleService {
    */
   List<InterviewScheduleResponse> getUserInterviewSchedules(
       Long semester, LocalDate dateFrom, LocalDate dateTo);
+
+  /**
+   * [ 관리자 | 면접 일정 삭제 ]
+   *
+   * <p>예약된 일정은 삭제 불가
+   *
+   * @param scheduleId 면접 일정 id
+   */
+  void deleteInterviewSchedule(Long scheduleId);
 }

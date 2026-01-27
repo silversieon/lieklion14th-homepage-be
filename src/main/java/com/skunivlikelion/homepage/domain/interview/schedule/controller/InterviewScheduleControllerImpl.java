@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.service.InterviewScheduleService;
 
@@ -43,10 +44,10 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
   }
 
   @Override
-  public ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getAdminInterviewSchedules(
+  public ResponseEntity<BaseResponse<AdminInterviewScheduleResponse>> getAdminInterviewSchedules(
       Long semester, Track track, LocalDate dateFrom, LocalDate dateTo) {
 
-    List<InterviewScheduleResponse> result =
+    AdminInterviewScheduleResponse result =
         interviewScheduleService.getAdminInterviewSchedules(semester, track, dateFrom, dateTo);
 
     return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 조회에 성공했습니다.", result));
@@ -60,5 +61,13 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
         interviewScheduleService.getUserInterviewSchedules(semester, dateFrom, dateTo);
 
     return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 조회에 성공했습니다.", result));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<Void>> deleteInterviewSchedule(@Positive Long scheduleId) {
+
+    interviewScheduleService.deleteInterviewSchedule(scheduleId);
+
+    return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 삭제에 성공했습니다.", null));
   }
 }

@@ -20,4 +20,6 @@ public interface InterviewBookingRepository extends JpaRepository<InterviewBooki
           where b.schedule.id in :scheduleIds
           """)
   Set<Long> findBookedScheduleIds(@Param("scheduleIds") Set<Long> scheduleIds);
+
+  boolean existsByScheduleId(Long scheduleId);
 }

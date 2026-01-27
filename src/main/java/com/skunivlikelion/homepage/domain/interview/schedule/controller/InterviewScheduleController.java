@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 
 import backend.boilerplate.response.BaseResponse;
@@ -63,25 +64,26 @@ public interface InterviewScheduleController {
       summary = "[ 관리자 | 토큰 O | 면접 일정 조회 ]",
       description =
           """
+              **Path Variable (Required)**
+              - semester: 기수
+
               **Query Parameter (Optional)**
-              - semester: 기수 (미입력 시 전체 기수)
               - track: 트랙 Enum (미입력 시 전체 트랙)
               - dateFrom: 조회 시작 날짜 (yyyy-MM-dd)
               - dateTo: 조회 종료 날짜 (yyyy-MM-dd)
 
-              **Date Filter 동작 방식**
-              - dateFrom만 입력: 해당 날짜부터 ~ 이후 전체 조회
-              - dateTo만 입력: 해당 날짜까지 ~ 이전 전체 조회
-              - dateFrom/dateTo 둘 다 입력: 기간 조회 (포함, inclusive)
-              - dateFrom == dateTo: 해당 날짜(하루)만 조회
+              **응답 구조**
+              - tracks[]: 트랙별 그룹
+                - dates[]: 날짜별 그룹
+                  - times[]: 시간 슬롯 목록 (booked 포함)
 
               **정렬 기준**
-              - date ASC, startTime ASC
+              - track ASC, date ASC, startTime ASC
               """)
   @PreAuthorize("hasRole('ADMIN')")
-  @GetMapping("/v1/admin/interviews/schedules")
-  ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getAdminInterviewSchedules(
-      @RequestParam(required = false) @Positive Long semester,
+  @GetMapping("/v1/admin/interviews/schedules/{semester}")
+  ResponseEntity<BaseResponse<AdminInterviewScheduleResponse>> getAdminInterviewSchedules(
+      @PathVariable @Positive Long semester,
       @RequestParam(required = false) Track track,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate dateFrom,
@@ -117,4 +119,22 @@ public interface InterviewScheduleController {
           LocalDate dateFrom,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate dateTo);
+
+  @Operation(
+      summary = "[ 관리자 | 토큰 O | 면접 일정 삭제 ]",
+      description =
+          """
+              **Path Variable**
+              - scheduleId: 면접 일정 id
+
+              **삭제 정책**
+              - 예약(InterviewBooking)이 존재하는 일정은 삭제할 수 없습니다.
+
+              **Returns**
+              - 면접 일정 삭제 성공/실패 여부
+              """)
+  @PreAuthorize("hasRole('ADMIN')")
+  @DeleteMapping("/v1/admin/interviews/schedules/{scheduleId}")
+  ResponseEntity<BaseResponse<Void>> deleteInterviewSchedule(
+      @PathVariable @Positive Long scheduleId);
 }

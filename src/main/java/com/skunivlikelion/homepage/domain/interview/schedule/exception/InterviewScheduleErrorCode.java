@@ -21,9 +21,6 @@ public enum InterviewScheduleErrorCode implements BaseErrorCode {
   NOT_PASSED_APPLICATION("IVTSCH4011", "서류 합격자만 면접 일정을 조회할 수 있습니다.", HttpStatus.UNAUTHORIZED),
 
   NOT_FOUND_SEMESTER("IVTSCH4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
-  NOT_FOUND_APPLICATION_RECORD("IVTSCH4042", "지원 내역이 없습니다.", HttpStatus.NOT_FOUND);
-
-  NOT_FOUND_SEMESTER("IVTSCH4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_APPLICATION_RECORD("IVTSCH4042", "지원 내역이 없습니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_SCHEDULE("IVTSCH4043", "존재하지 않는 면접 일정입니다.", HttpStatus.NOT_FOUND),
 
