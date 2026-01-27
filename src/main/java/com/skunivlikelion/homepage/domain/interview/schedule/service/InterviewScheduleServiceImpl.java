@@ -5,11 +5,16 @@ package com.skunivlikelion.homepage.domain.interview.schedule.service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
+import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSchedule;
@@ -17,6 +22,7 @@ import com.skunivlikelion.homepage.domain.interview.schedule.exception.Interview
 import com.skunivlikelion.homepage.domain.interview.schedule.mapper.InterviewScheduleMapper;
 import com.skunivlikelion.homepage.domain.interview.schedule.repository.InterviewScheduleRepository;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
+import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
 import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +36,10 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
   private final InterviewScheduleRepository interviewScheduleRepository;
   private final SemesterRepository semesterRepository;
+  private final InterviewBookingRepository interviewBookingRepository;
   private final InterviewScheduleMapper interviewScheduleMapper;
+  private final CurrentUserProvider currentUserProvider;
+  private final ApplicationRecordRepository applicationRecordRepository;
 
   @Override
   public InterviewScheduleResponse createInterviewSchedule(
@@ -55,7 +64,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     if (overlap) {
       log.info(
-          "[InterviewSchedule] 면접 일정 생성 실패 - 시간 겹침(OVERLAP) - semester={}, track={}, date={}, slot={}~{}",
+          "[InterviewSchedule] 면접 일정 생성 실패 - 시간 겹침 - semester={}, track={}, date={}, slot={}~{}",
           semester,
           track,
           request.getDate(),
@@ -98,6 +107,66 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     return interviewScheduleMapper.toResponseList(schedules);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public List<InterviewScheduleResponse> getUserInterviewSchedules(
+      Long semester, LocalDate dateFrom, LocalDate dateTo) {
+
+    Long userId = currentUserProvider.getUserId();
+
+    log.info(
+        "[InterviewSchedule] 사용자 면접 일정 조회 - userId={}, semester={}, dateFrom={}, dateTo={}",
+        userId,
+        semester,
+        dateFrom,
+        dateTo);
+
+    if (semester == null) {
+      log.warn("[InterviewSchedule] semester 미입력 - userId={}", userId);
+      throw new CustomException(InterviewScheduleErrorCode.REQUIRED_SEMESTER);
+    }
+
+    validateSemesterExists(semester);
+
+    ApplicationRecord record =
+        applicationRecordRepository
+            .findSubmittedBySemesterAndUserId(semester, userId)
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[InterviewSchedule] 지원 내역 없음 - userId={}, semester={}", userId, semester);
+                  return new CustomException(
+                      InterviewScheduleErrorCode.NOT_FOUND_APPLICATION_RECORD);
+                });
+
+    if (!record.isPassed()) {
+      log.warn(
+          "[InterviewSchedule] 서류 불합격자 접근 차단 - userId={}, semester={}, track={}",
+          userId,
+          semester,
+          record.getTrack());
+      throw new CustomException(InterviewScheduleErrorCode.NOT_PASSED_APPLICATION);
+    }
+
+    Long resolvedSemester = record.getApplicationForm().getSemester().getSemester();
+    Track resolvedTrack = record.getTrack();
+
+    List<InterviewSchedule> schedules =
+        interviewScheduleRepository.findUserSchedules(
+            resolvedSemester, resolvedTrack, dateFrom, dateTo);
+
+    if (schedules.isEmpty()) {
+      return List.of();
+    }
+
+    Set<Long> scheduleIds =
+        schedules.stream().map(InterviewSchedule::getId).collect(Collectors.toSet());
+
+    Set<Long> bookedIds = interviewBookingRepository.findBookedScheduleIds(scheduleIds);
+
+    return interviewScheduleMapper.toResponseList(schedules, bookedIds);
+  }
+
   private void validateSemesterExists(Long semester) {
     if (semester == null || !semesterRepository.existsById(semester)) {
       log.warn("[InterviewSchedule] 기수 검증 실패 - semester={}", semester);
@@ -107,21 +176,21 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
   private void validateTrack(Track track) {
     if (track == null) {
-      log.warn("[InterviewSchedule] 트랙 검증 실패 - track=null");
-      throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
+      log.warn("[InterviewSchedule] 트랙 누락 - track=null");
+      throw new CustomException(InterviewScheduleErrorCode.INVALID_TRACK);
     }
   }
 
   private void validateRequestBody(InterviewScheduleCreateRequest request) {
     if (request == null) {
-      log.warn("[InterviewSchedule] 요청 바디 검증 실패 - request=null");
+      log.warn("[InterviewSchedule] 요청 바디 누락 - request=null");
       throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
     }
   }
 
   private void validateTimeRange(InterviewScheduleCreateRequest request) {
     if (request.getStartTime() == null || request.getEndTime() == null) {
-      log.warn("[InterviewSchedule] 시간 검증 실패 - 시간 값 누락");
+      log.warn("[InterviewSchedule] 시간 값 누락");
       throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
     }
 

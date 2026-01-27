@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,20 +37,21 @@ public interface InterviewScheduleController {
       summary = "[ 관리자 | 토큰 O | 면접 일정 생성(기수별) ]",
       description =
           """
-              **Path Variable**  \n
-              semester: 기수 값  \n
+              **Path Variable**
+              - semester: 기수 값
 
-              **Query Parameter**  \n
-              track: 트랙(Enum)  \n
+              **Query Parameter**
+              - track: 트랙(Enum)
 
-              **Request Body**  \n
-              date: 면접 날짜 (yyyy-MM-dd)  \n
-              startTime: 시작 시간 (HH:mm:ss)  \n
-              endTime: 종료 시간 (HH:mm:ss)  \n
+              **Request Body**
+              - date: 면접 날짜 (yyyy-MM-dd)
+              - startTime: 시작 시간 (HH:mm:ss)
+              - endTime: 종료 시간 (HH:mm:ss)
 
-              **Returns**  \n
-              생성된 면접 일정 정보
+              **Returns**
+              - 생성된 면접 일정(슬롯) 1건
               """)
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/v1/admin/interviews/schedules/{semester}")
   ResponseEntity<BaseResponse<InterviewScheduleResponse>> createInterviewSchedule(
       @PathVariable @Positive Long semester,
@@ -74,17 +76,42 @@ public interface InterviewScheduleController {
 
               **정렬 기준**
               - date ASC, startTime ASC
-
-              **응답 범위 예시**
-              - 전체 기수/전체 트랙 조회: /v1/admin/interviews/schedules
-              - 기수별 전체 트랙 조회: /v1/admin/interviews/schedules?semester=13
-              - 기수+트랙 조회: /v1/admin/interviews/schedules?semester=13&track=BACKEND
-              - 특정 날짜만: /v1/admin/interviews/schedules?semester=13&dateFrom=2026-03-08&dateTo=2026-03-08
               """)
+  @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/v1/admin/interviews/schedules")
   ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getAdminInterviewSchedules(
       @RequestParam(required = false) @Positive Long semester,
       @RequestParam(required = false) Track track,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dateFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dateTo);
+
+  @Operation(
+      summary = "[ 사용자 | 토큰 O | 면접 일정 조회(예약 상태 포함) ]",
+      description =
+          """
+              **Query Parameter**
+              - semester: 기수 (Optional, 미입력 시 기수 선택 필요)
+              - dateFrom: 조회 시작 날짜 (Optional, yyyy-MM-dd)
+              - dateTo: 조회 종료 날짜 (Optional, yyyy-MM-dd)
+
+              **접근 정책**
+              - 로그인 사용자만 접근 가능
+              - 서류 합격자(ApplicationRecord.isPassed = true)만 조회 가능
+              - 트랙은 ApplicationRecord.track 기준 자동 적용 (클라이언트 입력 X)
+
+              **정렬 기준**
+              - date ASC, startTime ASC
+
+              **예약 상태 필드**
+              - booked: true → 이미 예약된 일정
+              - booked: false → 예약 가능 일정
+              """)
+  @PreAuthorize("isAuthenticated()")
+  @GetMapping("/v1/interviews/schedules")
+  ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getUserInterviewSchedules(
+      @RequestParam(required = false) @Positive Long semester,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate dateFrom,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

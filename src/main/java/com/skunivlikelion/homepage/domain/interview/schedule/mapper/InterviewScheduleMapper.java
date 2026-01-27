@@ -4,6 +4,7 @@
 package com.skunivlikelion.homepage.domain.interview.schedule.mapper;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -26,18 +27,31 @@ public class InterviewScheduleMapper {
         .build();
   }
 
-  public InterviewScheduleResponse toResponse(InterviewSchedule entity) {
+  public InterviewScheduleResponse toResponse(InterviewSchedule s) {
+    return toResponse(s, false);
+  }
+
+  public InterviewScheduleResponse toResponse(InterviewSchedule s, boolean booked) {
     return InterviewScheduleResponse.builder()
-        .id(entity.getId())
-        .semester(entity.getSemester())
-        .track(entity.getTrack())
-        .date(entity.getDate())
-        .startTime(entity.getStartTime())
-        .endTime(entity.getEndTime())
+        .id(s.getId())
+        .semester(s.getSemester())
+        .track(s.getTrack())
+        .date(s.getDate())
+        .startTime(s.getStartTime())
+        .endTime(s.getEndTime())
+        .booked(booked)
         .build();
   }
 
   public List<InterviewScheduleResponse> toResponseList(List<InterviewSchedule> list) {
     return list.stream().map(this::toResponse).toList();
+  }
+
+  public List<InterviewScheduleResponse> toResponseList(
+      List<InterviewSchedule> schedules, Set<Long> bookedIds) {
+
+    return schedules.stream()
+        .map(s -> toResponse(s, bookedIds != null && bookedIds.contains(s.getId())))
+        .toList();
   }
 }
