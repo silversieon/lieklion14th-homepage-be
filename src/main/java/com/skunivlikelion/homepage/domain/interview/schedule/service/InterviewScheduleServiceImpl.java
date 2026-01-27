@@ -202,4 +202,29 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
       throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
     }
   }
+
+  @Override
+  public void deleteInterviewSchedule(Long scheduleId) {
+
+    log.info("[InterviewSchedule] 관리자 면접 일정 삭제 요청 - scheduleId={}", scheduleId);
+
+    InterviewSchedule schedule =
+        interviewScheduleRepository
+            .findById(scheduleId)
+            .orElseThrow(
+                () -> {
+                  log.warn("[InterviewSchedule] 삭제 실패 - 일정 없음 - scheduleId={}", scheduleId);
+                  return new CustomException(InterviewScheduleErrorCode.NOT_FOUND_SCHEDULE);
+                });
+
+    boolean hasBooking = interviewBookingRepository.existsByScheduleId(scheduleId);
+    if (hasBooking) {
+      log.warn("[InterviewSchedule] 삭제 실패 - 예약 존재 - scheduleId={}", scheduleId);
+      throw new CustomException(InterviewScheduleErrorCode.CANNOT_DELETE_BOOKED_SCHEDULE);
+    }
+
+    interviewScheduleRepository.delete(schedule);
+
+    log.info("[InterviewSchedule] 관리자 면접 일정 삭제 완료 - scheduleId={}", scheduleId);
+  }
 }
