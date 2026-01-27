@@ -23,6 +23,11 @@ public enum InterviewScheduleErrorCode implements BaseErrorCode {
   NOT_FOUND_SEMESTER("IVTSCH4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_APPLICATION_RECORD("IVTSCH4042", "지원 내역이 없습니다.", HttpStatus.NOT_FOUND);
 
+  NOT_FOUND_SEMESTER("IVTSCH4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
+  NOT_FOUND_APPLICATION_RECORD("IVTSCH4042", "지원 내역이 없습니다.", HttpStatus.NOT_FOUND),
+  NOT_FOUND_SCHEDULE("IVTSCH4043", "존재하지 않는 면접 일정입니다.", HttpStatus.NOT_FOUND),
+
+  CANNOT_DELETE_BOOKED_SCHEDULE("IVTSCH4091", "예약된 면접 일정은 삭제할 수 없습니다.", HttpStatus.CONFLICT);
   private final String code;
   private final String message;
   private final HttpStatus status;
