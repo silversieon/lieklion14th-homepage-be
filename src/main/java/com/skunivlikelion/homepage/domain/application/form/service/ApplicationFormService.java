@@ -60,4 +60,20 @@ public interface ApplicationFormService {
    * @return 모집 공고 요약(title, closeAt) 리스트
    */
   List<ApplicationFormSummaryResponse> getApplicationFormSummariesForQuestionRegistration();
+
+  /**
+   * [ 현재 진행중인 모집 공고 기수 조회 메서드 ] 현재 시점 기준으로 진행중인 모집 공고의 기수를 반환
+   *
+   * <p>진행중 기준: now >= openAt AND now <= finalResultAt
+   *
+   * @return 현재 진행중인 모집 공고의 기수 값
+   */
+  Long getCurrentApplicationSemester();
+
+  /**
+   * [ 현재 진행중인 모집 공고 ID 조회 메서드 ] 현재 시점 기준으로 진행중인 모집 공고의 ApplicationForm 식별자를 반환
+   *
+   * @return 현재 진행중인 모집 공고의 ApplicationForm ID
+   */
+  Long getCurrentApplicationFormId();
 }

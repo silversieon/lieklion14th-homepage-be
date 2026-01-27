@@ -16,7 +16,7 @@ public enum SemesterErrorCode implements BaseErrorCode {
 
   NOT_FOUND_SEMESTER("SEMESTER4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
 
-  SEMESTER_IN_USE("SEMESTER4091", "해당 기수에 모집 공고가 존재하여 삭제할 수 없습니다.", HttpStatus.CONFLICT);
+  SEMESTER_IN_USE("SEMESTER4091", "해당 기수는 다른 데이터에서 참조 중이라 삭제할 수 없습니다.", HttpStatus.CONFLICT);
 
   private final String code;
   private final String message;

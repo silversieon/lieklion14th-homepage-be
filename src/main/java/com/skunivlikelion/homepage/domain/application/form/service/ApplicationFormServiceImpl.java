@@ -41,6 +41,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
       Long semester, ApplicationFormUpsertRequest request) {
     validateSemesterExists(semester);
     validateDateRange(request);
+    validateNoOverlappedFormForCreate(request);
 
     if (applicationFormRepository.existsBySemester_Semester(semester)) {
       log.info("[ApplicationForm] 모집 공고 등록 실패 - 이미 존재하는 모집 공고 - semester={}", semester);
@@ -70,6 +71,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                   log.warn("[ApplicationForm] 모집 공고 수정 실패: 모집 공고 없음 - semester={}", semester);
                   return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
                 });
+    validateNoOverlappedFormForUpdate(found.getId(), request);
 
     found.update(
         request.getOpenAt(),
@@ -193,5 +195,65 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
           applicationResultAt);
       throw new CustomException(ApplicationFormErrorCode.INVALID_DATE_RANGE);
     }
+  }
+
+  private void validateNoOverlappedFormForCreate(ApplicationFormUpsertRequest request) {
+    if (applicationFormRepository.existsOverlappedApplicationForm(
+        request.getOpenAt(), request.getFinalResultAt())) {
+      log.info(
+          "[ApplicationForm] 기간 겹침: create 불가 - openAt={}, finalResultAt={}",
+          request.getOpenAt(),
+          request.getFinalResultAt());
+      throw new CustomException(ApplicationFormErrorCode.DATE_RANGE_OVERLAPPED);
+    }
+  }
+
+  private void validateNoOverlappedFormForUpdate(
+      Long excludeFormId, ApplicationFormUpsertRequest request) {
+    if (applicationFormRepository.existsOverlappedApplicationFormExcludingId(
+        excludeFormId, request.getOpenAt(), request.getFinalResultAt())) {
+      log.info(
+          "[ApplicationForm] 기간 겹침: update 불가 - formId={}, openAt={}, finalResultAt={}",
+          excludeFormId,
+          request.getOpenAt(),
+          request.getFinalResultAt());
+      throw new CustomException(ApplicationFormErrorCode.DATE_RANGE_OVERLAPPED);
+    }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Long getCurrentApplicationSemester() {
+    ApplicationForm current = getCurrentApplicationForm();
+    return current.getSemester().getSemester();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Long getCurrentApplicationFormId() {
+    ApplicationForm current = getCurrentApplicationForm();
+    return current.getId();
+  }
+
+  private ApplicationForm getCurrentApplicationForm() {
+    LocalDateTime now = LocalDateTime.now();
+    ApplicationForm current =
+        applicationFormRepository
+            .findCurrentApplicationForm(now)
+            .orElseThrow(
+                () -> {
+                  log.info("[ApplicationForm] 현재 진행중 모집 공고 없음 - now={}", now);
+                  return new CustomException(
+                      ApplicationFormErrorCode.NOT_FOUND_CURRENT_APPLICATION_FORM);
+                });
+
+    log.info(
+        "[ApplicationForm] 현재 진행중 모집 공고 조회 성공 - formId={}, semester={}, openAt={}, finalResultAt={}",
+        current.getId(),
+        current.getSemester().getSemester(),
+        current.getOpenAt(),
+        current.getFinalResultAt());
+
+    return current;
   }
 }
