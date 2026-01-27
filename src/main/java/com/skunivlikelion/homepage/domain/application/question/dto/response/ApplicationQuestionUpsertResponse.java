@@ -41,6 +41,9 @@ public class ApplicationQuestionUpsertResponse {
   @AllArgsConstructor
   public static class QuestionItemResponse {
 
+    @Schema(description = "질문 식별자", example = "1")
+    private Long questionId;
+
     @Schema(description = "문항 번호", example = "1")
     private Integer orderNumber;
 

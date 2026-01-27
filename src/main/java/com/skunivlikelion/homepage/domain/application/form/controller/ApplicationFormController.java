@@ -83,7 +83,7 @@ public interface ApplicationFormController {
   ResponseEntity<BaseResponse<Void>> deleteApplicationForm(@PathVariable @Positive Long semester);
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 모집 공고 기수별 조회 ]",
+      summary = "[ 사용자 | 토큰 X | 모집 공고 기수별 조회 ]",
       description =
           """
               **Parameters**  \n
@@ -92,7 +92,7 @@ public interface ApplicationFormController {
               **Returns**  \n
               해당 기수의 모집 공고 정보
               """)
-  @GetMapping("/v1/admin/applications/forms/{semester}")
+  @GetMapping("/v1/applications/forms/{semester}")
   ResponseEntity<BaseResponse<ApplicationFormResponse>> getApplicationFormBySemester(
       @PathVariable @Positive Long semester);
 

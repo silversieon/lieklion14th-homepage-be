@@ -24,12 +24,12 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class ApplicationFormControllerImpl implements ApplicationFormController {
 
   private final ApplicationFormService applicationFormService;
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationFormResponse>> createApplicationForm(
       @PathVariable @Positive Long semester,
       @Valid @RequestBody ApplicationFormUpsertRequest request) {
@@ -40,6 +40,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationFormResponse>> updateApplicationForm(
       @PathVariable @Positive Long semester,
       @Valid @RequestBody ApplicationFormUpsertRequest request) {
@@ -50,6 +51,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<Void>> deleteApplicationForm(
       @PathVariable @Positive Long semester) {
     applicationFormService.deleteApplicationForm(semester);
@@ -66,6 +68,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<List<ApplicationFormResponse>>> getAllApplicationForms() {
     List<ApplicationFormResponse> result = applicationFormService.getAllApplicationForms();
     return ResponseEntity.status(200)
@@ -73,6 +76,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<List<ApplicationFormSummaryResponse>>>
       getApplicationFormSummariesForQuestionRegistration() {
 

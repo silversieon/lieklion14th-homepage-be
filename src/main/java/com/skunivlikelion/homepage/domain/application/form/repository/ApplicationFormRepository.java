@@ -3,6 +3,7 @@
  */
 package com.skunivlikelion.homepage.domain.application.form.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,5 +61,13 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
           order by s.semester desc
           """)
   List<ApplicationForm> findAllAvailableForQuestionRegistrationWithSemesterOrderBySemesterDesc(
-      @Param("now") java.time.LocalDateTime now);
+      @Param("now") LocalDateTime now);
+
+  @Query(
+      """
+              select f
+              from ApplicationForm f
+              where f.semester.semester = :semester
+          """)
+  Optional<ApplicationForm> findBySemester(@Param("semester") Long semester);
 }
