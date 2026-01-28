@@ -45,14 +45,6 @@ public class UserControllerImpl implements UserController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<MyInformationResponse>> getMyInformation() {
-    return ResponseEntity.status(200)
-        .body(
-            BaseResponse.success(
-                200, "사용자 정보 상세 조회에 성공했습니다.", userService.getCurrentUserInformation()));
-  }
-
-  @Override
   public ResponseEntity<BaseResponse<List<ClubMemberPageResponse>>> getClubMemberList(
       @PathVariable @Positive Long semester) {
     return ResponseEntity.status(200)
@@ -65,13 +57,15 @@ public class UserControllerImpl implements UserController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<UserManagementResponse>> getUserManagement(
       @RequestParam(value = "is-guest") Boolean isGuest,
+      @RequestParam(value = "last-user-id", required = false) Long lastUserId,
+      @RequestParam(value = "size") Integer size,
       @RequestParam(required = false) String keyword) {
     return ResponseEntity.status(200)
         .body(
             BaseResponse.success(
                 200,
                 "사용자 관리 - 게스트 관리창 목록 조회에 성공했습니다.",
-                userService.getUserManagement(isGuest, keyword)));
+                userService.getUserManagement(isGuest, lastUserId, size, keyword)));
   }
 
   @Override

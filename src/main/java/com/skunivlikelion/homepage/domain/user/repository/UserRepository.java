@@ -6,6 +6,7 @@ package com.skunivlikelion.homepage.domain.user.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,13 +23,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   @Query(
       """
-SELECT u FROM User u
-WHERE NOT EXISTS (SELECT cm FROM ClubMember cm WHERE cm.user = u)
-AND (:keyword IS NULL OR :keyword = ''
- OR u.name LIKE CONCAT('%', :keyword, '%')
- OR u.department LIKE CONCAT('%', :keyword, '%'))
+SELECT u
+FROM User u
+WHERE NOT EXISTS (
+  SELECT 1 FROM ClubMember cm WHERE cm.user = u
+)
+AND (
+  :keyword IS NULL OR :keyword = ''
+  OR u.name LIKE CONCAT('%', :keyword, '%')
+  OR u.department LIKE CONCAT('%', :keyword, '%')
+)
+AND (:lastUserId IS NULL OR u.id < :lastUserId)
+ORDER BY u.id DESC
 """)
-  List<User> findGuestUsers(@Param("keyword") String keyword);
+  List<User> findGuestUsers(
+      Pageable pageable, @Param("lastUserId") Long lastUserId, @Param("keyword") String keyword);
 
   @Query(
       """
@@ -37,8 +46,11 @@ WHERE EXISTS (SELECT cm FROM ClubMember cm WHERE cm.user = u)
 AND (:keyword IS NULL OR :keyword = ''
  OR u.name LIKE CONCAT('%', :keyword, '%')
  OR u.department LIKE CONCAT('%', :keyword, '%'))
+ AND (:lastUserId IS NULL OR u.id < :lastUserId)
+ ORDER BY u.id DESC
 """)
-  List<User> findClubMemberUsers(@Param("keyword") String keyword);
+  List<User> findClubMemberUsers(
+      Pageable pageable, @Param("lastUserId") Long lastUserId, @Param("keyword") String keyword);
 
   List<User> findAllByIdIn(List<Long> ids);
 

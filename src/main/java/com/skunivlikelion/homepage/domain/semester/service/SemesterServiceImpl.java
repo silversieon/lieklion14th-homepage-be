@@ -77,10 +77,25 @@ public class SemesterServiceImpl implements SemesterService {
 
   @Override
   @Transactional(readOnly = true)
-  public void checkSemesterExist(Long semesterId) {
-    if (!semesterRepository.existsBySemester(semesterId)) {
-      log.warn("[Semester] 해당 기수가 존재하지 않음 - semester={}", semesterId);
-      throw new CustomException(SemesterErrorCode.NOT_FOUND_SEMESTER);
-    }
+  public Semester getSemester(Long semesterId) {
+    return semesterRepository
+        .findById(semesterId)
+        .orElseThrow(
+            () -> {
+              log.warn("[Semester] 해당 기수가 존재하지 않음 - semester={}", semesterId);
+              return new CustomException(SemesterErrorCode.NOT_FOUND_SEMESTER);
+            });
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Semester getLatestSemester() {
+    return semesterRepository
+        .findFirstByOrderBySemesterDesc()
+        .orElseThrow(
+            () -> {
+              log.info("[Semester] 기수가 존재하지 않습니다. 기수 추가 필요");
+              return new CustomException(SemesterErrorCode.NOT_EXIST_SEMESTER);
+            });
   }
 }

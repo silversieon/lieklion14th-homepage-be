@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.user.dto.response.ClubMemberInformationResponse;
 import com.skunivlikelion.homepage.domain.user.dto.response.ClubMemberPageResponse;
 import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
@@ -18,11 +19,11 @@ import com.skunivlikelion.homepage.domain.user.enums.Position;
 @Component
 public class ClubMemberMapper {
 
-  public List<ClubMember> toTempClubMembers(List<User> users, Long semester) {
+  public List<ClubMember> toTempClubMembers(List<User> users, Semester semester) {
     return users.stream().map(user -> toTempClubMember(user, semester)).toList();
   }
 
-  public ClubMember toClubMember(User user, Long semester, Position position, Track track) {
+  public ClubMember toClubMember(User user, Semester semester, Position position, Track track) {
     return ClubMember.builder()
         .semester(semester)
         .track(track)
@@ -31,7 +32,7 @@ public class ClubMemberMapper {
         .build();
   }
 
-  public ClubMember toTempClubMember(User user, Long semester) {
+  public ClubMember toTempClubMember(User user, Semester semester) {
     return ClubMember.builder()
         .semester(semester)
         .track(Track.COMMON)
@@ -110,7 +111,7 @@ public class ClubMemberMapper {
     return ClubMemberInformationResponse.builder()
         .userId(clubMember.getUser().getId())
         .clubMemberId(clubMember.getId())
-        .semester(clubMember.getSemester())
+        .semester(clubMember.getSemester().getSemester())
         .position(clubMember.getPosition())
         .name(clubMember.getUser().getName())
         .track(clubMember.getTrack())

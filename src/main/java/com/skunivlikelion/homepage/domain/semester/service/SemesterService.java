@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.skunivlikelion.homepage.domain.semester.dto.request.SemesterRequest;
 import com.skunivlikelion.homepage.domain.semester.dto.response.SemesterResponse;
+import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 
 public interface SemesterService {
 
@@ -33,9 +34,17 @@ public interface SemesterService {
   List<SemesterResponse> getAllSemesters();
 
   /**
-   * [ 기수 존재 여부 확인 메서드 ] 해당 기수의 존재 여부를 반환
+   * [ 기수 존재 여부 확인 메서드 ] 해당 기수의 존재 여부를 확인하고 반환
    *
    * @param semester 확인할 기수
+   * @return 존재 여부가 확인된 기수
    */
-  void checkSemesterExist(Long semester);
+  Semester getSemester(Long semester);
+
+  /**
+   * [ 최신 기수 조회 메서드 ] 존재하는 기수 중 최신 기수를 반환
+   *
+   * @return 최신 기수
+   */
+  Semester getLatestSemester();
 }

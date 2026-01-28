@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
  *
  * @since 2026.01.22
  * @see CustomUserDetails
+ * @see CustomUserDetailsService
  * @see JwtAuthenticationFilter
  * @author Keum Si Eon
  */
@@ -35,11 +36,13 @@ public class CurrentUserProvider {
    *
    * @return userId: 로그인된 사용자 식별자
    */
-  public Long getUserId() {
+  public Long getCurrentUserId() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     isAuthenticated(auth);
 
-    return getCurrentCustomUserDetails(getCurrentUserDetails(auth.getPrincipal())).getUserId();
+    return getCurrentCustomUserDetails(getCurrentUserDetails(auth.getPrincipal()))
+        .getUser()
+        .getId();
   }
 
   /**
@@ -51,9 +54,7 @@ public class CurrentUserProvider {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     isAuthenticated(auth);
 
-    return userRepository
-        .findByEmail(getCurrentUserDetails(auth.getPrincipal()).getUsername())
-        .orElseThrow(() -> new CustomException(AuthErrorCode.NOT_FOUND_EMAIL));
+    return getCurrentCustomUserDetails(getCurrentUserDetails(auth.getPrincipal())).getUser();
   }
 
   private void isAuthenticated(Authentication auth) {

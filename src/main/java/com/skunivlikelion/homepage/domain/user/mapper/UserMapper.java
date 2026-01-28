@@ -11,6 +11,7 @@ import com.skunivlikelion.homepage.domain.user.dto.request.CreateUserRequest;
 import com.skunivlikelion.homepage.domain.user.dto.response.*;
 import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
 import com.skunivlikelion.homepage.domain.user.entity.User;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 @Component
 public class UserMapper {
@@ -39,21 +40,9 @@ public class UserMapper {
         .build();
   }
 
-  public MyInformationResponse toMyInformationResponse(User user) {
-    return MyInformationResponse.builder()
-        .name(user.getName())
-        .email(user.getEmail())
-        .department(user.getDepartment())
-        .studentNumber(user.getStudentNumber())
-        .phoneNumber(user.getPhoneNumber())
-        .build();
-  }
-
-  public UserManagementResponse toUserManagementResponse(boolean isGuest, List<User> users) {
-    return UserManagementResponse.builder()
-        .guest(isGuest)
-        .userInformationList(users.stream().map(this::toUserInformationResponse).toList())
-        .build();
+  public UserManagementResponse toUserManagementResponse(
+      boolean isGuest, InfiniteResponse<UserInformationResponse> response) {
+    return UserManagementResponse.builder().guest(isGuest).userInformationList(response).build();
   }
 
   public UserInformationResponse toUserInformationResponse(User user) {
@@ -74,7 +63,7 @@ public class UserMapper {
     return ClubMemberInformationResponse.builder()
         .userId(clubMember.getUser().getId())
         .clubMemberId(clubMember.getId())
-        .semester(clubMember.getSemester())
+        .semester(clubMember.getSemester().getSemester())
         .position(clubMember.getPosition())
         .name(clubMember.getUser().getName())
         .track(clubMember.getTrack())

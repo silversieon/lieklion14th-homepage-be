@@ -17,7 +17,7 @@ import com.skunivlikelion.homepage.domain.user.enums.Position;
 
 public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
   @EntityGraph(attributePaths = "user")
-  List<ClubMember> findAllBySemesterAndPositionInAndTrackIn(
+  List<ClubMember> findAllBySemester_SemesterAndPositionInAndTrackIn(
       Long semester, List<Position> positions, List<Track> tracks);
 
   @EntityGraph(attributePaths = "user")
@@ -43,7 +43,7 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
       """
 SELECT cm
 FROM ClubMember cm
-WHERE cm.semester = :semesterId
+WHERE cm.semester.semester = :semesterId
   AND (:position IS NULL OR cm.position = :position)
   AND (:track IS NULL OR cm.track = :track)
   AND (

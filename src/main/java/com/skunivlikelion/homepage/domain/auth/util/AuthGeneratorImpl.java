@@ -27,7 +27,7 @@ public class AuthGeneratorImpl implements AuthGenerator {
   public String generateTemporaryPassword() {
     StringBuilder temporaryPassword = new StringBuilder();
     Random random = new Random();
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 10; i++) {
       temporaryPassword.append(
           TEMPORARY_PASSWORD_CHARS.charAt(random.nextInt(TEMPORARY_PASSWORD_CHARS.length())));
     }

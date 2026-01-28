@@ -3,7 +3,7 @@
  */
 package com.skunivlikelion.homepage.domain.user.dto.response;
 
-import java.util.List;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -18,5 +18,5 @@ public class UserManagementResponse {
   private boolean guest;
 
   @Schema(description = "사용자 정보 목록")
-  private List<UserInformationResponse> userInformationList;
+  private InfiniteResponse<UserInformationResponse> userInformationList;
 }
