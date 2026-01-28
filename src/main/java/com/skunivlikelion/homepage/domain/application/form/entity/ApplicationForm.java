@@ -46,6 +46,9 @@ public class ApplicationForm extends BaseTimeEntity {
   private LocalDateTime applicationResultAt;
 
   @Column(nullable = false)
+  private LocalDateTime interviewScheduleConfirmedAt;
+
+  @Column(nullable = false)
   private LocalDateTime finalResultAt;
 
   @Column(nullable = false)
@@ -56,10 +59,12 @@ public class ApplicationForm extends BaseTimeEntity {
       LocalDateTime openAt,
       LocalDateTime closeAt,
       LocalDateTime applicationResultAt,
+      LocalDateTime interviewScheduleConfirmedAt,
       LocalDateTime finalResultAt) {
     this.openAt = openAt;
     this.closeAt = closeAt;
     this.applicationResultAt = applicationResultAt;
+    this.interviewScheduleConfirmedAt = interviewScheduleConfirmedAt;
     this.finalResultAt = finalResultAt;
   }
 
@@ -69,5 +74,14 @@ public class ApplicationForm extends BaseTimeEntity {
 
   public void unmarkHasQuestions() {
     this.hasQuestions = false;
+  }
+
+  public boolean isAfterApplicationResultAt(LocalDateTime now) {
+    return now.isAfter(this.applicationResultAt) || now.isEqual(this.applicationResultAt);
+  }
+
+  public boolean isAfterInterviewScheduleConfirmedAt(LocalDateTime now) {
+    return now.isAfter(this.interviewScheduleConfirmedAt)
+        || now.isEqual(this.interviewScheduleConfirmedAt);
   }
 }

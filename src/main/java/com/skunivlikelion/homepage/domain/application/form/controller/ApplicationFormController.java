@@ -40,6 +40,7 @@ public interface ApplicationFormController {
               openAt: 모집 시작 일시  \n
               closeAt: 모집 마감 일시  \n
               applicationResultAt: 서류 결과 발표 일시  \n
+              interviewScheduleConfirmedAt: 면접 일정 확정 일시    \n
               finalResultAt: 최종 결과 발표 일시  \n
 
               **Returns**  \n
@@ -59,6 +60,7 @@ public interface ApplicationFormController {
               openAt: 모집 시작 일시  \n
               closeAt: 모집 마감 일시  \n
               applicationResultAt: 서류 결과 발표 일시  \n
+              interviewScheduleConfirmedAt: 면접 일정 확정 일시    \n
               finalResultAt: 최종 결과 발표 일시  \n
 
               **Returns**  \n
