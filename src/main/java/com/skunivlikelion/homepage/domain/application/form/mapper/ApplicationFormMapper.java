@@ -22,18 +22,7 @@ public class ApplicationFormMapper {
         .openAt(request.getOpenAt())
         .closeAt(request.getCloseAt())
         .applicationResultAt(request.getApplicationResultAt())
-        .finalResultAt(request.getFinalResultAt())
-        .build();
-  }
-
-  public ApplicationForm toUpdatedEntity(
-      ApplicationForm found, ApplicationFormUpsertRequest request) {
-    return ApplicationForm.builder()
-        .id(found.getId())
-        .semester(found.getSemester())
-        .openAt(request.getOpenAt())
-        .closeAt(request.getCloseAt())
-        .applicationResultAt(request.getApplicationResultAt())
+        .interviewScheduleConfirmedAt(request.getInterviewScheduleConfirmedAt())
         .finalResultAt(request.getFinalResultAt())
         .build();
   }
@@ -45,6 +34,7 @@ public class ApplicationFormMapper {
         .openAt(entity.getOpenAt())
         .closeAt(entity.getCloseAt())
         .applicationResultAt(entity.getApplicationResultAt())
+        .interviewScheduleConfirmedAt(entity.getInterviewScheduleConfirmedAt())
         .finalResultAt(entity.getFinalResultAt())
         .build();
   }

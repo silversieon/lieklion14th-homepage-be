@@ -27,6 +27,9 @@ public class ApplicationFormUpsertRequest {
   @NotNull @Schema(description = "서류 결과 발표 일시", example = "2026-02-18T18:00:00")
   private LocalDateTime applicationResultAt;
 
+  @NotNull @Schema(description = "면접 일정 확정 일시", example = "2026-02-20T18:00:00")
+  private LocalDateTime interviewScheduleConfirmedAt;
+
   @NotNull @Schema(description = "최종 결과 발표 일시", example = "2026-02-25T18:00:00")
   private LocalDateTime finalResultAt;
 }

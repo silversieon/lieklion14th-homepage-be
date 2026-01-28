@@ -77,6 +77,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
         request.getOpenAt(),
         request.getCloseAt(),
         request.getApplicationResultAt(),
+        request.getInterviewScheduleConfirmedAt(),
         request.getFinalResultAt());
 
     log.info("[ApplicationForm] 모집 공고 수정 완료 - semester={}, id={}", semester, found.getId());
@@ -188,11 +189,21 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
       throw new CustomException(ApplicationFormErrorCode.INVALID_DATE_RANGE);
     }
 
-    if (finalResultAt.isBefore(applicationResultAt)) {
+    LocalDateTime interviewScheduleConfirmedAt = request.getInterviewScheduleConfirmedAt();
+
+    if (interviewScheduleConfirmedAt.isBefore(applicationResultAt)) {
       log.info(
-          "[ApplicationForm] 날짜 검증 실패 - finalResultAt < applicationResultAt - finalResultAt={}, applicationResultAt={}",
-          finalResultAt,
+          "[ApplicationForm] 날짜 검증 실패 - interviewScheduleConfirmedAt < applicationResultAt - interviewScheduleConfirmedAt={}, applicationResultAt={}",
+          interviewScheduleConfirmedAt,
           applicationResultAt);
+      throw new CustomException(ApplicationFormErrorCode.INVALID_DATE_RANGE);
+    }
+
+    if (finalResultAt.isBefore(interviewScheduleConfirmedAt)) {
+      log.info(
+          "[ApplicationForm] 날짜 검증 실패 - finalResultAt < interviewScheduleConfirmedAt - finalResultAt={}, interviewScheduleConfirmedAt={}",
+          finalResultAt,
+          interviewScheduleConfirmedAt);
       throw new CustomException(ApplicationFormErrorCode.INVALID_DATE_RANGE);
     }
   }
