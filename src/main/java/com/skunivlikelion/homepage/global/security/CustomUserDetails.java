@@ -19,11 +19,9 @@ import lombok.Getter;
 public class CustomUserDetails implements UserDetails {
 
   private final User user;
-  private final Long userId;
 
   public CustomUserDetails(User user) {
     this.user = user;
-    this.userId = user.getId();
   }
 
   @Override

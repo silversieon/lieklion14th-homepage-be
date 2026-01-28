@@ -168,7 +168,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
   public List<InterviewScheduleResponse> getUserInterviewSchedules(
       Long semester, LocalDate dateFrom, LocalDate dateTo) {
 
-    Long userId = currentUserProvider.getUserId();
+    Long userId = currentUserProvider.getCurrentUserId();
 
     log.info(
         "[InterviewSchedule] 사용자 면접 일정 조회 - userId={}, semester={}, dateFrom={}, dateTo={}",

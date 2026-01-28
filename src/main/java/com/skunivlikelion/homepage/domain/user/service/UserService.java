@@ -38,13 +38,6 @@ public interface UserService {
   MyPageResponse getCurrentUserPage();
 
   /**
-   * [ 현재 사용자의 정보 상세 조회 메서드 ] 지원서 작성, 조회 부분에서 사용
-   *
-   * @return 상세 정보를 담은 MyInformationResponse 객체
-   */
-  MyInformationResponse getCurrentUserInformation();
-
-  /**
    * [ 기수별 구성원 조회 메서드 ]
    *
    * @param semester 구성원을 조회할 기수
@@ -61,7 +54,17 @@ public interface UserService {
    * @param keyword 검색어 필터 (이름, 학과 가능)
    * @return 사용자 기본 정보가 담긴 UserManagementResponse 리스트
    */
-  UserManagementResponse getUserManagement(boolean isGuest, String keyword);
+  /**
+   * [ 사용자들의 기본 정보 조회 메서드 ] 사용자 관리 화면 - 게스트 관리 목록 조회
+   *
+   * @param isGuest 조회할 사용자 목록의 게스트 여부
+   * @param lastUserId 스크롤 시점 마지막 사용자 식별자
+   * @param size 한 번에 불러올 데이터 크기
+   * @param keyword 검색어 필터 (이름, 학과 가능)
+   * @return 구성원 여부 및 스크롤 시점 사용자 정보가 담긴 UserManagementResponse 객체
+   */
+  UserManagementResponse getUserManagement(
+      boolean isGuest, Long lastUserId, Integer size, String keyword);
 
   /**
    * [ 구성원들의 상세 정보 조회 메서드 ] 사용자 관리 화면 - 구성원 관리 목록 조회

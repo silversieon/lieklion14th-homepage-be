@@ -18,15 +18,18 @@ import lombok.Getter;
 @Schema(title = "SignUpRequest: 회원가입 요청 DTO")
 public class SignUpRequest {
 
+  @NotBlank
   @Pattern(regexp = "^[A-Za-z0-9._%+-]+@skuniv\\.ac\\.kr$")
   @Schema(description = "사용자 이메일", example = "likelion@skuniv.ac.kr")
   private String email;
 
   @NotBlank
+  @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,20}$")
   @Schema(description = "사용자 비밀번호", example = "lion1234!")
   private String password;
 
-  @Size(min = 2, max = 10)
+  @NotBlank
+  @Size(min = 2, max = 17)
   @Schema(description = "이름(본명)", example = "윤희준")
   private String name;
 
@@ -35,9 +38,11 @@ public class SignUpRequest {
   private String department;
 
   @NotBlank
+  @Pattern(regexp = "^[0-9]{10}$")
   @Schema(description = "학번", example = "2023123456")
   private String studentNumber;
 
+  @NotBlank
   @Pattern(regexp = "^01[016789]-\\d{3,4}-\\d{4}$")
   @Schema(description = "전화번호", example = "010-1234-5678")
   private String phoneNumber;

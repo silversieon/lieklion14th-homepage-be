@@ -6,6 +6,10 @@ package com.skunivlikelion.homepage.domain.user.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +20,7 @@ import com.skunivlikelion.homepage.domain.application.form.exception.Application
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
 import com.skunivlikelion.homepage.domain.user.dto.request.*;
 import com.skunivlikelion.homepage.domain.user.dto.response.*;
@@ -27,6 +32,8 @@ import com.skunivlikelion.homepage.domain.user.mapper.ClubMemberMapper;
 import com.skunivlikelion.homepage.domain.user.mapper.UserMapper;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
+import com.skunivlikelion.homepage.global.page.response.CreateUserInfiniteResponse;
 import com.skunivlikelion.homepage.global.s3.enums.PathName;
 import com.skunivlikelion.homepage.global.s3.service.S3Service;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
@@ -51,6 +58,7 @@ public class UserServiceImpl implements UserService {
   private final AuthService authService;
   private final PasswordEncoder passwordEncoder;
   private final S3Service s3Service;
+  private final InfiniteMapper infiniteMapper;
 
   @Override
   @Transactional(readOnly = true)
@@ -78,28 +86,16 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @Transactional(readOnly = true)
-  public MyInformationResponse getCurrentUserInformation() {
-    User currentUser = currentUserProvider.getCurrentUser();
-    log.info(
-        "[User] 내 상세 정보 조회 발생 - 사용자 식별자: {}, 이름: {}, 이메일: {}",
-        currentUser.getId(),
-        currentUser.getName(),
-        currentUser.getEmail());
-    return userMapper.toMyInformationResponse(currentUser);
-  }
-
-  @Override
-  @Transactional(readOnly = true)
   public List<ClubMemberPageResponse> getClubMemberList(Long semester) {
-    semesterService.checkSemesterExist(semester);
+    Long safeSemester = semesterService.getSemester(semester).getSemester();
 
     LocalDateTime now = LocalDateTime.now();
     ApplicationForm applicationForm =
         applicationFormRepository
-            .findBySemester_Semester(semester)
+            .findBySemester_Semester(safeSemester)
             .orElseThrow(
                 () -> {
-                  log.info("[User] 해당 기수의 지원 공고 없음, 지원 공고 필요 - semester: {}", semester);
+                  log.info("[User] 해당 기수의 지원 공고 없음, 지원 공고 필요 - semester: {}", safeSemester);
                   return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
                 });
     boolean canExposeBabyLion = now.isAfter(applicationForm.getFinalResultAt().plusDays(3));
@@ -109,31 +105,58 @@ public class UserServiceImpl implements UserService {
             ? List.of(Position.LEAD, Position.COLEAD, Position.COREMEMBER, Position.BABYLION)
             : List.of(Position.LEAD, Position.COLEAD, Position.COREMEMBER);
 
-    List<Track> tracksToFetch = Track.getCurrentSemesterTracks(semester);
+    List<Track> tracksToFetch = Track.getCurrentSemesterTracks(safeSemester);
 
     List<ClubMember> clubMembers =
-        clubMemberRepository.findAllBySemesterAndPositionInAndTrackIn(
-            semester, positionsToFetch, tracksToFetch);
+        clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
+            safeSemester, positionsToFetch, tracksToFetch);
 
     if (clubMembers.isEmpty()) {
-      log.info("[User] 해당 기수의 구성원을 찾을 수 없음 - semester: {}", semester);
+      log.info("[User] 해당 기수의 구성원을 찾을 수 없음 - semester: {}", safeSemester);
       throw new CustomException(UserErrorCode.USER_NOT_FOUND);
     }
-
     log.info("[User] 기수별 구성원 화면 조회 발생");
     return clubMemberMapper.toClubMemberPageResponses(positionsToFetch, tracksToFetch, clubMembers);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public UserManagementResponse getUserManagement(boolean isGuest, String keyword) {
+  public UserManagementResponse getUserManagement(
+      boolean isGuest, Long lastUserId, Integer size, String keyword) {
+    Pageable pageable = PageRequest.of(0, size + 1, Sort.by(Direction.DESC, "id"));
     if (isGuest) {
-      log.info("[User] 게스트 관리 - 게스트 목록 조회 발생");
-      return userMapper.toUserManagementResponse(true, userRepository.findGuestUsers(keyword));
-    } else {
-      log.info("[User] 게스트 관리 - 구성원 목록 조회 발생");
+      List<User> guestUsers = userRepository.findGuestUsers(pageable, lastUserId, keyword);
+      CreateUserInfiniteResponse createUserInfiniteResponse =
+          infiniteMapper.toCreateUserInfiniteResponse(guestUsers, size);
+      log.info(
+          "[User] 게스트 관리 | 게스트 목록 조회 발생 - lastUserId: {}, size: {}, keyword: {}",
+          lastUserId,
+          size,
+          keyword);
       return userMapper.toUserManagementResponse(
-          false, userRepository.findClubMemberUsers(keyword));
+          true,
+          infiniteMapper.toUserInformationInfiniteResponse(
+              userMapper.toUserInformationList(createUserInfiniteResponse.getUsers()),
+              createUserInfiniteResponse.getLastCursor(),
+              createUserInfiniteResponse.isHasNext(),
+              size));
+    } else {
+      List<User> clubMemberUsers =
+          userRepository.findClubMemberUsers(pageable, lastUserId, keyword);
+      CreateUserInfiniteResponse createUserInfiniteResponse =
+          infiniteMapper.toCreateUserInfiniteResponse(clubMemberUsers, size);
+      log.info(
+          "[User] 게스트 관리 | 구성원 목록 조회 발생 - lastUserId: {}, size: {}, keyword: {}",
+          lastUserId,
+          size,
+          keyword);
+      return userMapper.toUserManagementResponse(
+          false,
+          infiniteMapper.toUserInformationInfiniteResponse(
+              userMapper.toUserInformationList(createUserInfiniteResponse.getUsers()),
+              createUserInfiniteResponse.getLastCursor(),
+              createUserInfiniteResponse.isHasNext(),
+              size));
     }
   }
 
@@ -148,10 +171,10 @@ public class UserServiceImpl implements UserService {
           clubMemberRepository.searchClubMembersByPositionAndTrackAndKeywordIn(
               position, track, safeKeyword);
     } else {
-      semesterService.checkSemesterExist(semester);
+      Long safeSemester = semesterService.getSemester(semester).getSemester();
       clubMembers =
           clubMemberRepository.searchClubMembersBySemesterAndPositionAndTrackAndKeywordIn(
-              semester, position, track, safeKeyword);
+              safeSemester, position, track, safeKeyword);
     }
 
     log.info("[User] 구성원 관리 - 구성원 목록 상세 조회 발생");
@@ -171,7 +194,7 @@ public class UserServiceImpl implements UserService {
       throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
     }
 
-    Long currentSemester = semesterService.getAllSemesters().getFirst().getSemester();
+    Semester currentSemester = semesterService.getLatestSemester();
     List<ClubMember> clubMembers = clubMemberMapper.toTempClubMembers(users, currentSemester);
     clubMemberRepository.saveAll(clubMembers);
 
@@ -205,14 +228,15 @@ public class UserServiceImpl implements UserService {
                   log.warn("[User] 사용자를 찾을 수 없음 - userId: {}", userId);
                   return new CustomException(UserErrorCode.USER_NOT_FOUND);
                 });
-    semesterService.checkSemesterExist(semester);
+    Semester safeSemester = semesterService.getSemester(semester);
     if (!clubMemberRepository.existsByUser_Id(userId)) {
       log.warn("[User] 구성원에 존재하지 않는 사용자에 대한 이력 추가 요청 발생");
       throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
     }
 
     ClubMember savedClubMember =
-        clubMemberRepository.save(clubMemberMapper.toClubMember(user, semester, position, track));
+        clubMemberRepository.save(
+            clubMemberMapper.toClubMember(user, safeSemester, position, track));
 
     log.info(
         "[User] 구성원 새 이력 추가 성공 - clubMemberId: {}, userId: {}, semester: {}, position: {}, track: {}",
@@ -227,7 +251,11 @@ public class UserServiceImpl implements UserService {
   @Override
   @Transactional
   public MyPageResponse updateProfileImage(MultipartFile profileImage) {
-    User user = currentUserProvider.getCurrentUser();
+    Long userId = currentUserProvider.getCurrentUser().getId();
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     String currentImageUrl = user.getProfileImageUrl();
 
     String uploadImageUrl = s3Service.uploadFile(PathName.PROFILE, profileImage);
@@ -244,7 +272,11 @@ public class UserServiceImpl implements UserService {
   @Override
   @Transactional
   public void updatePassword(UpdatePasswordRequest request) {
-    User user = currentUserProvider.getCurrentUser();
+    Long userId = currentUserProvider.getCurrentUserId();
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
       log.info("[User] 비밀번호 변경에 현재 비밀번호와 불일치");
       throw new CustomException(UserErrorCode.CURRENT_PASSWORD_MISMATCH);
@@ -252,6 +284,10 @@ public class UserServiceImpl implements UserService {
     if (!request.getNewPassword().equals(request.getNewPasswordConfirmation())) {
       log.info("[User] 비밀번호 변경에 새 비밀번호와 새 비밀번호 확인 불일치");
       throw new CustomException(UserErrorCode.NEW_PASSWORD_MISMATCH);
+    }
+    if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+      log.info("[User] 현재 비밀번호와 동일한 비밀번호 입력");
+      throw new CustomException(UserErrorCode.CONFLICT_NEW_PASSWORD);
     }
 
     String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
@@ -268,8 +304,8 @@ public class UserServiceImpl implements UserService {
         clubMemberRepository
             .findById(clubMemberId)
             .orElseThrow(() -> new CustomException(UserErrorCode.CLUBMEMBER_NOT_FOUND));
-    semesterService.checkSemesterExist(semester);
-    clubMember.updateClubMemberRecord(semester, position, track);
+    Semester safeSemester = semesterService.getSemester(semester);
+    clubMember.updateClubMemberRecord(safeSemester, position, track);
 
     log.info("[User] 구성원 이력 변경에 성공 - clubMemberId: {}", clubMemberId);
     return clubMemberMapper.toClubMemberInformation(clubMember);

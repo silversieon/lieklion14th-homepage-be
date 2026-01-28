@@ -69,20 +69,6 @@ public interface UserController {
   ResponseEntity<BaseResponse<MyPageResponse>> getMyPage();
 
   @Operation(
-      summary = "[ 사용자 | 토큰 O | 사용자 인적 사항 조회(지원서) ]",
-      description =
-          """
-            **Returns** \n
-            name: 사용자 이름    \n
-            email: 사용자 이메일  \n
-            department: 사용자 학과 \n
-            studentNumber: 사용자 학번  \n
-            phoneNumber: 사용자 전화번호   \n
-            """)
-  @GetMapping("/v1/users/me/summary")
-  ResponseEntity<BaseResponse<MyInformationResponse>> getMyInformation();
-
-  @Operation(
       summary = "[ 사용자 | 토큰 X | 기수별 구성원 조회 ]",
       description =
           """
@@ -118,6 +104,8 @@ public interface UserController {
   @GetMapping("/v1/admin/users")
   ResponseEntity<BaseResponse<UserManagementResponse>> getUserManagement(
       @RequestParam(value = "is-guest") Boolean isGuest,
+      @RequestParam(value = "last-user-id", required = false) Long lastUserId,
+      @RequestParam(value = "size") Integer size,
       @RequestParam(required = false) String keyword);
 
   @Operation(
