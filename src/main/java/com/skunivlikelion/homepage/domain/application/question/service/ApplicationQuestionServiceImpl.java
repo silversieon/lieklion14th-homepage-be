@@ -4,14 +4,20 @@
 package com.skunivlikelion.homepage.domain.application.question.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
+import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest.QuestionItemRequest;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest.TrackQuestionGroupRequest;
@@ -22,6 +28,7 @@ import com.skunivlikelion.homepage.domain.application.question.entity.Applicatio
 import com.skunivlikelion.homepage.domain.application.question.exception.ApplicationQuestionErrorCode;
 import com.skunivlikelion.homepage.domain.application.question.mapper.ApplicationQuestionMapper;
 import com.skunivlikelion.homepage.domain.application.question.repository.ApplicationQuestionRepository;
+import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationAnswerRepository;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 
 import backend.boilerplate.exception.CustomException;
@@ -36,7 +43,10 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
 
   private final ApplicationQuestionRepository applicationQuestionRepository;
   private final ApplicationFormRepository applicationFormRepository;
+  private final ApplicationAnswerRepository applicationAnswerRepository;
+
   private final ApplicationQuestionMapper applicationQuestionMapper;
+  private final ApplicationFormService applicationFormService;
 
   @Override
   public ApplicationQuestionUpsertResponse createQuestions(
@@ -67,51 +77,111 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
         form.getId(),
         saved.size());
 
-    return applicationQuestionMapper.toUpsertResponse(semester, saved);
+    return applicationQuestionMapper.toUpsertResponse(form, saved);
   }
 
   @Override
   public ApplicationQuestionUpsertResponse updateQuestions(
-      Long semester, ApplicationQuestionUpsertRequest request) {
+      Long applicationFormId, ApplicationQuestionUpsertRequest request) {
 
-    ApplicationForm form = getFormWithLock(semester);
+    ApplicationForm form = getFormWithLockById(applicationFormId);
     validateBeforeOpenAt(form);
 
-    applicationQuestionRepository.deleteAllByApplicationFormId(form.getId());
+    if (applicationAnswerRepository.existsByQuestion_ApplicationForm_Id(form.getId())) {
+      log.warn("[ApplicationQuestion] 답변 존재로 질문 변경 차단 - formId={}", form.getId());
+      throw new CustomException(ApplicationQuestionErrorCode.QUESTIONS_IN_USE);
+    }
+
     List<TrackQuestionGroupRequest> groups = safeGroups(request);
+
     if (groups.isEmpty()) {
+      applicationQuestionRepository.deleteAllByApplicationFormId(form.getId());
       if (!form.isHasQuestions()) {
         form.markHasQuestions();
       }
 
-      log.info(
-          "[ApplicationQuestion] 질문 수정(빈 상태 저장) 완료 - semester={}, formId={}",
-          semester,
-          form.getId());
+      log.info("[ApplicationQuestion] 질문 수정(빈 상태 저장) 완료 - formId={}", form.getId());
 
-      return applicationQuestionMapper.toUpsertResponse(semester, List.of());
+      return applicationQuestionMapper.toUpsertResponse(form, List.of());
     }
 
     validateRequestForUpsert(groups);
-    List<ApplicationQuestion> saved = saveQuestions(form, request);
+
+    List<ApplicationQuestion> existing =
+        applicationQuestionRepository.findAllByApplicationForm_IdOrderByTrackAscOrderNumberAsc(
+            form.getId());
+
+    Map<String, ApplicationQuestion> existingMap =
+        existing.stream()
+            .collect(
+                Collectors.toMap(q -> key(q.getTrack(), q.getOrderNumber()), q -> q, (a, b) -> a));
+
+    Set<String> desiredKeys = new HashSet<>();
+    List<ApplicationQuestion> toInsert = new ArrayList<>();
+
+    for (TrackQuestionGroupRequest g : groups) {
+      Track track = g.getTrack();
+      List<QuestionItemRequest> questions = Optional.ofNullable(g.getQuestions()).orElse(List.of());
+
+      for (QuestionItemRequest item : questions) {
+        String k = key(track, item.getOrderNumber());
+        desiredKeys.add(k);
+
+        ApplicationQuestion found = existingMap.get(k);
+        if (found != null) {
+          found.updateContent(item.getContent());
+        } else {
+          toInsert.add(
+              ApplicationQuestion.builder()
+                  .applicationForm(form)
+                  .track(track)
+                  .orderNumber(item.getOrderNumber())
+                  .content(item.getContent())
+                  .build());
+        }
+      }
+    }
+
+    if (!toInsert.isEmpty()) {
+      applicationQuestionRepository.saveAll(toInsert);
+    }
+
+    List<Long> obsoleteIds =
+        existing.stream()
+            .filter(q -> !desiredKeys.contains(key(q.getTrack(), q.getOrderNumber())))
+            .map(ApplicationQuestion::getId)
+            .toList();
+
+    if (!obsoleteIds.isEmpty()) {
+      applicationQuestionRepository.deleteAllByIdInBatch(obsoleteIds);
+    }
 
     if (!form.isHasQuestions()) {
       form.markHasQuestions();
     }
 
-    log.info(
-        "[ApplicationQuestion] 질문 수정 완료 - semester={}, formId={}, savedCount={}",
-        semester,
-        form.getId(),
-        saved.size());
+    List<ApplicationQuestion> refreshed =
+        applicationQuestionRepository.findAllByApplicationForm_IdOrderByTrackAscOrderNumberAsc(
+            form.getId());
 
-    return applicationQuestionMapper.toUpsertResponse(semester, saved);
+    log.info(
+        "[ApplicationQuestion] 질문 수정(upsert) 완료 - formId={}, inserted={}, deleted={}, total={}",
+        form.getId(),
+        toInsert.size(),
+        obsoleteIds.size(),
+        refreshed.size());
+
+    return applicationQuestionMapper.toUpsertResponse(form, refreshed);
   }
 
   @Override
-  public void deleteQuestions(Long semester) {
-    ApplicationForm form = getFormWithLock(semester);
+  public void deleteQuestions(Long applicationFormId) {
+    ApplicationForm form = getFormWithLockById(applicationFormId);
     validateBeforeOpenAt(form);
+
+    if (applicationAnswerRepository.existsByQuestion_ApplicationForm_Id(form.getId())) {
+      throw new CustomException(ApplicationQuestionErrorCode.QUESTIONS_IN_USE);
+    }
 
     applicationQuestionRepository.deleteAllByApplicationFormId(form.getId());
 
@@ -119,36 +189,38 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
       form.unmarkHasQuestions();
     }
 
-    log.info("[ApplicationQuestion] 질문 삭제 완료 - semester={}, formId={}", semester, form.getId());
+    log.info("[ApplicationQuestion] 질문 삭제 완료 - formId={}", form.getId());
   }
 
   @Override
   @Transactional(readOnly = true)
-  public ApplicationQuestionGetResponse getQuestionsBySemesterAndTrack(Long semester, Track track) {
+  public ApplicationQuestionGetResponse getCurrentQuestionsByTrack(Track track) {
 
+    Long formId = applicationFormService.getCurrentApplicationFormId();
     ApplicationForm form =
         applicationFormRepository
-            .findBySemester_Semester(semester)
+            .findById(formId)
             .orElseThrow(
                 () -> new CustomException(ApplicationQuestionErrorCode.NOT_FOUND_APPLICATION_FORM));
 
     if (!form.isHasQuestions()) {
-      log.warn(
-          "[ApplicationQuestion] 질문 조회 실패: 지원서 미설정 공고 - semester={}, track={}", semester, track);
+      log.warn("[ApplicationQuestion] 질문 조회 실패: 지원서 미설정 공고 - formId={}, track={}", formId, track);
       throw new CustomException(ApplicationQuestionErrorCode.NOT_CONFIGURED_QUESTIONS);
     }
 
     List<ApplicationQuestion> questions =
         applicationQuestionRepository.findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
-            form.getId(), track);
+            formId, track);
 
     log.info(
-        "[ApplicationQuestion] 질문 조회 완료 - semester={}, track={}, count={}",
-        semester,
+        "[ApplicationQuestion] 진행중 공고 질문 조회 완료 - formId={}, semester={}, track={}, count={}",
+        formId,
+        form.getSemester().getSemester(),
         track,
         questions.size());
 
-    return applicationQuestionMapper.toGetResponse(semester, track, questions);
+    return applicationQuestionMapper.toGetResponse(
+        form.getSemester().getSemester(), track, questions);
   }
 
   @Override
@@ -168,6 +240,41 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
         response.getCompleted().size());
 
     return response;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ApplicationQuestionUpsertResponse getQuestionsBySemesterForDev(Long semester) {
+
+    ApplicationForm form =
+        applicationFormRepository
+            .findBySemester_Semester(semester)
+            .orElseThrow(
+                () -> new CustomException(ApplicationQuestionErrorCode.NOT_FOUND_APPLICATION_FORM));
+
+    if (!form.isHasQuestions()) {
+      throw new CustomException(ApplicationQuestionErrorCode.NOT_CONFIGURED_QUESTIONS);
+    }
+
+    List<ApplicationQuestion> questions =
+        applicationQuestionRepository.findAllByApplicationForm_IdOrderByTrackAscOrderNumberAsc(
+            form.getId());
+
+    return applicationQuestionMapper.toUpsertResponse(form, questions);
+  }
+
+  private ApplicationForm getFormWithLockById(Long applicationFormId) {
+    return applicationFormRepository
+        .findByIdForUpdate(applicationFormId)
+        .orElseThrow(
+            () -> {
+              log.warn("[ApplicationQuestion] 모집 공고 없음(락 조회) - formId={}", applicationFormId);
+              return new CustomException(ApplicationQuestionErrorCode.NOT_FOUND_APPLICATION_FORM);
+            });
+  }
+
+  private String key(Track track, Integer orderNumber) {
+    return track.name() + "#" + orderNumber;
   }
 
   private ApplicationForm getFormWithLock(Long semester) {

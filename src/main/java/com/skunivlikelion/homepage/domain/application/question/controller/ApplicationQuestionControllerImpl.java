@@ -45,27 +45,27 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>> updateQuestions(
-      @PathVariable @Positive Long semester,
+      @PathVariable @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationQuestionUpsertRequest request) {
     ApplicationQuestionUpsertResponse response =
-        applicationQuestionService.updateQuestions(semester, request);
+        applicationQuestionService.updateQuestions(applicationFormId, request);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "지원서 질문 수정에 성공했습니다.", response));
   }
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<BaseResponse<Void>> deleteQuestions(@PathVariable @Positive Long semester) {
-    applicationQuestionService.deleteQuestions(semester);
+  public ResponseEntity<BaseResponse<Void>> deleteQuestions(
+      @PathVariable @Positive Long applicationFormId) {
+    applicationQuestionService.deleteQuestions(applicationFormId);
     return ResponseEntity.status(200).body(BaseResponse.success(200, "지원서 질문 삭제에 성공했습니다.", null));
   }
 
   @Override
-  public ResponseEntity<BaseResponse<ApplicationQuestionGetResponse>>
-      getQuestionsBySemesterAndTrack(
-          @RequestParam @Positive Long semester, @RequestParam Track track) {
+  public ResponseEntity<BaseResponse<ApplicationQuestionGetResponse>> getCurrentQuestionsByTrack(
+      @RequestParam Track track) {
     ApplicationQuestionGetResponse response =
-        applicationQuestionService.getQuestionsBySemesterAndTrack(semester, track);
+        applicationQuestionService.getCurrentQuestionsByTrack(track);
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "지원서 질문 조회에 성공했습니다.", response));
   }
@@ -76,5 +76,17 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
     ApplicationSummaryListResponse response = applicationQuestionService.getApplicationSummaries();
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "등록된 지원서 목록 조회에 성공했습니다.", response));
+  }
+
+  @Override
+  @PreAuthorize("hasRole('DEVELOPER')")
+  public ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>>
+      getQuestionsBySemesterForDev(@PathVariable @Positive Long semester) {
+
+    ApplicationQuestionUpsertResponse response =
+        applicationQuestionService.getQuestionsBySemesterForDev(semester);
+
+    return ResponseEntity.status(200)
+        .body(BaseResponse.success(200, "지원서 질문 전체 조회에 성공했습니다.", response));
   }
 }

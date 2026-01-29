@@ -18,6 +18,9 @@ import lombok.Getter;
 @Schema(title = "ApplicationQuestionUpsertResponse: 지원서 질문 등록/수정 응답 DTO")
 public class ApplicationQuestionUpsertResponse {
 
+  @Schema(description = "모집 공고 식별자", example = "1")
+  private Long applicationFormId;
+
   @Schema(description = "기수 값", example = "13")
   private Long semester;
 
