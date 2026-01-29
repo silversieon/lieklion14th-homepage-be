@@ -56,11 +56,13 @@ public class ApplicationForm extends BaseTimeEntity {
   private boolean hasQuestions = false;
 
   public void update(
+      Semester semester,
       LocalDateTime openAt,
       LocalDateTime closeAt,
       LocalDateTime applicationResultAt,
       LocalDateTime interviewScheduleConfirmedAt,
       LocalDateTime finalResultAt) {
+    this.semester = semester;
     this.openAt = openAt;
     this.closeAt = closeAt;
     this.applicationResultAt = applicationResultAt;

@@ -6,8 +6,6 @@ package com.skunivlikelion.homepage.domain.application.form.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import jakarta.persistence.EntityManager;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,99 +31,130 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
 
   private final ApplicationFormRepository applicationFormRepository;
   private final SemesterRepository semesterRepository;
-  private final EntityManager entityManager;
   private final ApplicationFormMapper applicationFormMapper;
 
   @Override
-  public ApplicationFormResponse createApplicationForm(
-      Long semester, ApplicationFormUpsertRequest request) {
-    validateSemesterExists(semester);
+  public ApplicationFormResponse createApplicationForm(ApplicationFormUpsertRequest request) {
+    Long semesterId = request.getSemester();
+
     validateDateRange(request);
     validateNoOverlappedFormForCreate(request);
 
-    if (applicationFormRepository.existsBySemester_Semester(semester)) {
-      log.info("[ApplicationForm] 모집 공고 등록 실패 - 이미 존재하는 모집 공고 - semester={}", semester);
+    if (semesterId == null) {
+      log.warn("[ApplicationForm] 지원 일정 등록 실패 - semester=null");
+      throw new CustomException(ApplicationFormErrorCode.NOT_FOUND_SEMESTER);
+    }
+
+    Semester semester =
+        semesterRepository
+            .findById(semesterId)
+            .orElseThrow(
+                () -> {
+                  log.warn("[ApplicationForm] 지원 일정 등록 실패: 존재하지 않는 기수 - semester={}", semesterId);
+                  return new CustomException(ApplicationFormErrorCode.NOT_FOUND_SEMESTER);
+                });
+
+    if (applicationFormRepository.existsBySemester_Semester(semesterId)) {
+      log.info("[ApplicationForm] 지원 일정 등록 실패: 이미 존재하는 모집 공고 - semester={}", semesterId);
       throw new CustomException(ApplicationFormErrorCode.ALREADY_EXIST_APPLICATION_FORM);
     }
 
-    Semester semesterRef = entityManager.getReference(Semester.class, semester);
-    ApplicationForm form = applicationFormMapper.toEntity(semesterRef, request);
+    ApplicationForm form = applicationFormMapper.toEntity(semester, request);
 
     ApplicationForm saved = applicationFormRepository.save(form);
-    log.info("[ApplicationForm] 모집 공고 등록 완료 - semester={}, id={}", semester, saved.getId());
+    log.info("[ApplicationForm] 지원 일정 등록 완료 - semester={}, formId={}", semesterId, saved.getId());
 
     return applicationFormMapper.toResponse(saved);
   }
 
   @Override
   public ApplicationFormResponse updateApplicationForm(
-      Long semester, ApplicationFormUpsertRequest request) {
-    validateSemesterExists(semester);
+      Long applicationFormId, ApplicationFormUpsertRequest request) {
+
     validateDateRange(request);
 
     ApplicationForm found =
         applicationFormRepository
-            .findBySemester_Semester(semester)
+            .findById(applicationFormId)
             .orElseThrow(
                 () -> {
-                  log.warn("[ApplicationForm] 모집 공고 수정 실패: 모집 공고 없음 - semester={}", semester);
+                  log.warn(
+                      "[ApplicationForm] 지원 일정 수정 실패: 모집 공고 없음 - formId={}", applicationFormId);
                   return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
                 });
+
+    Long targetSemesterId = request.getSemester();
+    if (targetSemesterId == null) {
+      log.warn("[ApplicationForm] 지원 일정 수정 실패: semester=null - formId={}", applicationFormId);
+      throw new CustomException(ApplicationFormErrorCode.INVALID_SEMESTER_VALUE);
+    }
+
+    Semester targetSemester =
+        semesterRepository
+            .findById(targetSemesterId)
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[ApplicationForm] 지원 일정 수정 실패: 존재하지 않는 기수 - formId={}, semester={}",
+                      applicationFormId,
+                      targetSemesterId);
+                  return new CustomException(ApplicationFormErrorCode.NOT_FOUND_SEMESTER);
+                });
+
+    if (applicationFormRepository.existsBySemester_SemesterAndIdNot(
+        targetSemesterId, applicationFormId)) {
+      log.info(
+          "[ApplicationForm] 지원 일정 수정 실패: 이미 존재하는 모집 공고(기수 중복) - formId={}, semester={}",
+          applicationFormId,
+          targetSemesterId);
+      throw new CustomException(ApplicationFormErrorCode.ALREADY_EXIST_APPLICATION_FORM);
+    }
+
     validateNoOverlappedFormForUpdate(found.getId(), request);
 
     found.update(
+        targetSemester,
         request.getOpenAt(),
         request.getCloseAt(),
         request.getApplicationResultAt(),
         request.getInterviewScheduleConfirmedAt(),
         request.getFinalResultAt());
 
-    log.info("[ApplicationForm] 모집 공고 수정 완료 - semester={}, id={}", semester, found.getId());
+    log.info(
+        "[ApplicationForm] 지원 일정 수정 완료 - formId={}, semester={} -> {}",
+        found.getId(),
+        found.getSemester().getSemester(),
+        targetSemesterId);
 
     return applicationFormMapper.toResponse(found);
   }
 
   @Override
-  public void deleteApplicationForm(Long semester) {
-    validateSemesterExists(semester);
+  public void deleteApplicationForm(Long applicationFormId) {
 
     ApplicationForm found =
         applicationFormRepository
-            .findBySemester_Semester(semester)
+            .findById(applicationFormId)
             .orElseThrow(
                 () -> {
-                  log.warn("[ApplicationForm] 모집 공고 삭제 실패: 모집 공고 없음 - semester={}", semester);
+                  log.warn(
+                      "[ApplicationForm] 지원 일정 삭제 실패 - 모집 공고 없음 - formId={}", applicationFormId);
                   return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
                 });
 
     if (found.isHasQuestions()) {
       log.warn(
-          "[ApplicationForm] 모집 공고 삭제 실패: 등록된 지원서 질문 존재 - semester={}, formId={}",
-          semester,
-          found.getId());
+          "[ApplicationForm] 지원 일정 삭제 실패: 등록된 지원서 질문 존재 - formId={}, semester={}",
+          found.getId(),
+          found.getSemester().getSemester());
       throw new CustomException(ApplicationFormErrorCode.CANNOT_DELETE_FORM_WITH_QUESTIONS);
     }
 
     applicationFormRepository.delete(found);
-    log.info("[ApplicationForm] 모집 공고 삭제 완료 - semester={}, id={}", semester, found.getId());
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public ApplicationFormResponse getApplicationFormBySemester(Long semester) {
-    validateSemesterExists(semester);
-
-    ApplicationForm found =
-        applicationFormRepository
-            .findBySemester_Semester(semester)
-            .orElseThrow(
-                () -> {
-                  log.warn("[ApplicationForm] 모집 공고 기수별 조회 실패: 모집 공고 없음 - semester={}", semester);
-                  return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
-                });
-
-    log.info("[ApplicationForm] 모집 공고 기수별 조회 완료 - semester={}, id={}", semester, found.getId());
-    return applicationFormMapper.toResponse(found);
+    log.info(
+        "[ApplicationForm] 지원 일정 삭제 완료: formId={}, semester={}",
+        found.getId(),
+        found.getSemester().getSemester());
   }
 
   @Override
@@ -155,22 +184,11 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     return result;
   }
 
-  private void validateSemesterExists(Long semester) {
-    if (semester == null) {
-      log.warn("[ApplicationForm] 기수 검증 실패 - semester=null");
-      throw new CustomException(ApplicationFormErrorCode.NOT_FOUND_SEMESTER);
-    }
-
-    if (!semesterRepository.existsById(semester)) {
-      log.warn("[ApplicationForm] 기수 검증 실패 - 존재하지 않는 기수 - semester={}", semester);
-      throw new CustomException(ApplicationFormErrorCode.NOT_FOUND_SEMESTER);
-    }
-  }
-
   private void validateDateRange(ApplicationFormUpsertRequest request) {
     LocalDateTime openAt = request.getOpenAt();
     LocalDateTime closeAt = request.getCloseAt();
     LocalDateTime applicationResultAt = request.getApplicationResultAt();
+    LocalDateTime interviewScheduleConfirmedAt = request.getInterviewScheduleConfirmedAt();
     LocalDateTime finalResultAt = request.getFinalResultAt();
 
     if (!openAt.isBefore(closeAt)) {
@@ -188,8 +206,6 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
           closeAt);
       throw new CustomException(ApplicationFormErrorCode.INVALID_DATE_RANGE);
     }
-
-    LocalDateTime interviewScheduleConfirmedAt = request.getInterviewScheduleConfirmedAt();
 
     if (interviewScheduleConfirmedAt.isBefore(applicationResultAt)) {
       log.info(
@@ -266,5 +282,12 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
         current.getFinalResultAt());
 
     return current;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ApplicationFormResponse getCurrentApplicationFormResponse() {
+    ApplicationForm current = getCurrentApplicationForm();
+    return applicationFormMapper.toResponse(current);
   }
 }

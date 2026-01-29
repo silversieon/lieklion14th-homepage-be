@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Positive;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,7 @@ import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFo
 import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 public class ApplicationFormControllerImpl implements ApplicationFormController {
@@ -31,40 +33,41 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationFormResponse>> createApplicationForm(
-      @PathVariable @Positive Long semester,
       @Valid @RequestBody ApplicationFormUpsertRequest request) {
-    ApplicationFormResponse response =
-        applicationFormService.createApplicationForm(semester, request);
+
+    ApplicationFormResponse response = applicationFormService.createApplicationForm(request);
     return ResponseEntity.status(201)
-        .body(BaseResponse.success(201, "모집 공고 등록에 성공했습니다.", response));
+        .body(BaseResponse.success(201, "지원 일정 등록에 성공했습니다.", response));
   }
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationFormResponse>> updateApplicationForm(
-      @PathVariable @Positive Long semester,
+      @PathVariable @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationFormUpsertRequest request) {
+
     ApplicationFormResponse response =
-        applicationFormService.updateApplicationForm(semester, request);
+        applicationFormService.updateApplicationForm(applicationFormId, request);
+
     return ResponseEntity.status(200)
-        .body(BaseResponse.success(200, "모집 공고 수정에 성공했습니다.", response));
+        .body(BaseResponse.success(200, "지원 일정 수정에 성공했습니다.", response));
   }
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<Void>> deleteApplicationForm(
-      @PathVariable @Positive Long semester) {
-    applicationFormService.deleteApplicationForm(semester);
-    return ResponseEntity.status(200).body(BaseResponse.success(200, "모집 공고 삭제에 성공했습니다.", null));
+      @PathVariable @Positive Long applicationFormId) {
+
+    applicationFormService.deleteApplicationForm(applicationFormId);
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "지원 일정 삭제에 성공했습니다.", null));
   }
 
   @Override
-  public ResponseEntity<BaseResponse<ApplicationFormResponse>> getApplicationFormBySemester(
-      @PathVariable @Positive Long semester) {
-    ApplicationFormResponse response =
-        applicationFormService.getApplicationFormBySemester(semester);
+  public ResponseEntity<BaseResponse<ApplicationFormResponse>> getCurrentApplicationForm() {
+
+    ApplicationFormResponse response = applicationFormService.getCurrentApplicationFormResponse();
     return ResponseEntity.status(200)
-        .body(BaseResponse.success(200, "모집 공고 기수별 조회에 성공했습니다.", response));
+        .body(BaseResponse.success(200, "진행중 지원 일정 조회에 성공했습니다.", response));
   }
 
   @Override

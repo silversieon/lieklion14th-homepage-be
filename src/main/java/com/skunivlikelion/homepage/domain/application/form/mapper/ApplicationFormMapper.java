@@ -16,9 +16,9 @@ import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 @Component
 public class ApplicationFormMapper {
 
-  public ApplicationForm toEntity(Semester semesterRef, ApplicationFormUpsertRequest request) {
+  public ApplicationForm toEntity(Semester semester, ApplicationFormUpsertRequest request) {
     return ApplicationForm.builder()
-        .semester(semesterRef)
+        .semester(semester)
         .openAt(request.getOpenAt())
         .closeAt(request.getCloseAt())
         .applicationResultAt(request.getApplicationResultAt())
@@ -27,33 +27,33 @@ public class ApplicationFormMapper {
         .build();
   }
 
-  public ApplicationFormResponse toResponse(ApplicationForm entity) {
+  public ApplicationFormResponse toResponse(ApplicationForm applicationForm) {
     return ApplicationFormResponse.builder()
-        .id(entity.getId())
-        .semester(entity.getSemester().getSemester())
-        .openAt(entity.getOpenAt())
-        .closeAt(entity.getCloseAt())
-        .applicationResultAt(entity.getApplicationResultAt())
-        .interviewScheduleConfirmedAt(entity.getInterviewScheduleConfirmedAt())
-        .finalResultAt(entity.getFinalResultAt())
+        .id(applicationForm.getId())
+        .semester(applicationForm.getSemester().getSemester())
+        .openAt(applicationForm.getOpenAt())
+        .closeAt(applicationForm.getCloseAt())
+        .applicationResultAt(applicationForm.getApplicationResultAt())
+        .interviewScheduleConfirmedAt(applicationForm.getInterviewScheduleConfirmedAt())
+        .finalResultAt(applicationForm.getFinalResultAt())
         .build();
   }
 
-  public List<ApplicationFormResponse> toResponseList(List<ApplicationForm> entities) {
-    return entities.stream().map(this::toResponse).toList();
+  public List<ApplicationFormResponse> toResponseList(List<ApplicationForm> applicationForms) {
+    return applicationForms.stream().map(this::toResponse).toList();
   }
 
-  public ApplicationFormSummaryResponse toSummaryResponse(ApplicationForm entity) {
-    Long semester = entity.getSemester().getSemester();
+  public ApplicationFormSummaryResponse toSummaryResponse(ApplicationForm applicationForm) {
+    Long semester = applicationForm.getSemester().getSemester();
     return ApplicationFormSummaryResponse.builder()
         .semester(semester)
         .title(semester + "기")
-        .closeAt(entity.getCloseAt())
+        .closeAt(applicationForm.getCloseAt())
         .build();
   }
 
   public List<ApplicationFormSummaryResponse> toSummaryResponseList(
-      List<ApplicationForm> entities) {
-    return entities.stream().map(this::toSummaryResponse).toList();
+      List<ApplicationForm> applicationForms) {
+    return applicationForms.stream().map(this::toSummaryResponse).toList();
   }
 }
