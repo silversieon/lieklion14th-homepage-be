@@ -15,6 +15,8 @@ import com.skunivlikelion.homepage.domain.common.enums.Track;
 
 public interface ApplicationAnswerRepository extends JpaRepository<ApplicationAnswer, Long> {
 
+  boolean existsByQuestion_ApplicationForm_Id(Long applicationFormId);
+
   @Query(
       """
               select a

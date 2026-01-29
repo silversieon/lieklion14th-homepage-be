@@ -18,20 +18,20 @@ public interface ApplicationQuestionRepository extends JpaRepository<Application
   List<ApplicationQuestion> findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
       Long applicationFormId, Track track);
 
+  @Query(
+      """
+              select q
+              from ApplicationQuestion q
+              where q.applicationForm.id = :formId
+                and q.id in :questionIds
+          """)
+  List<ApplicationQuestion> findAllByFormIdAndQuestionIds(
+      @Param("formId") Long formId, @Param("questionIds") List<Long> questionIds);
+
   List<ApplicationQuestion> findAllByApplicationForm_IdOrderByTrackAscOrderNumberAsc(
       Long applicationFormId);
 
   @Modifying(flushAutomatically = true)
   @Query("delete from ApplicationQuestion q where q.applicationForm.id = :applicationFormId")
   void deleteAllByApplicationFormId(@Param("applicationFormId") Long applicationFormId);
-
-  @Query(
-      """
-          select q
-          from ApplicationQuestion q
-          where q.applicationForm.id = :formId
-            and q.id in :questionIds
-      """)
-  List<ApplicationQuestion> findAllByFormIdAndQuestionIds(
-      @Param("formId") Long formId, @Param("questionIds") List<Long> questionIds);
 }

@@ -57,7 +57,8 @@ public class ApplicationQuestionMapper {
   }
 
   public ApplicationQuestionUpsertResponse toUpsertResponse(
-      Long semester, List<ApplicationQuestion> saved) {
+      ApplicationForm form, List<ApplicationQuestion> saved) {
+
     Map<Track, List<QuestionItemResponse>> grouped =
         saved.stream()
             .collect(
@@ -86,7 +87,11 @@ public class ApplicationQuestionMapper {
                         .build())
             .toList();
 
-    return ApplicationQuestionUpsertResponse.builder().semester(semester).groups(groups).build();
+    return ApplicationQuestionUpsertResponse.builder()
+        .applicationFormId(form.getId())
+        .semester(form.getSemester().getSemester())
+        .groups(groups)
+        .build();
   }
 
   public ApplicationQuestionGetResponse toGetResponse(
