@@ -6,6 +6,7 @@ package com.skunivlikelion.homepage.domain.application.form.dto.request;
 import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,9 @@ import lombok.Getter;
 @AllArgsConstructor
 @Schema(title = "ApplicationFormUpsertRequest: 모집 공고 등록/수정 요청 DTO")
 public class ApplicationFormUpsertRequest {
+
+  @NotNull @Positive @Schema(description = "기수 값", example = "13")
+  private Long semester;
 
   @NotNull @Schema(description = "모집 시작 일시", example = "2026-02-01T10:00:00")
   private LocalDateTime openAt;

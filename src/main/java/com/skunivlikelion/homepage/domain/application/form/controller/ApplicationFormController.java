@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,16 +25,15 @@ import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Validated
 @RequestMapping("/api")
 @Tag(name = "ApplicationForm", description = "모집 공고 일정 관리 API")
 public interface ApplicationFormController {
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 모집 공고 등록 ]",
+      summary = "[ 관리자 | 토큰 O | 지원 일정 등록 ]",
       description =
           """
-              **Parameters**  \n
+              **RequestBody**  \n
               semester: 등록할 기수 값  \n
               openAt: 모집 시작 일시  \n
               closeAt: 모집 마감 일시  \n
@@ -43,20 +41,23 @@ public interface ApplicationFormController {
               interviewScheduleConfirmedAt: 면접 일정 확정 일시    \n
               finalResultAt: 최종 결과 발표 일시  \n
 
+              - openAt < closeAt ≤ applicationResultAt ≤ interviewScheduleConfirmedAt ≤ finalResultAt \n
+
               **Returns**  \n
               등록된 모집 공고 정보
               """)
-  @PostMapping("/v1/admin/applications/forms/{semester}")
+  @PostMapping("/v1/admin/applications/forms")
   ResponseEntity<BaseResponse<ApplicationFormResponse>> createApplicationForm(
-      @PathVariable @Positive Long semester,
       @Valid @RequestBody ApplicationFormUpsertRequest request);
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 모집 공고 수정 ]",
+      summary = "[ 관리자 | 토큰 O | 지원 일정 수정 ]",
       description =
           """
               **Parameters**  \n
-              semester: 수정할 기수 값  \n
+              applicationFormId: 수정할 모집 공고 ID  \n
+
+              **RequestBody**  \n
               openAt: 모집 시작 일시  \n
               closeAt: 모집 마감 일시  \n
               applicationResultAt: 서류 결과 발표 일시  \n
@@ -66,37 +67,34 @@ public interface ApplicationFormController {
               **Returns**  \n
               수정된 모집 공고 정보
               """)
-  @PutMapping("/v1/admin/applications/forms/{semester}")
+  @PutMapping("/v1/admin/applications/forms/{applicationFormId}")
   ResponseEntity<BaseResponse<ApplicationFormResponse>> updateApplicationForm(
-      @PathVariable @Positive Long semester,
+      @PathVariable @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationFormUpsertRequest request);
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 모집 공고 삭제 ]",
+      summary = "[ 관리자 | 토큰 O | 지원 일정 삭제 ]",
       description =
           """
               **Parameters**  \n
-              semester: 삭제할 기수 값  \n
+              applicationFormId: 삭제할 모집 공고 ID  \n
 
               **Returns**  \n
-              모집 공고 삭제 성공/실패 여부
+              지원 일정 삭제 성공/실패 여부
               """)
-  @DeleteMapping("/v1/admin/applications/forms/{semester}")
-  ResponseEntity<BaseResponse<Void>> deleteApplicationForm(@PathVariable @Positive Long semester);
+  @DeleteMapping("/v1/admin/applications/forms/{applicationFormId}")
+  ResponseEntity<BaseResponse<Void>> deleteApplicationForm(
+      @PathVariable @Positive Long applicationFormId);
 
   @Operation(
-      summary = "[ 사용자 | 토큰 X | 모집 공고 기수별 조회 ]",
+      summary = "[ 사용자 | 토큰 X | 진행중 지원 일정 조회 ]",
       description =
           """
-              **Parameters**  \n
-              semester: 조회할 기수 값  \n
-
               **Returns**  \n
-              해당 기수의 모집 공고 정보
+              현재 진행중인 모집 공고 정보
               """)
-  @GetMapping("/v1/applications/forms/{semester}")
-  ResponseEntity<BaseResponse<ApplicationFormResponse>> getApplicationFormBySemester(
-      @PathVariable @Positive Long semester);
+  @GetMapping("/v1/applications/current-forms")
+  ResponseEntity<BaseResponse<ApplicationFormResponse>> getCurrentApplicationForm();
 
   @Operation(
       summary = "[ 관리자 | 토큰 O | 모집 공고 내림차순 전체 조회 ]",

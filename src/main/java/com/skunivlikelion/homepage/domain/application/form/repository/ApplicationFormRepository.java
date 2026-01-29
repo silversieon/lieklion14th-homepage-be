@@ -22,6 +22,8 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
 
   boolean existsBySemester_Semester(Long semester);
 
+  boolean existsBySemester_SemesterAndIdNot(Long semester, Long id);
+
   @Query(
       """
           select af
