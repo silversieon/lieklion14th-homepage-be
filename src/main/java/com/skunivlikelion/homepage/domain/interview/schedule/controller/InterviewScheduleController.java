@@ -4,7 +4,6 @@
 package com.skunivlikelion.homepage.domain.interview.schedule.controller;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -25,6 +24,7 @@ import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.UserInterviewScheduleResponse;
 
 import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -95,7 +95,7 @@ public interface InterviewScheduleController {
       description =
           """
               **Query Parameter**
-              - semester: 기수 (Optional, 미입력 시 기수 선택 필요)
+              - semester: 기수 (Optional, 미입력 시 현재 진행 중인 공고의 기수로 자동 적용)
               - dateFrom: 조회 시작 날짜 (Optional, yyyy-MM-dd)
               - dateTo: 조회 종료 날짜 (Optional, yyyy-MM-dd)
 
@@ -104,16 +104,17 @@ public interface InterviewScheduleController {
               - 서류 합격자(ApplicationRecord.isPassed = true)만 조회 가능
               - 트랙은 ApplicationRecord.track 기준 자동 적용 (클라이언트 입력 X)
 
-              **정렬 기준**
-              - date ASC, startTime ASC
+              **응답 구조**
+              - dates[]: 날짜별 그룹
+                - times[]: 시간 슬롯 목록 (booked 포함)
 
-              **예약 상태 필드**
-              - booked: true → 이미 예약된 일정
-              - booked: false → 예약 가능 일정
+              **정렬 기준**
+              - date ASC
+              - times[]: startTime ASC
               """)
   @PreAuthorize("isAuthenticated()")
   @GetMapping("/v1/interviews/schedules")
-  ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getUserInterviewSchedules(
+  ResponseEntity<BaseResponse<UserInterviewScheduleResponse>> getUserInterviewSchedules(
       @RequestParam(required = false) @Positive Long semester,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate dateFrom,

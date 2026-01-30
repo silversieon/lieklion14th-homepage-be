@@ -7,9 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public record AdminInterviewScheduleResponse(Integer semester, List<TrackGroup> tracks) {
-
-  public record TrackGroup(String track, List<DateGroup> dates) {}
+public record UserInterviewScheduleResponse(Integer semester, List<DateGroup> dates) {
 
   public record DateGroup(LocalDate date, List<TimeSlot> times) {}
 
