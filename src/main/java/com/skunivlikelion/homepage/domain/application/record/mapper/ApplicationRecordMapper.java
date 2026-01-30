@@ -10,13 +10,11 @@ import org.springframework.stereotype.Component;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.question.entity.ApplicationQuestion;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantUserInfo;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicationDetailResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswersGetResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationDraftSaveResponse;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationQuestionAnswerItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordMeta;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationSubmitResponse;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordResponse;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationAnswer;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
@@ -38,15 +36,7 @@ public class ApplicationRecordMapper {
         .build();
   }
 
-  public ApplicationDraftSaveResponse toDraftResponse(ApplicationRecord record) {
-    return ApplicationDraftSaveResponse.builder().meta(toMeta(record)).build();
-  }
-
-  public ApplicationSubmitResponse toSubmitResponse(ApplicationRecord record) {
-    return ApplicationSubmitResponse.builder().meta(toMeta(record)).build();
-  }
-
-  public ApplicationAnswersGetResponse toAnswersGetResponse(
+  public ApplicationRecordResponse toAnswersGetResponse(
       ApplicationRecord record,
       List<ApplicationQuestion> commonQuestions,
       List<ApplicationQuestion> trackQuestions,
@@ -54,33 +44,37 @@ public class ApplicationRecordMapper {
 
     QaBundle qa = buildQaBundle(commonQuestions, trackQuestions, answerMap);
 
-    return ApplicationAnswersGetResponse.builder()
+    return ApplicationRecordResponse.builder()
         .meta(toMeta(record))
+        .userInfo(toApplicantUserInfo(record.getUser(), record.getTrack()))
         .commonQuestions(qa.common())
         .trackQuestions(qa.track())
         .build();
   }
 
-  public AdminApplicationDetailResponse toAdminApplicationDetailResponse(
-      ApplicationRecord record,
-      List<ApplicationQuestion> commonQuestions,
-      List<ApplicationQuestion> trackQuestions,
-      Map<Long, ApplicationAnswer> answerMap) {
-
-    QaBundle qa = buildQaBundle(commonQuestions, trackQuestions, answerMap);
-
-    return AdminApplicationDetailResponse.builder()
-        .meta(toMeta(record))
-        .userInfo(toAdminApplicantUserInfo(record))
-        .commonQuestions(qa.common())
-        .trackQuestions(qa.track())
+  public ApplicantUserInfo toApplicantUserInfo(User user, Track trackOrNull) {
+    return ApplicantUserInfo.builder()
+        .name(user.getName())
+        .phoneNumber(user.getPhoneNumber())
+        .department(user.getDepartment())
+        .studentNumber(user.getStudentNumber())
+        .email(user.getEmail())
+        .track(trackOrNull)
         .build();
   }
 
-  private ApplicationRecordMeta toMeta(ApplicationRecord record) {
+  public List<ApplicationAnswerItem> toAnswerItems(List<ApplicationAnswer> answers) {
+    if (answers == null || answers.isEmpty()) {
+      return List.of();
+    }
+    return answers.stream().map(this::toAnswerItem).toList();
+  }
+
+  public ApplicationRecordMeta toMeta(ApplicationRecord record) {
     return ApplicationRecordMeta.builder()
         .applicationRecordId(record.getId())
         .applicationFormId(record.getApplicationForm().getId())
+        .semester(record.getApplicationForm().getSemester().getSemester())
         .track(record.getTrack())
         .isSubmitted(record.isSubmitted())
         .submittedAt(record.getSubmittedAt())
@@ -116,15 +110,12 @@ public class ApplicationRecordMapper {
         .build();
   }
 
-  private AdminApplicantUserInfo toAdminApplicantUserInfo(ApplicationRecord record) {
-    return AdminApplicantUserInfo.builder()
-        .name(record.getUser().getName())
-        .phoneNumber(record.getUser().getPhoneNumber())
-        .department(record.getUser().getDepartment())
-        .studentNumber(record.getUser().getStudentNumber())
-        .email(record.getUser().getEmail())
-        .supportPart(record.getTrack())
-        .build();
+  private ApplicationAnswerItem toAnswerItem(ApplicationAnswer answer) {
+    Long questionId =
+        (answer == null || answer.getQuestion() == null) ? null : answer.getQuestion().getId();
+    String content = (answer == null || answer.getContent() == null) ? "" : answer.getContent();
+
+    return ApplicationAnswerItem.builder().questionId(questionId).answer(content).build();
   }
 
   private record QaBundle(

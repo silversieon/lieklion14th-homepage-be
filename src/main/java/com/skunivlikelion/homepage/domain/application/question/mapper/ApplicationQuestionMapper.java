@@ -46,7 +46,7 @@ public class ApplicationQuestionMapper {
         .toList();
   }
 
-  private ApplicationQuestion toEntity(
+  public ApplicationQuestion toEntity(
       ApplicationForm form, Track track, Integer orderNumber, String content) {
     return ApplicationQuestion.builder()
         .applicationForm(form)

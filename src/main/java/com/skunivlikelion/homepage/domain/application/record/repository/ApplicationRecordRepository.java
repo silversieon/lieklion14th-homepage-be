@@ -6,6 +6,7 @@ package com.skunivlikelion.homepage.domain.application.record.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -74,18 +75,21 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
           where r.isSubmitted = true
             and (:semester is null or r.applicationForm.semester.semester = :semester)
             and (:track is null or r.track = :track)
+            and (:lastCursor is null or r.id < :lastCursor)
             and (
               :search is null
               or lower(u.name) like concat('%', :search, '%')
               or lower(u.department) like concat('%', :search, '%')
               or lower(u.studentNumber) like concat('%', :search, '%')
             )
-          order by r.submittedAt asc, r.id asc
+          order by r.id desc
           """)
-  List<AdminApplicantListItem> findAdminApplicantListItems(
+  List<AdminApplicantListItem> findAdminApplicantListItemsInfinite(
       @Param("semester") Long semester,
       @Param("track") Track track,
-      @Param("search") String search);
+      @Param("search") String search,
+      @Param("lastCursor") Long lastCursor,
+      Pageable pageable);
 
   @Query(
       """

@@ -15,14 +15,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(title = "AdminApplicationDetailResponse: 관리자 특정 지원서 조회 응답 DTO")
-public class AdminApplicationDetailResponse {
+@Schema(title = "ApplicationAnswersGetResponse: 지원서 조회 응답 DTO")
+public class ApplicationRecordResponse {
 
   @Schema(description = "지원서 메타 정보")
   private ApplicationRecordMeta meta;
 
-  @Schema(description = "사용자 정보")
-  private AdminApplicantUserInfo userInfo;
+  @Schema(description = "인적사항")
+  private ApplicantUserInfo userInfo;
 
   @Schema(description = "공통 질문/답변 목록")
   private List<ApplicationQuestionAnswerItem> commonQuestions;

@@ -4,38 +4,36 @@
 package com.skunivlikelion.homepage.domain.application.record.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
+import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
-import com.skunivlikelion.homepage.domain.application.question.entity.ApplicationQuestion;
-import com.skunivlikelion.homepage.domain.application.question.repository.ApplicationQuestionRepository;
-import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationAnswerSaveItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicationDetailResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswersGetResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationDraftSaveResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationSubmitDateResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationSubmitResponse;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordMeta;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordResponse;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationAnswer;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
 import com.skunivlikelion.homepage.domain.application.record.exception.ApplicationRecordErrorCode;
 import com.skunivlikelion.homepage.domain.application.record.mapper.ApplicationRecordMapper;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationAnswerRepository;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
+import com.skunivlikelion.homepage.domain.application.record.service.ApplicationRecordDraftHandler.QuestionsBundle;
+import com.skunivlikelion.homepage.domain.application.record.validator.SubmitSnapshotValidator;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.user.entity.User;
+import com.skunivlikelion.homepage.global.page.exception.PageErrorStatus;
+import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
 import backend.boilerplate.exception.CustomException;
@@ -48,31 +46,46 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class ApplicationRecordServiceImpl implements ApplicationRecordService {
 
-  private static final int MAX_ANSWER_LENGTH = 500;
-
   private final ApplicationFormRepository applicationFormRepository;
   private final ApplicationRecordRepository applicationRecordRepository;
-  private final ApplicationQuestionRepository applicationQuestionRepository;
-
   private final ApplicationAnswerRepository applicationAnswerRepository;
 
   private final CurrentUserProvider currentUserProvider;
   private final ApplicationRecordMapper applicationRecordMapper;
+  private final InfiniteMapper infiniteMapper;
+
+  private final SubmitSnapshotValidator submitSnapshotValidator;
+  private final ApplicationRecordDraftHandler draftHandler;
 
   @Override
-  public ApplicationDraftSaveResponse saveFirstDraft(
-      Long semester, ApplicationDraftSaveRequest request) {
+  public ApplicationRecordMeta saveFirstDraft(ApplicationDraftSaveRequest request) {
+
+    validateRequestTrack(request);
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
     LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm form = getOpenedFormOrThrow(semester, now, userId);
-    Long formId = form.getId();
+    ApplicationForm current = getCurrentFormOrThrow(now);
+    Long formId = current.getId();
+    Long semester = current.getSemester().getSemester();
 
     validateNotSubmitted(formId, userId, semester);
-    ApplicationRecord record = upsertDraftRecord(form, user, request.getTrack(), semester);
-    applyDraftSave(record, formId, request);
+
+    if (applicationRecordRepository.findDraft(formId, userId).isPresent()) {
+      log.warn(
+          "[ApplicationRecord] 최초 임시저장 실패: 이미 draft 존재 - semester={}, formId={}, userId={}",
+          semester,
+          formId,
+          userId);
+      throw new CustomException(ApplicationRecordErrorCode.ALREADY_DRAFT_EXISTS);
+    }
+
+    ApplicationRecord record =
+        applicationRecordRepository.save(
+            applicationRecordMapper.toNewDraftRecord(current, user, request.getTrack()));
+
+    draftHandler.applyDraftSave(record, formId, request);
 
     log.info(
         "[ApplicationRecord] first draft 반환 - semester={}, formId={}, userId={}, recordId={}, track={}",
@@ -82,29 +95,35 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
         record.getId(),
         record.getTrack());
 
-    return applicationRecordMapper.toDraftResponse(record);
+    return applicationRecordMapper.toMeta(record);
   }
 
   @Override
-  public ApplicationDraftSaveResponse saveDraft(
-      Long applicationRecordId, ApplicationDraftSaveRequest request) {
+  public ApplicationRecordMeta saveDraft(ApplicationDraftSaveRequest request) {
+
+    validateRequestTrack(request);
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
+    LocalDateTime now = LocalDateTime.now();
 
-    ApplicationRecord record = getOwnedRecordOrThrow(applicationRecordId, userId);
+    ApplicationForm current = getCurrentFormOrThrow(now);
+    Long formId = current.getId();
+
+    ApplicationRecord record =
+        applicationRecordRepository
+            .findDraft(formId, userId)
+            .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_DRAFT));
 
     if (record.isSubmitted()) {
       log.warn(
           "[ApplicationRecord] draft 저장 실패: 이미 제출됨 - recordId={}, userId={}",
-          applicationRecordId,
+          record.getId(),
           userId);
       throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
     }
 
-    Long formId = record.getApplicationForm().getId();
-
-    applyDraftSave(record, formId, request);
+    draftHandler.applyDraftSave(record, formId, request);
 
     log.info(
         "[ApplicationRecord] draft 반환 - formId={}, userId={}, recordId={}, track={}",
@@ -113,25 +132,30 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
         record.getId(),
         record.getTrack());
 
-    return applicationRecordMapper.toDraftResponse(record);
+    return applicationRecordMapper.toMeta(record);
   }
 
   @Override
-  public ApplicationSubmitResponse submit(Long semester, ApplicationDraftSaveRequest request) {
+  public ApplicationRecordMeta submit(ApplicationDraftSaveRequest request) {
+
+    validateRequestTrack(request);
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
     LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm form = getOpenedFormOrThrow(semester, now, userId);
-    Long formId = form.getId();
+    ApplicationForm current = getCurrentFormOrThrow(now);
+    Long formId = current.getId();
+    Long semester = current.getSemester().getSemester();
 
     validateNotSubmitted(formId, userId, semester);
 
-    ApplicationRecord record = upsertDraftRecord(form, user, request.getTrack(), semester);
+    QuestionsBundle q = draftHandler.loadQuestions(formId, request.getTrack());
+    submitSnapshotValidator.validate(q.commonQuestions(), q.trackQuestions(), request);
 
-    applyDraftSave(record, formId, request);
+    ApplicationRecord record = upsertDraftRecord(current, user, request.getTrack(), semester);
 
+    draftHandler.applyDraftSave(record, formId, request);
     record.markSubmitted(now);
 
     log.info(
@@ -142,108 +166,163 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
         record.getId(),
         record.getSubmittedAt());
 
-    return applicationRecordMapper.toSubmitResponse(record);
+    return applicationRecordMapper.toMeta(record);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public ApplicationAnswersGetResponse getMyApplicationAnswers(Long semester) {
+  public ApplicationRecordResponse getMySubmittedApplicationAnswers() {
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
+    LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm form =
-        applicationFormRepository
-            .findBySemester(semester)
-            .orElseThrow(
-                () -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_APPLICATION_FORM));
+    ApplicationForm current = getCurrentFormOrThrow(now);
 
     ApplicationRecord record =
         applicationRecordRepository
-            .findLatestByFormIdAndUserId(form.getId(), userId)
+            .findSubmittedBySemesterAndUserId(current.getSemester().getSemester(), userId)
             .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_RECORD));
 
-    QuestionsBundle q = loadQuestions(record.getApplicationForm().getId(), record.getTrack());
-    Map<Long, ApplicationAnswer> a = loadAnswerMap(record.getId());
+    QuestionsBundle q =
+        draftHandler.loadQuestions(record.getApplicationForm().getId(), record.getTrack());
+    Map<Long, ApplicationAnswer> a = draftHandler.loadAnswerMap(record.getId());
 
-    ApplicationAnswersGetResponse response =
+    ApplicationRecordResponse response =
         applicationRecordMapper.toAnswersGetResponse(
             record, q.commonQuestions(), q.trackQuestions(), a);
 
     log.info(
-        "[ApplicationRecord] answers 반환 - semester={}, userId={}, recordId={}, submitted={}",
-        semester,
+        "[ApplicationRecord] submitted answers 반환 - currentFormId={}, semester={}, userId={}, recordId={}",
+        current.getId(),
+        current.getSemester().getSemester(),
         userId,
-        record.getId(),
-        record.isSubmitted());
+        record.getId());
 
     return response;
   }
 
   @Override
   @Transactional(readOnly = true)
-  public ApplicationSubmitDateResponse getMySubmitDate(Long semester) {
+  public ApplicantUserInfo getMyDraftPersonalInfo() {
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
+    LocalDateTime now = LocalDateTime.now();
 
-    ApplicationRecord record =
-        applicationRecordRepository.findSubmittedBySemesterAndUserId(semester, userId).orElse(null);
+    ApplicationForm current = getCurrentFormOrThrow(now);
 
-    return record == null
-        ? ApplicationSubmitDateResponse.builder().isSubmitted(false).submittedAt(null).build()
-        : ApplicationSubmitDateResponse.builder()
-            .isSubmitted(true)
-            .submittedAt(record.getSubmittedAt())
-            .build();
+    Track trackOrNull =
+        applicationRecordRepository
+            .findDraft(current.getId(), userId)
+            .map(ApplicationRecord::getTrack)
+            .orElse(null);
+
+    log.info(
+        "[ApplicationRecord] 내 인적사항 반환 - currentFormId={}, semester={}, userId={}, track={}",
+        current.getId(),
+        current.getSemester().getSemester(),
+        userId,
+        trackOrNull);
+
+    return applicationRecordMapper.toApplicantUserInfo(user, trackOrNull);
   }
 
   @Override
-  public AdminApplicantListResponse getApplicants(Long semester, Track track, String search) {
+  @Transactional(readOnly = true)
+  public List<ApplicationAnswerItem> getMyDraftAnswersByTrack(Track track) {
+
+    if (track == null) {
+      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
+    }
+
+    User user = currentUserProvider.getCurrentUser();
+    Long userId = user.getId();
+    LocalDateTime now = LocalDateTime.now();
+
+    ApplicationForm current = getCurrentFormOrThrow(now);
+
+    ApplicationRecord draft =
+        applicationRecordRepository
+            .findDraft(current.getId(), userId)
+            .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_DRAFT));
+
+    List<ApplicationAnswer> answers =
+        applicationAnswerRepository.findAllWithQuestionByRecordIdAndTrack(draft.getId(), track);
+
+    log.info(
+        "[ApplicationRecord] draft answers 반환 - currentFormId={}, semester={}, userId={}, recordId={}, requestedTrack={}, size={}",
+        current.getId(),
+        current.getSemester().getSemester(),
+        userId,
+        draft.getId(),
+        track,
+        answers.size());
+
+    return applicationRecordMapper.toAnswerItems(answers);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public InfiniteResponse<AdminApplicantListItem> getApplicants(
+      Long semester, Track track, String search, Long lastCursor, Integer size) {
+
+    int resolvedSize = (size == null) ? 10 : size;
+    if (resolvedSize <= 0 || resolvedSize > 100) {
+      throw new CustomException(PageErrorStatus.PAGE_SIZE_ERROR);
+    }
 
     String normalized = (search == null || search.isBlank()) ? null : search.trim().toLowerCase();
+    Pageable pageable = PageRequest.of(0, resolvedSize + 1);
 
     List<AdminApplicantListItem> items =
-        applicationRecordRepository.findAdminApplicantListItems(semester, track, normalized);
+        applicationRecordRepository.findAdminApplicantListItemsInfinite(
+            semester, track, normalized, lastCursor, pageable);
 
-    return AdminApplicantListResponse.builder().lists(items).build();
+    boolean hasNext = items.size() > resolvedSize;
+    if (hasNext) {
+      items.remove(resolvedSize);
+    }
+
+    Long newLastCursor = items.isEmpty() ? null : items.getLast().applicationRecordId();
+    return infiniteMapper.toInfiniteResponse(items, newLastCursor, hasNext, resolvedSize);
   }
 
   @Override
-  public AdminApplicationDetailResponse getApplicationDetail(Long applicationRecordId) {
+  @Transactional(readOnly = true)
+  public ApplicationRecordResponse getApplicationDetail(Long applicationRecordId) {
 
     ApplicationRecord record =
         applicationRecordRepository
             .findSubmittedWithUserAndForm(applicationRecordId)
             .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_RECORD));
 
-    QuestionsBundle q = loadQuestions(record.getApplicationForm().getId(), record.getTrack());
-    Map<Long, ApplicationAnswer> a = loadAnswerMap(record.getId());
+    QuestionsBundle q =
+        draftHandler.loadQuestions(record.getApplicationForm().getId(), record.getTrack());
+    Map<Long, ApplicationAnswer> a = draftHandler.loadAnswerMap(record.getId());
 
-    return applicationRecordMapper.toAdminApplicationDetailResponse(
+    return applicationRecordMapper.toAnswersGetResponse(
         record, q.commonQuestions(), q.trackQuestions(), a);
   }
 
-  private ApplicationForm getOpenedFormOrThrow(Long semester, LocalDateTime now, Long userId) {
-
-    ApplicationForm form =
-        applicationFormRepository
-            .findBySemester(semester)
-            .orElseThrow(
-                () -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_APPLICATION_FORM));
-
-    if (now.isBefore(form.getOpenAt()) || now.isAfter(form.getCloseAt())) {
-      log.warn(
-          "[ApplicationRecord] 폼 기간 아님 - semester={}, userId={}, now={}, openAt={}, closeAt={}",
-          semester,
-          userId,
-          now,
-          form.getOpenAt(),
-          form.getCloseAt());
-      throw new CustomException(ApplicationRecordErrorCode.FORM_NOT_OPENED);
+  // ========================================================================
+  // Helper
+  // ========================================================================
+  private void validateRequestTrack(ApplicationDraftSaveRequest request) {
+    if (request == null || request.getTrack() == null) {
+      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
     }
+  }
 
-    return form;
+  private ApplicationForm getCurrentFormOrThrow(LocalDateTime now) {
+    return applicationFormRepository
+        .findCurrentApplicationForm(now)
+        .orElseThrow(
+            () -> {
+              log.info("[ApplicationRecord] 현재 진행중 모집 공고 없음 - now={}", now);
+              return new CustomException(
+                  ApplicationFormErrorCode.NOT_FOUND_CURRENT_APPLICATION_FORM);
+            });
   }
 
   private void validateNotSubmitted(Long formId, Long userId, Long semester) {
@@ -255,20 +334,6 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
           userId);
       throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
     }
-  }
-
-  private ApplicationRecord getOwnedRecordOrThrow(Long recordId, Long userId) {
-
-    ApplicationRecord record =
-        applicationRecordRepository
-            .findById(recordId)
-            .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_RECORD));
-
-    if (!record.getUser().getId().equals(userId)) {
-      throw new CustomException(ApplicationRecordErrorCode.NOT_FOUND_RECORD);
-    }
-
-    return record;
   }
 
   private ApplicationRecord upsertDraftRecord(
@@ -305,208 +370,4 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
               return created;
             });
   }
-
-  private void applyDraftSave(
-      ApplicationRecord record, Long formId, ApplicationDraftSaveRequest request) {
-    applyTrackChangeIfNeeded(record, formId, request.getTrack());
-    ensureAnswersInitialized(record, formId, record.getTrack());
-    overwriteAnswers(record, formId, request);
-  }
-
-  private void ensureAnswersInitialized(ApplicationRecord record, Long formId, Track track) {
-
-    QuestionsBundle questions = loadQuestions(formId, track);
-
-    Set<Long> existingIds =
-        new HashSet<>(applicationAnswerRepository.findQuestionIdsByRecordId(record.getId()));
-
-    List<ApplicationAnswer> toInsert = new ArrayList<>();
-    addMissingAnswers(toInsert, record, questions.commonQuestions(), existingIds);
-    addMissingAnswers(toInsert, record, questions.trackQuestions(), existingIds);
-
-    if (!toInsert.isEmpty()) {
-      applicationAnswerRepository.saveAll(toInsert);
-      log.info(
-          "[ApplicationRecord] 답변 초기화(insert) - recordId={}, formId={}, track={}, insertCount={}",
-          record.getId(),
-          formId,
-          track,
-          toInsert.size());
-    }
-  }
-
-  private void applyTrackChangeIfNeeded(ApplicationRecord record, Long formId, Track requested) {
-
-    if (requested == null) {
-      log.warn(
-          "[ApplicationRecord] 트랙 변경 실패: requestedTrack null - recordId={}, formId={}, currentTrack={}",
-          record.getId(),
-          formId,
-          record.getTrack());
-      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-    }
-
-    if (record.getTrack() == requested) {
-      return;
-    }
-
-    Track before = record.getTrack();
-    int deleted =
-        applicationAnswerRepository.deleteAnswersByRecordIdAndTrack(record.getId(), before);
-
-    record.changeTrack(requested);
-
-    log.info(
-        "[ApplicationRecord] 트랙 변경 - recordId={}, formId={}, before={}, after={}, deletedAnswers={}",
-        record.getId(),
-        formId,
-        before,
-        requested,
-        deleted);
-
-    ensureAnswersInitialized(record, formId, requested);
-  }
-
-  private void addMissingAnswers(
-      List<ApplicationAnswer> target,
-      ApplicationRecord record,
-      List<ApplicationQuestion> questions,
-      Set<Long> existingIds) {
-
-    for (ApplicationQuestion q : questions) {
-      if (!existingIds.contains(q.getId())) {
-        target.add(applicationRecordMapper.toNewEmptyAnswer(record, q));
-      }
-    }
-  }
-
-  private void overwriteAnswers(
-      ApplicationRecord record, Long formId, ApplicationDraftSaveRequest request) {
-    overwriteAnswerItems(record, formId, request.getCommonAnswers(), Track.COMMON);
-    overwriteAnswerItems(record, formId, request.getTrackAnswers(), record.getTrack());
-  }
-
-  private void overwriteAnswerItems(
-      ApplicationRecord record,
-      Long formId,
-      List<ApplicationAnswerSaveItem> items,
-      Track expectedTrack) {
-
-    if (items == null || items.isEmpty()) {
-      return;
-    }
-
-    validateAnswerItems(record.getId(), expectedTrack, items);
-
-    List<Long> questionIds = items.stream().map(ApplicationAnswerSaveItem::getQuestionId).toList();
-
-    List<ApplicationQuestion> questions =
-        applicationQuestionRepository.findAllByFormIdAndQuestionIds(formId, questionIds);
-
-    if (questions.size() != questionIds.size()) {
-      log.warn(
-          "[ApplicationRecord] 답변 저장 실패: question mismatch - recordId={}, formId={}, expectedTrack={}, payloadSize={}, loadedQuestionsSize={}",
-          record.getId(),
-          formId,
-          expectedTrack,
-          questionIds.size(),
-          questions.size());
-      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-    }
-
-    boolean hasMismatchedTrack = questions.stream().anyMatch(q -> q.getTrack() != expectedTrack);
-    if (hasMismatchedTrack) {
-      log.warn(
-          "[ApplicationRecord] 답변 저장 실패: track mismatch - recordId={}, formId={}, expectedTrack={}, payloadSize={}",
-          record.getId(),
-          formId,
-          expectedTrack,
-          questionIds.size());
-      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-    }
-
-    Map<Long, ApplicationAnswer> answerMap =
-        applicationAnswerRepository
-            .findAllByRecordIdAndQuestionIds(record.getId(), questionIds)
-            .stream()
-            .collect(Collectors.toMap(a -> a.getQuestion().getId(), Function.identity()));
-
-    if (answerMap.size() != questionIds.size()) {
-      log.warn(
-          "[ApplicationRecord] 답변 저장 실패: answerMap mismatch - recordId={}, formId={}, expectedTrack={}, payloadSize={}, loadedAnswersSize={}",
-          record.getId(),
-          formId,
-          expectedTrack,
-          questionIds.size(),
-          answerMap.size());
-      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-    }
-
-    for (ApplicationAnswerSaveItem item : items) {
-      ApplicationAnswer answer = answerMap.get(item.getQuestionId());
-      if (answer == null) {
-        log.warn(
-            "[ApplicationRecord] 답변 저장 실패: answer null - recordId={}, formId={}, expectedTrack={}, questionId={}",
-            record.getId(),
-            formId,
-            expectedTrack,
-            item.getQuestionId());
-        throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-      }
-      answer.updateContent(item.getContent() == null ? "" : item.getContent());
-    }
-
-    log.debug(
-        "[ApplicationRecord] 답변 저장 완료 - recordId={}, formId={}, expectedTrack={}, itemsCount={}",
-        record.getId(),
-        formId,
-        expectedTrack,
-        items.size());
-  }
-
-  private void validateAnswerItems(
-      Long recordId, Track track, List<ApplicationAnswerSaveItem> items) {
-
-    Set<Long> seen = new HashSet<>();
-
-    for (ApplicationAnswerSaveItem item : items) {
-      Long qid = item.getQuestionId();
-
-      if (qid == null || qid <= 0 || !seen.add(qid)) {
-        log.warn(
-            "[ApplicationRecord] 답변 payload invalid - recordId={}, track={}, questionId={}",
-            recordId,
-            track,
-            qid);
-        throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-      }
-
-      String content = item.getContent();
-      if (content != null && content.length() > MAX_ANSWER_LENGTH) {
-        log.warn(
-            "[ApplicationRecord] 답변 길이 초과 - recordId={}, track={}, questionId={}, length={}",
-            recordId,
-            track,
-            qid,
-            content.length());
-        throw new CustomException(ApplicationRecordErrorCode.ANSWER_TOO_LONG);
-      }
-    }
-  }
-
-  private QuestionsBundle loadQuestions(Long formId, Track track) {
-    return new QuestionsBundle(
-        applicationQuestionRepository.findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
-            formId, Track.COMMON),
-        applicationQuestionRepository.findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
-            formId, track));
-  }
-
-  private Map<Long, ApplicationAnswer> loadAnswerMap(Long recordId) {
-    return applicationAnswerRepository.findAllWithQuestionByRecordId(recordId).stream()
-        .collect(Collectors.toMap(a -> a.getQuestion().getId(), Function.identity()));
-  }
-
-  private record QuestionsBundle(
-      List<ApplicationQuestion> commonQuestions, List<ApplicationQuestion> trackQuestions) {}
 }

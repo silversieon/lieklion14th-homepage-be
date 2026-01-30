@@ -47,7 +47,7 @@ public class ApplicationFormMapper {
     Long semester = applicationForm.getSemester().getSemester();
     return ApplicationFormSummaryResponse.builder()
         .semester(semester)
-        .title(semester + "기")
+        .title(semester + "기 아기사자 모집 지원서")
         .closeAt(applicationForm.getCloseAt())
         .build();
   }

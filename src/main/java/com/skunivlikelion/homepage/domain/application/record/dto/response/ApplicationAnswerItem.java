@@ -7,15 +7,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-@Schema(title = "ApplicationDraftSaveResponse: 지원서 임시 저장 응답 DTO")
-public class ApplicationDraftSaveResponse {
+public class ApplicationAnswerItem {
 
-  @Schema(description = "지원서 메타 정보")
-  private ApplicationRecordMeta meta;
+  @Schema(description = "질문 식별자", example = "10")
+  private Long questionId;
+
+  @Schema(description = "답변 내용 (답변 없으면 빈 문자열)", example = "안녕하세요. 저는 ...")
+  private String answer;
 }

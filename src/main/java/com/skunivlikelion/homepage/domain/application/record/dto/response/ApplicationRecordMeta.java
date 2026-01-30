@@ -27,6 +27,9 @@ public class ApplicationRecordMeta {
   @Schema(description = "모집 공고 식별자", example = "1")
   private Long applicationFormId;
 
+  @Schema(description = "기수", example = "13")
+  private Long semester;
+
   @Schema(description = "지원 트랙", example = "BACKEND")
   private Track track;
 

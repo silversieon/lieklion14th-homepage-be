@@ -132,12 +132,8 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
           found.updateContent(item.getContent());
         } else {
           toInsert.add(
-              ApplicationQuestion.builder()
-                  .applicationForm(form)
-                  .track(track)
-                  .orderNumber(item.getOrderNumber())
-                  .content(item.getContent())
-                  .build());
+              applicationQuestionMapper.toEntity(
+                  form, track, item.getOrderNumber(), item.getContent()));
         }
       }
     }
