@@ -14,7 +14,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(title = "ApplicationSummaryListResponse: 지원서(질문 생성된 공고) 목록")
+@Schema(title = "ApplicationSummaryListResponse: 지원서(질문 생성된 공고) 목록 DTO")
 public class ApplicationSummaryListResponse {
 
   @Schema(description = "진행중(마감 전) 지원서 목록")

@@ -54,4 +54,16 @@ public interface ApplicationAnswerRepository extends JpaRepository<ApplicationAn
               where a.applicationRecord.id = :recordId
           """)
   List<ApplicationAnswer> findAllWithQuestionByRecordId(@Param("recordId") Long recordId);
+
+  @Query(
+      """
+          select a
+          from ApplicationAnswer a
+          join fetch a.question q
+          where a.applicationRecord.id = :recordId
+            and q.track = :track
+          order by q.orderNumber asc
+          """)
+  List<ApplicationAnswer> findAllWithQuestionByRecordIdAndTrack(
+      @Param("recordId") Long recordId, @Param("track") Track track);
 }

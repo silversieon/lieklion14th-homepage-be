@@ -13,8 +13,8 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(title = "AdminApplicantUserInfo: 관리자 지원서 조회 사용자 정보 DTO")
-public class AdminApplicantUserInfo {
+@Schema(title = "ApplicantUserInfo: 관리자 지원서 조회 사용자 정보 DTO")
+public class ApplicantUserInfo {
 
   @Schema(description = "이름", example = "김나경")
   private String name;
@@ -32,5 +32,5 @@ public class AdminApplicantUserInfo {
   private String email;
 
   @Schema(description = "지원 트랙", example = "BACKEND")
-  private Track supportPart;
+  private Track track;
 }

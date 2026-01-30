@@ -121,7 +121,7 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
           .passed(applicationRecord.isInterviewPassed())
           .build();
     } else {
-      applicationRecord.markDocumentPassed();
+      applicationRecord.markInterviewPassed();
       User user =
           userRepository
               .findById(applicationRecord.getUser().getId())

@@ -3,8 +3,9 @@
  */
 package com.skunivlikelion.homepage.domain.application.record.controller;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,13 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicationDetailResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswersGetResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationDraftSaveResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationSubmitDateResponse;
-import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationSubmitResponse;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordMeta;
+import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordResponse;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,95 +37,99 @@ public interface ApplicationRecordController {
       summary = "[ 사용자 | 토큰 O | 지원서 최초 임시 저장 ]",
       description =
           """
-              **Parameters**  \n
-              semester: 지원할 기수 값  \n
-              request: track + answer  \n
+              **RequestBody**  \n
+              track + answer  \n
 
               **Returns**  \n
               임시 저장된 지원서 요약 정보
               """)
-  @PostMapping("/v1/applications/draft/{semester}")
-  ResponseEntity<BaseResponse<ApplicationDraftSaveResponse>> saveFirstDraft(
-      @PathVariable @Positive Long semester,
+  @PostMapping("/v1/applications/records/first-draft")
+  ResponseEntity<BaseResponse<ApplicationRecordMeta>> saveFirstDraft(
       @Valid @RequestBody ApplicationDraftSaveRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 O | 지원서 임시 저장 ]",
       description =
           """
-              **Parameters**  \n
-              applicationRecordId: 지원서 id  \n
-              request: track + answer  \n
+              **RequestBody**  \n
+              track + answer  \n
 
               **Returns**  \n
               임시 저장된 지원서 요약 정보
               """)
-  @PutMapping("/v1/applications/draft/{applicationRecordId}")
-  ResponseEntity<BaseResponse<ApplicationDraftSaveResponse>> saveDraft(
-      @PathVariable Long applicationRecordId,
+  @PutMapping("/v1/applications/records/draft")
+  ResponseEntity<BaseResponse<ApplicationRecordMeta>> saveDraft(
       @Valid @RequestBody ApplicationDraftSaveRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 O | 지원서 제출 ]",
       description =
           """
-              **Parameters**  \n
-              semester: 제출할 기수 값  \n
-              request: track + answer  \n
+              **RequestBody**  \n
+              track + answer  \n
 
               **Returns**  \n
               제출된 지원서 요약 정보
               """)
-  @PutMapping("/v1/applications/submit/{semester}")
-  ResponseEntity<BaseResponse<ApplicationSubmitResponse>> submit(
-      @PathVariable @Positive Long semester,
+  @PutMapping("/v1/applications/records/submit")
+  ResponseEntity<BaseResponse<ApplicationRecordMeta>> submit(
       @Valid @RequestBody ApplicationDraftSaveRequest request);
 
   @Operation(
-      summary = "[ 사용자 | 토큰 O | 본인 임시저장/제출 지원서 조회 ]",
+      summary = "[ 사용자 | 토큰 O | 내 인적사항 조회 ]",
       description =
           """
-              **Parameters**  \n
-              semester: 조회할 기수 값  \n
-
               **Returns**  \n
-              선택된 트랙 + (공통/트랙) 질문 오름차순 답변 목록
+              사용자 인적사항 + (임시저장된 지원서가 있으면 track, 없으면 null)
               """)
-  @GetMapping("/v1/applications/answers/{semester}")
-  ResponseEntity<BaseResponse<ApplicationAnswersGetResponse>> getMyApplicationAnswers(
-      @PathVariable @Positive Long semester);
+  @GetMapping("/v1/applications/records/personal-info")
+  ResponseEntity<BaseResponse<ApplicantUserInfo>> getMyDraftPersonalInfo();
 
   @Operation(
-      summary = "[ 사용자 | 토큰 O | 지원서 제출 일자 조회 ]",
+      summary = "[ 사용자 | 토큰 O | 내 임시 저장 지원서 트랙별 답변 조회 ]",
       description =
           """
-              **Parameters**  \n
-              semester: 조회할 기수 값  \n
+              **Query Parameters**  \n
+              track: 조회할 트랙  \n
 
               **Returns**  \n
-              해당 기수 지원서의 제출 여부 및 제출 일시
+              질문별 답변 목록 (questionId + answer)
               """)
-  @GetMapping("/v1/applications/submit/date/{semester}")
-  ResponseEntity<BaseResponse<ApplicationSubmitDateResponse>> getMySubmitDate(
-      @PathVariable @Positive Long semester);
+  @GetMapping("/v1/applications/records/draft/answers")
+  ResponseEntity<BaseResponse<List<ApplicationAnswerItem>>> getMyDraftAnswersByTrack(
+      @RequestParam Track track);
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 기수별, 트랙별, 검색어 지원자 목록 조회 ]",
+      summary = "[ 사용자 | 토큰 O | 내 제출 지원서 조회 ]",
       description =
           """
-              **Query Parameters(선택)**  \n
+              **Returns**  \n
+              선택된 트랙 + 공통 질문/답변 목록 + 트랙 질문/답변 목록
+              """)
+  @GetMapping("/v1/applications/records/submit")
+  ResponseEntity<BaseResponse<ApplicationRecordResponse>> getMySubmittedApplicationAnswers();
+
+  @Operation(
+      summary = "[ 관리자 | 토큰 O | 기수별, 트랙별, 검색어 지원자 목록 무한스크롤 조회 ]",
+      description =
+          """
+              **Query Parameters (선택)**  \n
               semester: 기수 값  \n
               track: 지원 트랙  \n
               search: 검색어  \n
+              lastCursor: 마지막으로 받은 applicationRecordId \n
+              size: 한 번에 가져올 개수 (default 10) \n
 
               **Returns**  \n
-              제출된 지원서 목록
+              제출된 지원서 목록 (무한스크롤)
               """)
-  @GetMapping("/v1/admin/applications")
-  ResponseEntity<BaseResponse<AdminApplicantListResponse>> getApplicants(
+  @GetMapping("/v1/admin/applications/records")
+  ResponseEntity<BaseResponse<InfiniteResponse<AdminApplicantListItem>>> getApplicants(
       @RequestParam(required = false) Long semester,
       @RequestParam(required = false) Track track,
-      @RequestParam(required = false) String search);
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) Long lastCursor,
+      @RequestParam(defaultValue = "10") Integer size);
 
   @Operation(
       summary = "[ 관리자 | 토큰 O | 특정 지원자의 지원서 조회 ]",
@@ -136,7 +141,7 @@ public interface ApplicationRecordController {
               **Returns**  \n
               사용자 정보 + 공통/트랙 질문/답변
               """)
-  @GetMapping("/v1/admin/applications/{applicationRecordId}")
-  ResponseEntity<BaseResponse<AdminApplicationDetailResponse>> getApplicationDetail(
+  @GetMapping("/v1/admin/applications/records/{applicationRecordId}")
+  ResponseEntity<BaseResponse<ApplicationRecordResponse>> getApplicationDetail(
       @PathVariable Long applicationRecordId);
 }
