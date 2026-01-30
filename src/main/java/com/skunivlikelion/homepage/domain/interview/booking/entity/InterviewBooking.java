@@ -3,7 +3,12 @@
  */
 package com.skunivlikelion.homepage.domain.interview.booking.entity;
 
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -13,8 +18,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSchedule;
-import com.skunivlikelion.homepage.domain.user.entity.User;
 
 import backend.boilerplate.common.BaseTimeEntity;
 import lombok.AllArgsConstructor;
@@ -27,18 +32,70 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"schedule_id"})})
+@Table(
+    name = "interview_booking",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_interview_booking_schedule",
+          columnNames = {"interview_schedule_id"}),
+      @UniqueConstraint(
+          name = "uk_interview_booking_semester_applicant",
+          columnNames = {"semester_id", "applicant_key"})
+    })
 public class InterviewBooking extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "schedule_id", nullable = false)
-  private InterviewSchedule schedule;
+  @Column(name = "booked_at", nullable = false)
+  private LocalDateTime bookedAt;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  @JoinColumn(name = "interview_schedule_id", nullable = false)
+  private InterviewSchedule interviewSchedule;
+
+  @Column(name = "user_id")
+  private Long userId;
+
+  // Snapshot - 사용자 삭제 이후에도 관리자 조회 가능하도록 유지
+  @Column(name = "user_name", nullable = false)
+  private String userName;
+
+  @Column(name = "user_department", nullable = false)
+  private String userDepartment;
+
+  @Column(name = "user_student_number", nullable = false)
+  private String userStudentNumber;
+
+  @Column(name = "user_phone_number", nullable = false)
+  private String userPhoneNumber;
+
+  @Column(name = "user_email_masked", nullable = false)
+  private String userEmailMasked;
+
+  @Column(name = "semester_id", nullable = false)
+  private Long semesterId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "track", nullable = false)
+  private Track track;
+
+  @Column(name = "applicant_key", nullable = false, length = 64)
+  private String applicantKey;
+
+  @Column(name = "application_record_id", nullable = false)
+  private Long applicationRecordId;
+
+  public void changeSchedule(InterviewSchedule newSchedule) {
+    this.interviewSchedule = newSchedule;
+  }
+
+  public void changeTrack(Track track) {
+    this.track = track;
+  }
+
+  public void changeSemesterId(Long semesterId) {
+    this.semesterId = semesterId;
+  }
 }

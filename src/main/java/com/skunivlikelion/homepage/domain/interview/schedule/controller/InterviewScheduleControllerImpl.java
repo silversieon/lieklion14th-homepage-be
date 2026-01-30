@@ -4,7 +4,6 @@
 package com.skunivlikelion.homepage.domain.interview.schedule.controller;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -19,6 +18,7 @@ import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.UserInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.service.InterviewScheduleService;
 
 import backend.boilerplate.response.BaseResponse;
@@ -54,10 +54,10 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
   }
 
   @Override
-  public ResponseEntity<BaseResponse<List<InterviewScheduleResponse>>> getUserInterviewSchedules(
+  public ResponseEntity<BaseResponse<UserInterviewScheduleResponse>> getUserInterviewSchedules(
       Long semester, LocalDate dateFrom, LocalDate dateTo) {
 
-    List<InterviewScheduleResponse> result =
+    UserInterviewScheduleResponse result =
         interviewScheduleService.getUserInterviewSchedules(semester, dateFrom, dateTo);
 
     return ResponseEntity.ok(BaseResponse.success(200, "면접 일정 조회에 성공했습니다.", result));

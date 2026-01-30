@@ -4,12 +4,12 @@
 package com.skunivlikelion.homepage.domain.interview.schedule.service;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.InterviewScheduleCreateRequest;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
+import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.UserInterviewScheduleResponse;
 
 public interface InterviewScheduleService {
 
@@ -49,9 +49,9 @@ public interface InterviewScheduleService {
    * @param semester 기수 (Optional)
    * @param dateFrom 조회 시작 날짜 (Optional, yyyy-MM-dd)
    * @param dateTo 조회 종료 날짜 (Optional, yyyy-MM-dd)
-   * @return 조회된 면접 일정 목록 (정렬: date ASC, startTime ASC / 예약 상태 포함)
+   * @return 날짜 → 시간 기준으로 그룹화된 면접 일정 응답
    */
-  List<InterviewScheduleResponse> getUserInterviewSchedules(
+  UserInterviewScheduleResponse getUserInterviewSchedules(
       Long semester, LocalDate dateFrom, LocalDate dateTo);
 
   /**

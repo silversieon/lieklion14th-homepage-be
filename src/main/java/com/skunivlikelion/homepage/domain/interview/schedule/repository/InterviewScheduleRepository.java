@@ -6,8 +6,12 @@ package com.skunivlikelion.homepage.domain.interview.schedule.repository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
+
+import jakarta.persistence.LockModeType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -64,4 +68,9 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
       @Param("track") Track track,
       @Param("dateFrom") LocalDate dateFrom,
       @Param("dateTo") LocalDate dateTo);
+
+  // 예약 동시성 대비(선착순): 동일 슬롯 예약 충돌 방지용 row lock
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select s from InterviewSchedule s where s.id = :scheduleId")
+  Optional<InterviewSchedule> findByIdForUpdate(@Param("scheduleId") Long scheduleId);
 }

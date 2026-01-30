@@ -1,0 +1,420 @@
+/* 
+ * Copyright (c) SKU LIKELION 
+ */
+package com.skunivlikelion.homepage.domain.interview.booking.service;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
+import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
+import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
+import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.entity.InterviewBooking;
+import com.skunivlikelion.homepage.domain.interview.booking.exception.InterviewBookingErrorCode;
+import com.skunivlikelion.homepage.domain.interview.booking.mapper.InterviewBookingMapper;
+import com.skunivlikelion.homepage.domain.interview.booking.repository.AdminInterviewBookingView;
+import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
+import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSchedule;
+import com.skunivlikelion.homepage.domain.interview.schedule.repository.InterviewScheduleRepository;
+import com.skunivlikelion.homepage.domain.user.entity.User;
+import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
+
+import backend.boilerplate.exception.CustomException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class InterviewBookingServiceImpl implements InterviewBookingService {
+
+  private final InterviewBookingRepository interviewBookingRepository;
+  private final InterviewScheduleRepository interviewScheduleRepository;
+  private final ApplicationRecordRepository applicationRecordRepository;
+  private final CurrentUserProvider currentUserProvider;
+  private final InterviewBookingMapper interviewBookingMapper;
+  private final ApplicationFormService applicationFormService;
+
+  @Override
+  public InterviewBookingResponse createBooking(InterviewBookingCreateRequest request) {
+
+    User user = currentUserProvider.getCurrentUser();
+    Long userId = user.getId();
+    Long scheduleId = request.getScheduleId();
+
+    String email = user.getEmail();
+    String applicantKey = sha256Hex(email.toLowerCase());
+    String maskedEmail = maskEmail(email);
+
+    log.info("[InterviewBooking] 예약 요청 - userId={}, scheduleId={}", userId, scheduleId);
+
+    InterviewSchedule schedule =
+        interviewScheduleRepository
+            .findByIdForUpdate(scheduleId)
+            .orElseThrow(() -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_SCHEDULE));
+
+    ApplicationRecord record =
+        applicationRecordRepository
+            .findSubmittedBySemesterAndUserId(schedule.getSemester(), userId)
+            .orElseThrow(
+                () -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_APPLICATION_RECORD));
+
+    if (!record.isDocumentPassed()) {
+      log.warn(
+          "[InterviewBooking] 예약 실패 - 서류 미합격 - userId={}, recordId={}", userId, record.getId());
+      throw new CustomException(InterviewBookingErrorCode.NOT_PASSED_DOCUMENT);
+    }
+
+    if (record.getTrack() != schedule.getTrack()) {
+      log.warn(
+          "[InterviewBooking] 예약 실패 - 트랙 불일치 - userId={}, recordTrack={}, scheduleTrack={}",
+          userId,
+          record.getTrack(),
+          schedule.getTrack());
+      throw new CustomException(InterviewBookingErrorCode.TRACK_MISMATCH);
+    }
+
+    if (interviewBookingRepository.existsBySemesterIdAndApplicantKey(
+        schedule.getSemester(), applicantKey)) {
+      throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_USER);
+    }
+
+    if (interviewBookingRepository.existsByInterviewSchedule_Id(scheduleId)) {
+      throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_SCHEDULE);
+    }
+
+    try {
+      InterviewBooking saved =
+          interviewBookingRepository.save(
+              InterviewBooking.builder()
+                  .bookedAt(LocalDateTime.now())
+                  .interviewSchedule(schedule)
+                  .userId(userId)
+
+                  // Snapshot
+                  .userName(user.getName())
+                  .userDepartment(user.getDepartment())
+                  .userStudentNumber(user.getStudentNumber())
+                  .userPhoneNumber(user.getPhoneNumber())
+                  .userEmailMasked(maskedEmail)
+
+                  // 정책/검색
+                  .semesterId(schedule.getSemester())
+                  .track(schedule.getTrack())
+                  .applicantKey(applicantKey)
+                  .applicationRecordId(record.getId())
+                  .build());
+
+      log.info("[InterviewBooking] 예약 완료 - bookingId={}", saved.getId());
+      return interviewBookingMapper.toResponse(saved);
+
+    } catch (DataIntegrityViolationException e) {
+      throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_SCHEDULE);
+    }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public AdminInterviewBookingResponse getAdminBookings(
+      Long semester, Track track, LocalDate dateFrom, LocalDate dateTo, String search) {
+
+    String normalized = (search == null || search.isBlank()) ? null : search.trim().toLowerCase();
+
+    List<AdminInterviewBookingView> rows =
+        interviewBookingRepository.findAdminBookings(semester, track, dateFrom, dateTo, normalized);
+
+    if (rows.isEmpty()) {
+      return new AdminInterviewBookingResponse(semester.intValue(), List.of());
+    }
+
+    Map<Track, Map<LocalDate, List<AdminInterviewBookingView>>> grouped =
+        rows.stream()
+            .collect(
+                Collectors.groupingBy(
+                    AdminInterviewBookingView::getTrack,
+                    Collectors.groupingBy(AdminInterviewBookingView::getDate)));
+
+    List<AdminInterviewBookingResponse.TrackGroup> trackGroups =
+        grouped.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                trackEntry -> {
+                  Track t = trackEntry.getKey();
+
+                  List<AdminInterviewBookingResponse.DateGroup> dateGroups =
+                      trackEntry.getValue().entrySet().stream()
+                          .sorted(Map.Entry.comparingByKey())
+                          .map(
+                              dateEntry -> {
+                                LocalDate date = dateEntry.getKey();
+
+                                List<AdminInterviewBookingResponse.TimeSlot> times =
+                                    dateEntry.getValue().stream()
+                                        .sorted(
+                                            Comparator.comparing(
+                                                AdminInterviewBookingView::getStartTime))
+                                        .map(
+                                            v ->
+                                                new AdminInterviewBookingResponse.TimeSlot(
+                                                    v.getScheduleId(),
+                                                    v.getStartTime(),
+                                                    v.getEndTime(),
+                                                    true,
+                                                    new AdminInterviewBookingResponse.BookingInfo(
+                                                        v.getBookingId(),
+                                                        v.getName(),
+                                                        v.getDepartment(),
+                                                        v.getStudentNumber(),
+                                                        v.getPhoneNumber(),
+                                                        v.getApplicationRecordId())))
+                                        .toList();
+
+                                return new AdminInterviewBookingResponse.DateGroup(date, times);
+                              })
+                          .toList();
+
+                  return new AdminInterviewBookingResponse.TrackGroup(t.name(), dateGroups);
+                })
+            .toList();
+
+    return new AdminInterviewBookingResponse(semester.intValue(), trackGroups);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public UserInterviewBookingResponse getMyBooking(Long semester) {
+
+    User user = currentUserProvider.getCurrentUser();
+
+    // applicantKey: 이메일 기반 해시
+    String applicantKey = sha256Hex(user.getEmail().toLowerCase());
+
+    Long resolvedSemester;
+    if (semester != null) {
+      resolvedSemester = semester;
+      log.info(
+          "[InterviewBooking] 사용자 예약 조회 - semester 직접 지정 - userId={}, semester={}",
+          user.getId(),
+          resolvedSemester);
+    } else {
+      resolvedSemester = applicationFormService.getCurrentApplicationSemester();
+      log.info(
+          "[InterviewBooking] 사용자 예약 조회 - 현재 공고 semester 자동 적용 - userId={}, semester={}",
+          user.getId(),
+          resolvedSemester);
+    }
+
+    InterviewBooking booking =
+        interviewBookingRepository
+            .findBySemesterIdAndApplicantKey(resolvedSemester, applicantKey)
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[InterviewBooking] 예약 조회 실패 - 예약 없음 - userId={}, semester={}",
+                      user.getId(),
+                      resolvedSemester);
+                  return new CustomException(InterviewBookingErrorCode.NOT_FOUND_BOOKING);
+                });
+
+    InterviewSchedule s = booking.getInterviewSchedule();
+
+    log.info(
+        "[InterviewBooking] 예약 조회 성공 - userId={}, bookingId={}, scheduleId={}",
+        user.getId(),
+        booking.getId(),
+        s.getId());
+
+    return new UserInterviewBookingResponse(
+        resolvedSemester.intValue(),
+        new UserInterviewBookingResponse.Booking(
+            booking.getId(),
+            booking.getTrack(),
+            s.getId(),
+            s.getDate(),
+            s.getStartTime(),
+            s.getEndTime()));
+  }
+
+  @Override
+  @Transactional
+  public UserInterviewBookingResponse updateMyBooking(Long semester, Long newScheduleId) {
+
+    User user = currentUserProvider.getCurrentUser();
+    Long userId = user.getId();
+
+    String applicantKey = sha256Hex(user.getEmail().toLowerCase());
+
+    Long resolvedSemester =
+        (semester != null) ? semester : applicationFormService.getCurrentApplicationSemester();
+
+    log.info(
+        "[InterviewBooking] 예약 변경 요청 - userId={}, semester={}, newScheduleId={}",
+        userId,
+        resolvedSemester,
+        newScheduleId);
+
+    InterviewBooking booking =
+        interviewBookingRepository
+            .findBySemesterIdAndApplicantKeyForUpdate(resolvedSemester, applicantKey)
+            .orElseThrow(
+                () -> {
+                  log.warn(
+                      "[InterviewBooking] 변경 실패 - 기존 예약 없음 - userId={}, semester={}",
+                      userId,
+                      resolvedSemester);
+                  return new CustomException(InterviewBookingErrorCode.NOT_FOUND_BOOKING);
+                });
+
+    Long currentScheduleId = booking.getInterviewSchedule().getId();
+
+    if (currentScheduleId.equals(newScheduleId)) {
+      log.warn(
+          "[InterviewBooking] 변경 실패 - 동일 슬롯 - userId={}, scheduleId={}", userId, newScheduleId);
+      throw new CustomException(InterviewBookingErrorCode.SAME_SCHEDULE);
+    }
+
+    InterviewSchedule newSchedule =
+        interviewScheduleRepository
+            .findByIdForUpdate(newScheduleId)
+            .orElseThrow(
+                () -> {
+                  log.warn("[InterviewBooking] 변경 실패 - 일정 없음 - newScheduleId={}", newScheduleId);
+                  return new CustomException(InterviewBookingErrorCode.NOT_FOUND_SCHEDULE);
+                });
+
+    if (interviewBookingRepository.existsByInterviewSchedule_Id(newScheduleId)) {
+      log.warn("[InterviewBooking] 변경 실패 - 슬롯 중복 예약 - newScheduleId={}", newScheduleId);
+      throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_SCHEDULE);
+    }
+
+    ApplicationRecord record =
+        applicationRecordRepository
+            .findSubmittedBySemesterAndUserId(resolvedSemester, userId)
+            .orElseThrow(
+                () -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_APPLICATION_RECORD));
+
+    if (!record.isDocumentPassed()) {
+      log.warn(
+          "[InterviewBooking] 변경 실패 - 서류 미합격 - userId={}, recordId={}", userId, record.getId());
+      throw new CustomException(InterviewBookingErrorCode.NOT_PASSED_DOCUMENT);
+    }
+
+    if (record.getTrack() != newSchedule.getTrack()) {
+      log.warn(
+          "[InterviewBooking] 변경 실패 - 트랙 불일치 - userId={}, recordTrack={}, scheduleTrack={}",
+          userId,
+          record.getTrack(),
+          newSchedule.getTrack());
+      throw new CustomException(InterviewBookingErrorCode.TRACK_MISMATCH);
+    }
+
+    booking.changeSchedule(newSchedule);
+    booking.changeTrack(newSchedule.getTrack());
+    booking.changeSemesterId(resolvedSemester);
+
+    log.info(
+        "[InterviewBooking] 변경 완료 - userId={}, bookingId={}, {} -> {}",
+        userId,
+        booking.getId(),
+        currentScheduleId,
+        newScheduleId);
+
+    InterviewSchedule s = booking.getInterviewSchedule();
+
+    return new UserInterviewBookingResponse(
+        resolvedSemester.intValue(),
+        new UserInterviewBookingResponse.Booking(
+            booking.getId(),
+            booking.getTrack(),
+            s.getId(),
+            s.getDate(),
+            s.getStartTime(),
+            s.getEndTime()));
+  }
+
+  @Override
+  public void deleteAdminBooking(Long bookingId) {
+
+    log.info("[InterviewBooking] 관리자 예약 삭제 요청 - bookingId={}", bookingId);
+
+    InterviewBooking booking =
+        interviewBookingRepository
+            .findByIdForUpdate(bookingId)
+            .orElseThrow(
+                () -> {
+                  log.warn("[InterviewBooking] 관리자 예약 삭제 실패 - 예약 없음 - bookingId={}", bookingId);
+                  return new CustomException(InterviewBookingErrorCode.BOOKING_NOT_FOUND);
+                });
+
+    InterviewSchedule schedule = booking.getInterviewSchedule();
+
+    LocalDateTime startAt = LocalDateTime.of(schedule.getDate(), schedule.getStartTime());
+    LocalDateTime now = LocalDateTime.now();
+
+    if (!now.isBefore(startAt)) {
+      log.warn(
+          "[InterviewBooking] 관리자 예약 삭제 실패 - 이미 시작된 일정 - bookingId={}, scheduleId={}, startAt={}, now={}",
+          bookingId,
+          schedule.getId(),
+          startAt,
+          now);
+      throw new CustomException(InterviewBookingErrorCode.PAST_SCHEDULE);
+    }
+
+    interviewBookingRepository.delete(booking);
+
+    log.info(
+        "[InterviewBooking] 관리자 예약 삭제 완료 - bookingId={}, scheduleId={}, userId={}",
+        bookingId,
+        schedule.getId(),
+        booking.getUserId());
+  }
+
+  // util
+
+  private static String maskEmail(String email) {
+    if (email == null || !email.contains("@")) {
+      return "****";
+    }
+    String[] parts = email.split("@", 2);
+    String local = parts[0];
+    String domain = parts[1];
+
+    if (local.length() <= 2) {
+      return local.charAt(0) + "*@" + domain;
+    }
+    String head = local.substring(0, 2);
+    String tail = local.substring(Math.max(2, local.length() - 2));
+    return head + "****" + tail + "@" + domain;
+  }
+
+  private static String sha256Hex(String input) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+      StringBuilder sb = new StringBuilder();
+      for (byte b : hash) {
+        sb.append(String.format("%02x", b));
+      }
+      return sb.toString();
+    } catch (Exception e) {
+      throw new IllegalStateException("SHA-256 hashing failed", e);
+    }
+  }
+}
