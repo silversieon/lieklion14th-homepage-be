@@ -11,7 +11,7 @@ import com.skunivlikelion.homepage.global.page.response.PageResponse;
 @Component
 public class PageMapper {
 
-  private <T> PageResponse<T> toPageResponse(Page<T> page) {
+  public <T> PageResponse<T> toPageResponse(Page<T> page) {
     return PageResponse.<T>builder()
         .content(page.getContent())
         .totalElements(page.getTotalElements())
