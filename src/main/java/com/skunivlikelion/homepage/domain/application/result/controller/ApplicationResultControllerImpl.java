@@ -16,7 +16,7 @@ import com.skunivlikelion.homepage.domain.application.result.dto.request.AdminAp
 import com.skunivlikelion.homepage.domain.application.result.dto.request.AdminDocumentResultUpdateRequest;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminApplicationResultConfirmResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
-import com.skunivlikelion.homepage.domain.application.result.dto.response.MyDocumentResultResponse;
+import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 import com.skunivlikelion.homepage.domain.application.result.service.ApplicationResultService;
 
 import backend.boilerplate.response.BaseResponse;
@@ -59,11 +59,12 @@ public class ApplicationResultControllerImpl implements ApplicationResultControl
   }
 
   @Override
-  public ResponseEntity<BaseResponse<MyDocumentResultResponse>> getMyDocumentResult() {
-
-    MyDocumentResultResponse response = applicationResultService.getMyDocumentResult();
-
+  public ResponseEntity<BaseResponse<MyInterviewResultResponse>> getMyInterviewResult() {
     return ResponseEntity.status(200)
-        .body(BaseResponse.success(200, "본인 서류 합격 여부 조회에 성공했습니다.", response));
+        .body(
+            BaseResponse.success(
+                200,
+                "면접 합격 결과 조회에 성공했습니다.",
+                applicationResultService.getCurrentUserInterviewResult()));
   }
 }

@@ -10,6 +10,7 @@ import com.skunivlikelion.homepage.domain.interview.booking.dto.request.Intervie
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
+import com.skunivlikelion.homepage.domain.user.entity.User;
 
 public interface InterviewBookingService {
 
@@ -57,4 +58,13 @@ public interface InterviewBookingService {
    * @param bookingId 삭제할 면접 예약 ID
    */
   void deleteAdminBooking(Long bookingId);
+
+  /**
+   * [ 면접 예약이 존재하는지 여부 확인 메서드 ]
+   *
+   * @param user 면접 예약 여부를 확인할 사용자
+   * @param semester 확인할 면접의 기수
+   * @return 면접 예약 여부
+   */
+  boolean existInterviewBookingByUserAndSemester(User user, Long semester);
 }

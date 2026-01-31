@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
@@ -16,7 +17,7 @@ import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationR
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminApplicationResultConfirmResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
-import com.skunivlikelion.homepage.domain.application.result.dto.response.MyDocumentResultResponse;
+import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 import com.skunivlikelion.homepage.domain.application.result.exception.ApplicationResultErrorCode;
 import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
 import com.skunivlikelion.homepage.domain.user.entity.User;
@@ -155,34 +156,26 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
 
   @Override
   @Transactional(readOnly = true)
-  public MyDocumentResultResponse getMyDocumentResult() {
+  public MyInterviewResultResponse getCurrentUserInterviewResult() {
 
-    User user = currentUserProvider.getCurrentUser();
-    Long userId = user.getId();
+    User currentUser = currentUserProvider.getCurrentUser();
 
-    Long currentFormId = applicationFormService.getCurrentApplicationFormId();
-
-    ApplicationRecord record =
+    ApplicationFormResponse currentApplicationForm =
+        applicationFormService.getCurrentApplicationFormResponse();
+    Long currentSemester = currentApplicationForm.getSemester();
+    ApplicationRecord applicationRecord =
         applicationRecordRepository
-            .findLatestByFormIdAndUserId(currentFormId, userId)
+            .findLatestByFormIdAndUserId(currentApplicationForm.getId(), currentUser.getId())
             .orElseThrow(() -> new CustomException(ApplicationResultErrorCode.NOT_FOUND_RECORD));
 
-    if (!record.isSubmitted()) {
-      log.warn(
-          "[ApplicationResult] 진행중 공고 지원서 결과 조회 실패: 미제출 - userId={}, formId={}, recordId={}",
-          userId,
-          currentFormId,
-          record.getId());
+    if (!applicationRecord.isSubmitted())
       throw new CustomException(ApplicationResultErrorCode.ONLY_SUBMITTED_RECORD_ALLOWED);
-    }
 
-    log.info(
-        "[ApplicationResult] 진행중 공고 지원서 서류 합격 여부 조회 - userId={}, formId={}, recordId={}, isDocumentPassed={}",
-        userId,
-        currentFormId,
-        record.getId(),
-        record.isDocumentPassed());
-
-    return MyDocumentResultResponse.builder().isDocumentPassed(record.isDocumentPassed()).build();
+    return MyInterviewResultResponse.builder()
+        .documentPassed(applicationRecord.isDocumentPassed())
+        .interviewPassed(applicationRecord.isInterviewPassed())
+        .track(applicationRecord.getTrack())
+        .semester(currentSemester)
+        .build();
   }
 }

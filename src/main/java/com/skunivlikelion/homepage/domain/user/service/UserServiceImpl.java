@@ -4,7 +4,9 @@
 package com.skunivlikelion.homepage.domain.user.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,11 +17,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
+import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
+import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
+import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
+import com.skunivlikelion.homepage.domain.interview.booking.service.InterviewBookingService;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
 import com.skunivlikelion.homepage.domain.user.dto.request.*;
@@ -59,6 +67,10 @@ public class UserServiceImpl implements UserService {
   private final PasswordEncoder passwordEncoder;
   private final S3Service s3Service;
   private final InfiniteMapper infiniteMapper;
+  private final ApplicationFormService applicationFormService;
+  private final ApplicationRecordRepository applicationRecordRepository;
+  private final InterviewBookingService interviewBookingService;
+  private final InterviewBookingRepository interviewBookingRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -76,20 +88,46 @@ public class UserServiceImpl implements UserService {
   @Transactional(readOnly = true)
   public MyPageResponse getCurrentUserPage() {
     User currentUser = currentUserProvider.getCurrentUser();
+
+    ApplicationFormResponse currentApplicationForm =
+        applicationFormService.getCurrentApplicationFormResponse();
+    Optional<ApplicationRecord> applicationRecord =
+        applicationRecordRepository.findLatestByFormIdAndUserId(
+            currentApplicationForm.getId(), currentUser.getId());
+    boolean documentSubmitted = false;
+    if (applicationRecord.isPresent()) documentSubmitted = applicationRecord.get().isSubmitted();
+
+    LocalDateTime now = LocalDateTime.now();
+    boolean interviewScheduleChangable;
+    if (currentApplicationForm.getApplicationResultAt().isAfter(now)
+        || currentApplicationForm.getInterviewScheduleConfirmedAt().isBefore(now)) {
+      interviewScheduleChangable = false;
+    } else {
+      interviewScheduleChangable = true;
+    }
+
+    Long currentSemester = currentApplicationForm.getSemester();
+    boolean interviewScheduleSubmitted =
+        interviewBookingService.existInterviewBookingByUserAndSemester(
+            currentUser, currentSemester);
     log.info(
         "[User] 내 정보 조회 발생 - 사용자 식별자: {}, 이름: {}, 이메일: {}",
         currentUser.getId(),
         currentUser.getName(),
         currentUser.getEmail());
-    return userMapper.toMyPageResponse(currentUser);
+    return userMapper.toMyPageResponse(
+        currentUser, documentSubmitted, interviewScheduleChangable, interviewScheduleSubmitted);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public List<ClubMemberPageResponse> getClubMemberList(Long semester) {
+  public ClubMemberCursorResponse<List<ClubMemberPageResponse>> getClubMemberList(
+      Long semester, Position nextPositionCursor, Track nextTrackCursor) {
+    if (nextPositionCursor == null || !(nextPositionCursor instanceof Position)) {
+      throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+    }
     Long safeSemester = semesterService.getSemester(semester).getSemester();
 
-    LocalDateTime now = LocalDateTime.now();
     ApplicationForm applicationForm =
         applicationFormRepository
             .findBySemester_Semester(safeSemester)
@@ -98,25 +136,112 @@ public class UserServiceImpl implements UserService {
                   log.info("[User] 해당 기수의 지원 공고 없음, 지원 공고 필요 - semester: {}", safeSemester);
                   return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
                 });
+
+    LocalDateTime now = LocalDateTime.now();
     boolean canExposeBabyLion = now.isAfter(applicationForm.getFinalResultAt().plusDays(3));
 
-    List<Position> positionsToFetch =
-        canExposeBabyLion
-            ? List.of(Position.LEAD, Position.COLEAD, Position.COREMEMBER, Position.BABYLION)
-            : List.of(Position.LEAD, Position.COLEAD, Position.COREMEMBER);
+    List<Track> tracksToFetchAvailable = Track.getCurrentSemesterTracks(safeSemester);
 
-    List<Track> tracksToFetch = Track.getCurrentSemesterTracks(safeSemester);
+    List<Position> positionsToFetch;
+    List<Track> tracksToFetch = new ArrayList<>();
+    List<ClubMemberPageResponse> clubMemberPageResponses = new ArrayList<>();
 
-    List<ClubMember> clubMembers =
-        clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
-            safeSemester, positionsToFetch, tracksToFetch);
+    Position newPositionCursor = null;
+    Track newTrackCursor = null;
+    boolean hasNext = false;
+    if (nextPositionCursor == Position.LEAD || nextPositionCursor == Position.COLEAD) {
+      positionsToFetch = List.of(Position.LEAD, Position.COLEAD);
+      tracksToFetch.addAll(tracksToFetchAvailable);
 
-    if (clubMembers.isEmpty()) {
+      List<ClubMember> clubMembers =
+          clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
+              safeSemester, positionsToFetch, tracksToFetch);
+      clubMemberPageResponses.addAll(
+          clubMemberMapper.toClubMemberPageResponses(clubMembers, positionsToFetch, tracksToFetch));
+      newPositionCursor = Position.COREMEMBER;
+      newTrackCursor = tracksToFetchAvailable.getFirst();
+      hasNext = true;
+    } else if (nextPositionCursor == Position.COREMEMBER) {
+      positionsToFetch = List.of(Position.LEAD, Position.COLEAD);
+      tracksToFetch.addAll(tracksToFetchAvailable);
+
+      List<ClubMember> clubMembers;
+      clubMembers =
+          clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
+              safeSemester, positionsToFetch, tracksToFetch);
+      clubMemberPageResponses.addAll(
+          clubMemberMapper.toClubMemberPageResponses(clubMembers, positionsToFetch, tracksToFetch));
+
+      tracksToFetch.clear();
+      clubMembers.clear();
+
+      positionsToFetch = List.of(Position.COREMEMBER);
+      for (int i = 0; i < tracksToFetchAvailable.size(); i++) {
+        Track track = tracksToFetchAvailable.get(i);
+        tracksToFetch.add(track);
+        if (track == nextTrackCursor) {
+          if (i == tracksToFetchAvailable.size() - 1) {
+            if (canExposeBabyLion) {
+              newPositionCursor = Position.BABYLION;
+              newTrackCursor = tracksToFetchAvailable.getFirst();
+              hasNext = true;
+            }
+          } else {
+            newPositionCursor = Position.COREMEMBER;
+            newTrackCursor = tracksToFetchAvailable.get(++i);
+            hasNext = true;
+          }
+          break;
+        }
+      }
+      clubMembers =
+          clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
+              safeSemester, positionsToFetch, tracksToFetch);
+      clubMemberPageResponses.addAll(
+          clubMemberMapper.toClubMemberPageResponses(clubMembers, positionsToFetch, tracksToFetch));
+    } else {
+      if (!canExposeBabyLion) throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+
+      positionsToFetch = List.of(Position.LEAD, Position.COLEAD, Position.COREMEMBER);
+      tracksToFetch.addAll(tracksToFetchAvailable);
+
+      List<ClubMember> clubMembers;
+      clubMembers =
+          clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
+              safeSemester, positionsToFetch, tracksToFetch);
+      clubMemberPageResponses.addAll(
+          clubMemberMapper.toClubMemberPageResponses(clubMembers, positionsToFetch, tracksToFetch));
+
+      tracksToFetch.clear();
+      clubMembers.clear();
+
+      positionsToFetch = List.of(Position.BABYLION);
+      for (int i = 0; i < tracksToFetchAvailable.size(); i++) {
+        Track track = tracksToFetchAvailable.get(i);
+        tracksToFetch.add(track);
+        if (track == nextTrackCursor) {
+          if (i != tracksToFetchAvailable.size() - 1) {
+            newPositionCursor = Position.BABYLION;
+            newTrackCursor = tracksToFetchAvailable.get(++i);
+            hasNext = true;
+            break;
+          }
+        }
+      }
+      clubMembers =
+          clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
+              safeSemester, positionsToFetch, tracksToFetch);
+      clubMemberPageResponses.addAll(
+          clubMemberMapper.toClubMemberPageResponses(clubMembers, positionsToFetch, tracksToFetch));
+    }
+
+    if (clubMemberPageResponses.isEmpty()) {
       log.info("[User] 해당 기수의 구성원을 찾을 수 없음 - semester: {}", safeSemester);
       throw new CustomException(UserErrorCode.USER_NOT_FOUND);
     }
     log.info("[User] 기수별 구성원 화면 조회 발생");
-    return clubMemberMapper.toClubMemberPageResponses(positionsToFetch, tracksToFetch, clubMembers);
+    return clubMemberMapper.toClubMemberCursorResponse(
+        clubMemberPageResponses, newPositionCursor, newTrackCursor, hasNext);
   }
 
   @Override
@@ -251,22 +376,45 @@ public class UserServiceImpl implements UserService {
   @Override
   @Transactional
   public MyPageResponse updateProfileImage(MultipartFile profileImage) {
-    Long userId = currentUserProvider.getCurrentUser().getId();
-    User user =
+    Long currentUserId = currentUserProvider.getCurrentUserId();
+    User currentUser =
         userRepository
-            .findById(userId)
+            .findById(currentUserId)
             .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
-    String currentImageUrl = user.getProfileImageUrl();
 
+    String currentImageUrl = currentUser.getProfileImageUrl();
     String uploadImageUrl = s3Service.uploadFile(PathName.PROFILE, profileImage);
-    user.updateProfileImage(uploadImageUrl);
+    currentUser.updateProfileImage(uploadImageUrl);
 
     if (currentImageUrl != null) {
       s3Service.deleteFile(s3Service.extractKeyNameFromUrl(currentImageUrl));
     }
 
-    log.info("[User] 프로필 이미지 업로드 성공 - userId: {}", user.getId());
-    return userMapper.toMyPageResponse(user);
+    ApplicationFormResponse currentApplicationForm =
+        applicationFormService.getCurrentApplicationFormResponse();
+    Optional<ApplicationRecord> applicationRecord =
+        applicationRecordRepository.findLatestByFormIdAndUserId(
+            currentApplicationForm.getId(), currentUser.getId());
+    boolean documentSubmitted = false;
+    if (applicationRecord.isPresent()) documentSubmitted = applicationRecord.get().isSubmitted();
+
+    LocalDateTime now = LocalDateTime.now();
+    boolean interviewScheduleChangable;
+    if (currentApplicationForm.getApplicationResultAt().isAfter(now)
+        || currentApplicationForm.getInterviewScheduleConfirmedAt().isBefore(now)) {
+      interviewScheduleChangable = false;
+    } else {
+      interviewScheduleChangable = true;
+    }
+
+    Long currentSemester = currentApplicationForm.getSemester();
+    boolean interviewScheduleSubmitted =
+        interviewBookingService.existInterviewBookingByUserAndSemester(
+            currentUser, currentSemester);
+
+    log.info("[User] 프로필 이미지 업로드 성공 - userId: {}", currentUser.getId());
+    return userMapper.toMyPageResponse(
+        currentUser, documentSubmitted, interviewScheduleChangable, interviewScheduleSubmitted);
   }
 
   @Override
