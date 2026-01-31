@@ -20,19 +20,11 @@ public class ClubMemberPageResponse {
   @Schema(description = "역할군")
   private Position position;
 
-  @Schema(description = "해당 트랙별 구성원")
-  private List<ClubMembersOfTracks> clubMembersOfTracks;
+  @Schema(description = "트랙")
+  private Track track;
 
-  @Getter
-  @Builder
-  public static class ClubMembersOfTracks {
-
-    @Schema(description = "트랙")
-    private Track track;
-
-    @Schema(description = "해당 역할군, 트랙에 소속된 구성원 리스트")
-    private List<ClubMemberSummary> clubMemberSummaryList;
-  }
+  @Schema(description = "해당 역할군, 트랙의 구성원 리스트")
+  private List<ClubMemberSummary> clubMembers;
 
   @Getter
   @Builder

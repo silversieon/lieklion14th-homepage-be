@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -386,7 +387,17 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
         booking.getUserId());
   }
 
-  // util
+  @Override
+  @Transactional(readOnly = true)
+  public boolean existInterviewBookingByUserAndSemester(User user, Long semester) {
+
+    String applicantKey = sha256Hex(user.getEmail().toLowerCase());
+
+    Optional<InterviewBooking> booking =
+        interviewBookingRepository.findBySemesterIdAndApplicantKey(semester, applicantKey);
+
+    return booking.isPresent();
+  }
 
   private static String maskEmail(String email) {
     if (email == null || !email.contains("@")) {

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
+import com.skunivlikelion.homepage.domain.user.dto.response.ClubMemberCursorResponse;
 import com.skunivlikelion.homepage.domain.user.dto.response.ClubMemberInformationResponse;
 import com.skunivlikelion.homepage.domain.user.dto.response.ClubMemberPageResponse;
 import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
@@ -41,59 +42,48 @@ public class ClubMemberMapper {
         .build();
   }
 
+  public <T> ClubMemberCursorResponse<T> toClubMemberCursorResponse(
+      T clubMemberPageResponses,
+      Position nextPositionCursor,
+      Track nextTrackCursor,
+      boolean hasNext) {
+    return ClubMemberCursorResponse.<T>builder()
+        .content(clubMemberPageResponses)
+        .nextPositionCursor(nextPositionCursor)
+        .nextTrackCursor(nextTrackCursor)
+        .hasNext(hasNext)
+        .build();
+  }
+
   public List<ClubMemberPageResponse> toClubMemberPageResponses(
-      List<Position> positions, List<Track> tracks, List<ClubMember> clubMemberList) {
-    Map<Position, List<ClubMember>> byPosition =
-        clubMemberList.stream().collect(Collectors.groupingBy(ClubMember::getPosition));
+      List<ClubMember> clubMembers, List<Position> positions, List<Track> tracks) {
+
+    Map<Position, Map<Track, List<ClubMember>>> grouped =
+        clubMembers.stream()
+            .collect(
+                Collectors.groupingBy(
+                    ClubMember::getPosition, Collectors.groupingBy(ClubMember::getTrack)));
+
     List<ClubMemberPageResponse> result = new ArrayList<>();
 
     for (Position position : positions) {
-      List<ClubMember> membersOfPosition = byPosition.getOrDefault(position, List.of());
+      Map<Track, List<ClubMember>> byTrack = grouped.getOrDefault(position, Map.of());
 
-      List<Track> tracksForThisPosition = resolveTracks(position, tracks, membersOfPosition);
-      result.add(toClubMemberPageResponse(position, tracksForThisPosition, membersOfPosition));
+      for (Track track : tracks) {
+        List<ClubMember> members = byTrack.getOrDefault(track, List.of());
+
+        if (members.isEmpty()) continue;
+
+        result.add(
+            ClubMemberPageResponse.builder()
+                .position(position)
+                .track(track)
+                .clubMembers(members.stream().map(this::toClubMemberSummary).toList())
+                .build());
+      }
     }
 
     return result;
-  }
-
-  private List<Track> resolveTracks(
-      Position position, List<Track> tracks, List<ClubMember> membersOfPosition) {
-    if (position == Position.LEAD || position == Position.COLEAD) {
-      return membersOfPosition.stream()
-          .map(ClubMember::getTrack)
-          .filter(Objects::nonNull)
-          .distinct()
-          .toList();
-    }
-
-    return tracks == null ? List.of(Track.BACKEND) : tracks;
-  }
-
-  public ClubMemberPageResponse toClubMemberPageResponse(
-      Position position, List<Track> trackList, List<ClubMember> clubMemberList) {
-
-    Map<Track, List<ClubMemberPageResponse.ClubMemberSummary>> grouped = new EnumMap<>(Track.class);
-    for (ClubMember cm : clubMemberList) {
-      if (cm == null || cm.getTrack() == null) continue;
-      grouped.computeIfAbsent(cm.getTrack(), k -> new ArrayList<>()).add(toClubMemberSummary(cm));
-    }
-
-    List<ClubMemberPageResponse.ClubMembersOfTracks> clubMembersOfTracks =
-        (trackList == null ? List.<Track>of() : trackList)
-            .stream()
-                .map(
-                    track ->
-                        ClubMemberPageResponse.ClubMembersOfTracks.builder()
-                            .track(track)
-                            .clubMemberSummaryList(grouped.getOrDefault(track, List.of()))
-                            .build())
-                .toList();
-
-    return ClubMemberPageResponse.builder()
-        .position(position)
-        .clubMembersOfTracks(clubMembersOfTracks)
-        .build();
   }
 
   public ClubMemberPageResponse.ClubMemberSummary toClubMemberSummary(ClubMember clubMember) {

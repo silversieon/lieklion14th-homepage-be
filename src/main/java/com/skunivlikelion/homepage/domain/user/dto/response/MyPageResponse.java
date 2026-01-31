@@ -22,5 +22,11 @@ public class MyPageResponse {
   private String profileImageUrl;
 
   @Schema(description = "지원서 제출 여부", example = "true")
-  private boolean submitted;
+  private boolean documentSubmitted;
+
+  @Schema(description = "면접 일정 변경 가능 여부", example = "false")
+  private boolean interviewScheduleChangable;
+
+  @Schema(description = "면접 일정 제출 여부", example = "false")
+  private boolean interviewScheduleSubmitted;
 }

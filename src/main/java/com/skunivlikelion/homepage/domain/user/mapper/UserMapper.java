@@ -31,12 +31,18 @@ public class UserMapper {
     return UserRoleResponse.builder().userRole(user.getUserRole()).build();
   }
 
-  public MyPageResponse toMyPageResponse(User user) {
+  public MyPageResponse toMyPageResponse(
+      User user,
+      boolean documentSubmitted,
+      boolean interviewScheduleChangable,
+      boolean interviewScheduleSubmitted) {
     return MyPageResponse.builder()
         .name(user.getName())
         .email(user.getEmail())
         .profileImageUrl(user.getProfileImageUrl())
-        .submitted(true) // application_record 나오면 수정 필요
+        .documentSubmitted(documentSubmitted)
+        .interviewScheduleChangable(interviewScheduleChangable)
+        .interviewScheduleSubmitted(interviewScheduleSubmitted)
         .build();
   }
 

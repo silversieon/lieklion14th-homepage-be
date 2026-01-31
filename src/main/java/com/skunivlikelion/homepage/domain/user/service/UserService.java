@@ -41,19 +41,15 @@ public interface UserService {
    * [ 기수별 구성원 조회 메서드 ]
    *
    * @param semester 구성원을 조회할 기수
+   * @param nextPositionCursor 다음 조회 역할 위치
+   * @param nextTrackCursor 다음 조회 트랙 위치
    * @return 해당 기수의 구성원 전체 리스트
    * @implNote "아기사자" 목록은 해당 기수의 최종 결과 발표일이 지난 후에 반환됩니다 currentSemesterTracks 변수는 현재 기수의 트랙 종류이므로
    *     변경사항이 있다면 바꿔야 합니다.
    */
-  List<ClubMemberPageResponse> getClubMemberList(Long semester);
+  ClubMemberCursorResponse<List<ClubMemberPageResponse>> getClubMemberList(
+      Long semester, Position nextPositionCursor, Track nextTrackCursor);
 
-  /**
-   * [ 사용자들의 기본 정보 조회 메서드 ] 사용자 관리 화면 - 게스트 관리 목록 조회
-   *
-   * @param isGuest 조회할 사용자 목록의 게스트 여부
-   * @param keyword 검색어 필터 (이름, 학과 가능)
-   * @return 사용자 기본 정보가 담긴 UserManagementResponse 리스트
-   */
   /**
    * [ 사용자들의 기본 정보 조회 메서드 ] 사용자 관리 화면 - 게스트 관리 목록 조회
    *

@@ -17,7 +17,7 @@ import com.skunivlikelion.homepage.domain.application.result.dto.request.AdminAp
 import com.skunivlikelion.homepage.domain.application.result.dto.request.AdminDocumentResultUpdateRequest;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminApplicationResultConfirmResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
-import com.skunivlikelion.homepage.domain.application.result.dto.response.MyDocumentResultResponse;
+import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 
 import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,12 +64,15 @@ public interface ApplicationResultController {
       @Valid @RequestBody AdminApplicationResultConfirmRequest request);
 
   @Operation(
-      summary = "[ 사용자 | 토큰 O | 본인 서류 합격 여부 조회 ]",
+      summary = "[ 사용자 | 토큰 O | 본인 면접 합격 결과 조회 ]",
       description =
           """
-              **Returns**  \n
-              진행중인 모집 공고에 대한 본인 지원서의 서류 합격 여부
-              """)
-  @GetMapping("/v1/applications/document-result")
-  ResponseEntity<BaseResponse<MyDocumentResultResponse>> getMyDocumentResult();
+          **Returns** \n
+          documentPassed: 서류 합격 여부 \n
+          interviewPassed: 면접 합격 여부 \n
+          semester: 기수   \n
+          track: 구성원 트랙 \n
+          """)
+  @GetMapping("/v1/users/interview-result")
+  ResponseEntity<BaseResponse<MyInterviewResultResponse>> getMyInterviewResult();
 }

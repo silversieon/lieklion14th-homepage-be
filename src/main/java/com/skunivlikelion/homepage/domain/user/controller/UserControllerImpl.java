@@ -45,12 +45,17 @@ public class UserControllerImpl implements UserController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<List<ClubMemberPageResponse>>> getClubMemberList(
-      @PathVariable @Positive Long semester) {
+  public ResponseEntity<BaseResponse<ClubMemberCursorResponse<List<ClubMemberPageResponse>>>>
+      getClubMemberList(
+          @PathVariable @Positive Long semester,
+          @RequestParam(value = "next-position-cursor") Position nextPositionCursor,
+          @RequestParam(value = "next-track-cursor", required = false) Track nextTrackCursor) {
     return ResponseEntity.status(200)
         .body(
             BaseResponse.success(
-                200, "구성원 페이지 조회에 성공했습니다.", userService.getClubMemberList(semester)));
+                200,
+                "구성원 페이지 조회에 성공했습니다.",
+                userService.getClubMemberList(semester, nextPositionCursor, nextTrackCursor)));
   }
 
   @Override

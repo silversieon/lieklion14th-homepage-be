@@ -5,7 +5,7 @@ package com.skunivlikelion.homepage.domain.application.result.service;
 
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminApplicationResultConfirmResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
-import com.skunivlikelion.homepage.domain.application.result.dto.response.MyDocumentResultResponse;
+import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 
 public interface ApplicationResultService {
 
@@ -30,9 +30,9 @@ public interface ApplicationResultService {
       Long applicationRecordId, boolean passed);
 
   /**
-   * [ 사용자 | 토큰 O | 본인 서류 합격 여부 조회 ]
+   * [ 현재 사용자의 면접 합격 결과 조회 메서드 ]
    *
-   * @return 진행중인 모집 공고에 대한 본인 지원서의 서류 합격 여부
+   * @return 면접 합격 결과 정보를 담은 객체
    */
-  MyDocumentResultResponse getMyDocumentResult();
+  MyInterviewResultResponse getCurrentUserInterviewResult();
 }

@@ -63,7 +63,9 @@ public interface UserController {
             name: 사용자 이름    \n
             email: 사용자 이메일  \n
             profieImageUrl: 프로필 이미지 URL \n
-            isSubmitted: 지원서 제출 여부  \n
+            documentSubmitted: 지원서 제출 여부  \n
+            interviewScheduleSubmitted: 면접 일정 제출 여부 \n
+            interviewScheduleChangable: 면접 일정 변경 가능 여부 \n
             """)
   @GetMapping("/v1/users/me")
   ResponseEntity<BaseResponse<MyPageResponse>> getMyPage();
@@ -74,16 +76,23 @@ public interface UserController {
           """
             **Returns** \n
             position: 역할군    \n
-            clubMemberOfTracks: 해당 역할군의 트랙별 구성원   \n
-            - track: 트랙 \n
-            - clubMemberSummaryList:  해당 트랙의 구성원 목록   \n
-            - - name:   구성원 이름   \n
-            - - department: 구성원 학과  \n
-            - - shortStudentNumber: 구성원 학번(앞부분) \n
+            track: 트랙 \n
+            clubMembers: 해당 역할군, 트랙별 구성원 리스트   \n
+            - name:   구성원 이름   \n
+            - profieImageUrl: 프로필 이미지 URL \n
+            - department: 구성원 학과  \n
+            - shortStudentNumber: 구성원 학번(앞부분) \n
+
+            hasNext: 다음 요청 가능 여부  \n
+            nextPositionCursor: 다음 요청할 역할 위치  \n
+            nextTrackCursor: 다음 요청할 트랙 위치 \n
             """)
   @GetMapping("/v1/users/club-members/{semester}")
-  ResponseEntity<BaseResponse<List<ClubMemberPageResponse>>> getClubMemberList(
-      @PathVariable @Positive Long semester);
+  ResponseEntity<BaseResponse<ClubMemberCursorResponse<List<ClubMemberPageResponse>>>>
+      getClubMemberList(
+          @PathVariable @Positive Long semester,
+          @RequestParam(value = "next-position-cursor") Position nextPositionCursor,
+          @RequestParam(value = "next-track-cursor", required = false) Track nextTrackCursor);
 
   @Operation(
       summary = "[ 관리자 | 토큰 O | 사용자 관리 - 게스트 관리창 목록 조회 ]",
@@ -204,7 +213,9 @@ public interface UserController {
             name: 사용자 이름    \n
             email: 사용자 이메일  \n
             profieImageUrl: 프로필 이미지 URL \n
-            submitted: 지원서 제출 여부  \n
+            documentSubmitted: 지원서 제출 여부  \n
+            interviewScheduleSubmitted: 면접 일정 제출 여부 \n
+            interviewScheduleChangable: 면접 일정 변경 가능 여부 \n
             """)
   @PatchMapping(value = "/v1/users/me/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   ResponseEntity<BaseResponse<MyPageResponse>> updateProfileImage(
