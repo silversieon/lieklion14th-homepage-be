@@ -7,7 +7,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public record UserInterviewScheduleResponse(Integer semester, List<DateGroup> dates) {
+import com.skunivlikelion.homepage.domain.common.enums.Track;
+
+public record UserInterviewScheduleResponse(
+    Integer semester, boolean documentPassed, Track track, List<DateGroup> dates) {
 
   public record DateGroup(LocalDate date, List<TimeSlot> times) {}
 

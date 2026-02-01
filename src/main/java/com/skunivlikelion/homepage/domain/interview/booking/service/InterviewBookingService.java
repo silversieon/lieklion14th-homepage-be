@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
-import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingInfiniteResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.user.entity.User;
@@ -25,15 +25,31 @@ public interface InterviewBookingService {
   InterviewBookingResponse createBooking(InterviewBookingCreateRequest request);
 
   /**
-   * [ 관리자 | 토큰 O | 예약된 면접 일정 조회·검색 ]
+   * [ 관리자 | 토큰 O | 면접 일정 조회 - 커서 기반 무한스크롤 ]
    *
-   * <p>조회 기준 - semester: 기수 (필수) - track: 트랙 (선택) - dateFrom / dateTo: 날짜 범위 (선택) - search: 이름 / 학과
-   * / 학번 검색 (선택)
+   * <p>조회 단위: - InterviewSchedule(시간 슬롯) 기준
    *
-   * <p>응답 구조 - 트랙 → 날짜 → 시간 슬롯 - 각 슬롯에는 예약자 정보(스냅샷) + 지원서 ID
+   * <p>정렬 기준: - track ASC - date ASC - startTime ASC - scheduleId ASC
+   *
+   * <p>특징: - 예약이 존재하는 슬롯 → booked=true + bookingInfo 포함 - 예약이 없는 슬롯 → booked=false +
+   * bookingInfo=null - tracks: 해당 기수에 실제 존재하는 트랙 목록 반환
+   *
+   * @param semester 기수 (필수)
+   * @param track 트랙 필터 (선택)
+   * @param dateFrom 시작 날짜 (선택)
+   * @param dateTo 종료 날짜 (선택)
+   * @param search 이름 / 학번 검색어 (선택, 검색 시 예약된 슬롯만 반환)
+   * @param cursor 다음 페이지 커서 (선택)
+   * @param size 페이지 크기 (선택, default=30, max=100)
    */
-  AdminInterviewBookingResponse getAdminBookings(
-      Long semester, Track track, LocalDate dateFrom, LocalDate dateTo, String search);
+  AdminInterviewBookingInfiniteResponse getAdminBookings(
+      Long semester,
+      Track track,
+      LocalDate dateFrom,
+      LocalDate dateTo,
+      String search,
+      String cursor,
+      Integer size);
 
   /**
    * [ 사용자 | 토큰 O | 내 면접 예약 조회 ]

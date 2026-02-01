@@ -192,18 +192,21 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
             .orElseThrow(
                 () -> new CustomException(InterviewScheduleErrorCode.NOT_FOUND_APPLICATION_RECORD));
 
-    if (!record.isDocumentPassed()) {
-      throw new CustomException(InterviewScheduleErrorCode.NOT_PASSED_APPLICATION);
-    }
-
+    boolean documentPassed = record.isDocumentPassed();
     Track resolvedTrack = record.getTrack();
+
+    if (!documentPassed) {
+      return new UserInterviewScheduleResponse(
+          resolvedSemester.intValue(), false, resolvedTrack, List.of());
+    }
 
     List<InterviewSchedule> schedules =
         interviewScheduleRepository.findUserSchedules(
             resolvedSemester, resolvedTrack, dateFrom, dateTo);
 
     if (schedules.isEmpty()) {
-      return new UserInterviewScheduleResponse(resolvedSemester.intValue(), List.of());
+      return new UserInterviewScheduleResponse(
+          resolvedSemester.intValue(), true, resolvedTrack, List.of());
     }
 
     Set<Long> scheduleIds =
@@ -211,7 +214,6 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     Set<Long> bookedIds = interviewBookingRepository.findBookedScheduleIds(scheduleIds);
 
-    // 날짜 → 시간 그룹핑
     Map<LocalDate, List<InterviewSchedule>> grouped =
         schedules.stream().collect(Collectors.groupingBy(InterviewSchedule::getDate));
 
@@ -238,7 +240,8 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                 })
             .toList();
 
-    return new UserInterviewScheduleResponse(resolvedSemester.intValue(), dateGroups);
+    return new UserInterviewScheduleResponse(
+        resolvedSemester.intValue(), true, resolvedTrack, dateGroups);
   }
 
   private void validateSemesterExists(Long semester) {

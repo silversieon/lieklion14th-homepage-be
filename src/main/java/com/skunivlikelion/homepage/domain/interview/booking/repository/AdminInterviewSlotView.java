@@ -8,11 +8,9 @@ import java.time.LocalTime;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 
-public interface AdminInterviewBookingView {
+public interface AdminInterviewSlotView {
 
   Long getScheduleId();
-
-  Long getSemester();
 
   Track getTrack();
 
@@ -22,7 +20,7 @@ public interface AdminInterviewBookingView {
 
   LocalTime getEndTime();
 
-  // booking
+  // booking (nullable)
   Long getBookingId();
 
   Long getUserId();

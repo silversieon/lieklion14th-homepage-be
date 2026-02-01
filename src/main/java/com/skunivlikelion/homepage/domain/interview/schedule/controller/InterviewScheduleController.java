@@ -101,16 +101,21 @@ public interface InterviewScheduleController {
 
               **접근 정책**
               - 로그인 사용자만 접근 가능
-              - 서류 합격자(ApplicationRecord.isPassed = true)만 조회 가능
               - 트랙은 ApplicationRecord.track 기준 자동 적용 (클라이언트 입력 X)
 
               **응답 구조**
-              - dates[]: 날짜별 그룹
+              - documentPassed: 서류 합격 여부
+              - track: 트랙 정보
+              - dates[]: 날짜별 그룹 (서류 불합격 시 빈 배열 [])
                 - times[]: 시간 슬롯 목록 (booked 포함)
 
               **정렬 기준**
               - date ASC
               - times[]: startTime ASC
+
+              **참고**
+              - 서류 불합격이어도 200 OK 응답
+              - 서류 불합격 시 documentPassed=false, dates=[]
               """)
   @PreAuthorize("isAuthenticated()")
   @GetMapping("/v1/interviews/schedules")
