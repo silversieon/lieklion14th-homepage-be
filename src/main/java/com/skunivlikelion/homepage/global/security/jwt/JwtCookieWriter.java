@@ -11,6 +11,13 @@ import com.skunivlikelion.homepage.global.config.property.JwtProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 사용자 로그인, 로그아웃 시 반환할 쿠키를 작성하는 클래스입니다.
+ *
+ * @since 2026.01.17
+ * @see JwtProperties
+ * @author Keum Si Eon
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -33,6 +40,15 @@ public class JwtCookieWriter {
         .secure(true)
         .path("/api")
         .maxAge(jwtProperties.getRefreshTokenValidityInSeconds())
+        .build();
+  }
+
+  public ResponseCookie removeTokenFromCookie(TokenType tokenType) {
+    return ResponseCookie.from(tokenType.name(), null)
+        .httpOnly(true)
+        .secure(true)
+        .path("/api")
+        .maxAge(0)
         .build();
   }
 }

@@ -20,10 +20,10 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
-import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
 import com.skunivlikelion.homepage.global.security.jwt.JwtCookieWriter;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
+import com.skunivlikelion.homepage.global.security.jwt.TokenType;
 
 import backend.boilerplate.exception.CustomException;
 import backend.boilerplate.response.BaseResponse;
@@ -37,7 +37,6 @@ public class AuthControllerImpl implements AuthController {
 
   private final AuthService authService;
   private final JwtCookieWriter jwtCookieWriter;
-  private final AuthMapper authMapper;
   private final JwtProvider jwtProvider;
 
   @Override
@@ -121,5 +120,22 @@ public class AuthControllerImpl implements AuthController {
     return ResponseEntity.status(200)
         .headers(tokenHeaders)
         .body(BaseResponse.success(200, "토큰 재발급에 성공했습니다.", tokenResponse));
+  }
+
+  @Override
+  public ResponseEntity<BaseResponse<Void>> logout(HttpServletRequest request) {
+    String refreshToken = jwtProvider.extractRefreshToken(request);
+    authService.logout(refreshToken);
+    HttpHeaders tokenHeaders = new HttpHeaders();
+    tokenHeaders.add(
+        HttpHeaders.SET_COOKIE,
+        jwtCookieWriter.removeTokenFromCookie(TokenType.ACCESS_TOKEN).toString());
+    tokenHeaders.add(
+        HttpHeaders.SET_COOKIE,
+        jwtCookieWriter.removeTokenFromCookie(TokenType.REFRESH_TOKEN).toString());
+
+    return ResponseEntity.status(200)
+        .headers(tokenHeaders)
+        .body(BaseResponse.success(200, "로그아웃에 성공하였습니다.", null));
   }
 }
