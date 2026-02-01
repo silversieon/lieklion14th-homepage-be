@@ -267,4 +267,11 @@ public class AuthServiceImpl implements AuthService {
         throw new CustomException(AuthErrorCode.ALREADY_EXIST_PHONENUMBER);
     }
   }
+
+  @Override
+  public void logout(String refreshToken) {
+    String email = jwtProvider.getEmailFromToken(refreshToken);
+    jwtProvider.addToBlackList(refreshToken);
+    log.info("[Auth] 사용자 로그아웃 - 이메일: {}", email);
+  }
 }

@@ -144,4 +144,15 @@ public interface AuthController {
           """)
   @PostMapping("/v1/auth/refresh")
   ResponseEntity<BaseResponse<TokenResponse>> refresh(HttpServletRequest request);
+
+  @Operation(
+      summary = "[ 사용자 | 토큰 O | 로그아웃 ]",
+      description =
+          """
+          **Returns (쿠키에 전달 [개발에서는 응답값 활용])**  \n
+          ACCESS_TOKEN: 0초 후 만료되는 ACCESS_TOKEN \n
+          REFRESH_TOKEN: 0초 후 만료되는 REFRESH_TOKEN \n
+          """)
+  @PostMapping("/v1/auth/logout")
+  ResponseEntity<BaseResponse<Void>> logout(HttpServletRequest request);
 }

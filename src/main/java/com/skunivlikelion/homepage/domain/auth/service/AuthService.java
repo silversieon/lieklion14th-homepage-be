@@ -84,4 +84,11 @@ public interface AuthService {
    * @param phoneNumber 사용자 전화번호
    */
   void validateUniqueValues(String email, String studentNumber, String phoneNumber);
+
+  /**
+   * [ 로그아웃 메서드 ]
+   *
+   * @param refreshToken 삭제 및 블랙리스트 처리 할 리프레시 토큰
+   */
+  void logout(String refreshToken);
 }
