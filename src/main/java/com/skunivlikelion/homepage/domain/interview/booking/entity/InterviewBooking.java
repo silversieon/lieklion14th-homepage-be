@@ -59,17 +59,11 @@ public class InterviewBooking extends BaseTimeEntity {
   private Long userId;
 
   // Snapshot - 사용자 삭제 이후에도 관리자 조회 가능하도록 유지
-  @Column(name = "user_name", nullable = false)
-  private String userName;
+  @Column(name = "user_name_masked", nullable = false)
+  private String userNameMasked;
 
-  @Column(name = "user_department", nullable = false)
-  private String userDepartment;
-
-  @Column(name = "user_student_number", nullable = false)
-  private String userStudentNumber;
-
-  @Column(name = "user_phone_number", nullable = false)
-  private String userPhoneNumber;
+  @Column(name = "user_student_number_masked", nullable = false)
+  private String userStudentNumberMasked;
 
   @Column(name = "user_email_masked", nullable = false)
   private String userEmailMasked;

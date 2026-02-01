@@ -69,6 +69,15 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
       @Param("dateFrom") LocalDate dateFrom,
       @Param("dateTo") LocalDate dateTo);
 
+  @Query(
+      """
+          select distinct s.track
+          from InterviewSchedule s
+          where s.semester = :semester
+          order by s.track asc
+          """)
+  List<Track> findDistinctTracksBySemester(@Param("semester") Long semester);
+
   // 예약 동시성 대비(선착순): 동일 슬롯 예약 충돌 방지용 row lock
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select s from InterviewSchedule s where s.id = :scheduleId")

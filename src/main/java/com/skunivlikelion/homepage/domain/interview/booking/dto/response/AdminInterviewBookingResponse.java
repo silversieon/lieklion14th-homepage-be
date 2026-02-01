@@ -21,10 +21,5 @@ public record AdminInterviewBookingResponse(Integer semester, List<TrackGroup> t
       BookingInfo bookingInfo) {}
 
   public record BookingInfo(
-      Long bookingId,
-      String name,
-      String department,
-      String studentNumber,
-      String phoneNumber,
-      Long applicationRecordId) {}
+      Long bookingId, String name, String studentNumber, Long applicationRecordId) {}
 }
