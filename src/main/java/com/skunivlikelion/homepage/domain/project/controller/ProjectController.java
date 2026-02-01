@@ -19,10 +19,10 @@ import com.skunivlikelion.homepage.domain.project.dto.request.ProjectTypeRequest
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.UpdateProjectMultipartBody;
 import com.skunivlikelion.homepage.domain.project.dto.response.*;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import com.skunivlikelion.homepage.global.page.response.PageResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

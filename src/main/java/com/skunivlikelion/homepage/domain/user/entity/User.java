@@ -19,8 +19,8 @@ import jakarta.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.skunivlikelion.homepage.domain.user.enums.UserRole;
+import com.skunivlikelion.homepage.global.common.BaseTimeEntity;
 
-import backend.boilerplate.common.BaseTimeEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

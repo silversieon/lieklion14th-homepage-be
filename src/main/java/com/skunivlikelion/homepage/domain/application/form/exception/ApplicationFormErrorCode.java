@@ -5,7 +5,8 @@ package com.skunivlikelion.homepage.domain.application.form.exception;
 
 import org.springframework.http.HttpStatus;
 
-import backend.boilerplate.exception.model.BaseErrorCode;
+import com.skunivlikelion.homepage.global.exception.model.BaseErrorCode;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

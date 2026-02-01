@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 
 /**

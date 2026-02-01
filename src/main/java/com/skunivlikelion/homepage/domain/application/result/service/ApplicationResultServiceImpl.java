@@ -25,9 +25,9 @@ import com.skunivlikelion.homepage.domain.user.enums.Position;
 import com.skunivlikelion.homepage.domain.user.exception.UserErrorCode;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

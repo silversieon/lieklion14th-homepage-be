@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import com.skunivlikelion.homepage.domain.application.form.dto.request.ApplicationFormUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

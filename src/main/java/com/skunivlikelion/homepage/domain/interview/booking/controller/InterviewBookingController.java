@@ -26,8 +26,8 @@ import com.skunivlikelion.homepage.domain.interview.booking.dto.request.Intervie
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingInfiniteResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

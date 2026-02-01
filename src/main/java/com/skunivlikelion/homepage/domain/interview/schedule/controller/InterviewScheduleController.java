@@ -25,8 +25,8 @@ import com.skunivlikelion.homepage.domain.interview.schedule.dto.request.Intervi
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.UserInterviewScheduleResponse;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

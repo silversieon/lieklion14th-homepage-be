@@ -19,11 +19,11 @@ import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateReque
 import com.skunivlikelion.homepage.domain.project.dto.response.*;
 import com.skunivlikelion.homepage.domain.project.service.ProjectService;
 import com.skunivlikelion.homepage.domain.project.service.ProjectTypeService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import com.skunivlikelion.homepage.global.page.response.PageResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController

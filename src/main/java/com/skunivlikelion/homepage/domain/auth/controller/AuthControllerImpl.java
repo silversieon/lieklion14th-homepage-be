@@ -21,12 +21,12 @@ import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueRespo
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.jwt.JwtCookieWriter;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
 import com.skunivlikelion.homepage.global.security.jwt.TokenType;
 
-import backend.boilerplate.exception.CustomException;
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

@@ -16,8 +16,8 @@ import com.skunivlikelion.homepage.domain.project.entity.ProjectType;
 import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
 import com.skunivlikelion.homepage.domain.project.mapper.ProjectTypeMapper;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectTypeRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

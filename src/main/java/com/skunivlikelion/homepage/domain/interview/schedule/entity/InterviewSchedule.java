@@ -17,8 +17,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.global.common.BaseTimeEntity;
 
-import backend.boilerplate.common.BaseTimeEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

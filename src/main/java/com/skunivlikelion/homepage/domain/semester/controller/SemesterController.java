@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.skunivlikelion.homepage.domain.semester.dto.request.SemesterRequest;
 import com.skunivlikelion.homepage.domain.semester.dto.response.SemesterResponse;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

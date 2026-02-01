@@ -24,9 +24,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.security.JwtAuthenticationFilter;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
@@ -111,7 +111,8 @@ public class SecurityConfig {
                     "/api/v1/users/club-members/",
                     "/api/v1/semesters",
                     "/api/v1/applications/current-forms",
-                    "/api/v1/projects")
+                    "/api/v1/projects/**",
+                    "/api/v1/project-types")
                 .permitAll()
                 .requestMatchers(RegexRequestMatcher.regexMatcher(".*/admin/.*"))
                 .hasRole("ADMIN")

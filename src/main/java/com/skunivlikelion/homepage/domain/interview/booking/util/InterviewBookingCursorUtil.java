@@ -10,8 +10,7 @@ import java.util.Base64;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.exception.InterviewBookingErrorCode;
-
-import backend.boilerplate.exception.CustomException;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
 public final class InterviewBookingCursorUtil {
 

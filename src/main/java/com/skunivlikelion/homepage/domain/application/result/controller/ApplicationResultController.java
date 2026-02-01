@@ -18,8 +18,8 @@ import com.skunivlikelion.homepage.domain.application.result.dto.request.AdminDo
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminApplicationResultConfirmResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

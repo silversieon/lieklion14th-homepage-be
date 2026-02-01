@@ -27,9 +27,9 @@ import com.skunivlikelion.homepage.domain.interview.schedule.exception.Interview
 import com.skunivlikelion.homepage.domain.interview.schedule.mapper.InterviewScheduleMapper;
 import com.skunivlikelion.homepage.domain.interview.schedule.repository.InterviewScheduleRepository;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

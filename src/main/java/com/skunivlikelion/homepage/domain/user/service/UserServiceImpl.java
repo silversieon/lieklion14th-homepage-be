@@ -40,14 +40,14 @@ import com.skunivlikelion.homepage.domain.user.mapper.ClubMemberMapper;
 import com.skunivlikelion.homepage.domain.user.mapper.UserMapper;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
+import com.skunivlikelion.homepage.global.exception.GlobalErrorCode;
 import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
 import com.skunivlikelion.homepage.global.page.response.CreateUserInfiniteResponse;
 import com.skunivlikelion.homepage.global.s3.enums.PathName;
 import com.skunivlikelion.homepage.global.s3.service.S3Service;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
-import backend.boilerplate.exception.CustomException;
-import backend.boilerplate.exception.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
