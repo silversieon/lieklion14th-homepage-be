@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.skunivlikelion.homepage.domain.semester.dto.request.SemesterRequest;
 import com.skunivlikelion.homepage.domain.semester.dto.response.SemesterResponse;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController

@@ -19,8 +19,8 @@ import com.skunivlikelion.homepage.domain.application.form.dto.request.Applicati
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
 import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @Validated

@@ -18,8 +18,8 @@ import com.skunivlikelion.homepage.domain.application.form.mapper.ApplicationFor
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

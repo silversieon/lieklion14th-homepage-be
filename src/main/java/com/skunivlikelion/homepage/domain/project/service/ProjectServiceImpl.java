@@ -40,10 +40,10 @@ import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.exception.SemesterErrorCode;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

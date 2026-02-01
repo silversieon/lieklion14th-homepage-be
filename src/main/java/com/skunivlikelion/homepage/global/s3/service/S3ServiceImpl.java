@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.global.config.property.AwsProperties;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.s3.enums.PathName;
 import com.skunivlikelion.homepage.global.s3.exception.S3ErrorCode;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.sync.RequestBody;

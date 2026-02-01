@@ -18,8 +18,8 @@ import com.skunivlikelion.homepage.domain.project.entity.ProjectMember;
 import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectImageRepository;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectMemberRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

@@ -31,12 +31,12 @@ import com.skunivlikelion.homepage.domain.application.record.service.Application
 import com.skunivlikelion.homepage.domain.application.record.validator.SubmitSnapshotValidator;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.user.entity.User;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.page.exception.PageErrorStatus;
 import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

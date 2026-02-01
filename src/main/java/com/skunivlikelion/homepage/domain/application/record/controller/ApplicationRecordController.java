@@ -23,9 +23,9 @@ import com.skunivlikelion.homepage.domain.application.record.dto.response.Applic
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordMeta;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationRecordResponse;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

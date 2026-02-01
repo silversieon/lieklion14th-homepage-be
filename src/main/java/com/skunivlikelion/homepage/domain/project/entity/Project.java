@@ -10,8 +10,8 @@ import jakarta.persistence.*;
 
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
+import com.skunivlikelion.homepage.global.common.BaseTimeEntity;
 
-import backend.boilerplate.common.BaseTimeEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -25,8 +25,8 @@ import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.user.dto.request.*;
 import com.skunivlikelion.homepage.domain.user.dto.response.*;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -20,8 +20,8 @@ import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.AdminI
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.InterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.dto.response.UserInterviewScheduleResponse;
 import com.skunivlikelion.homepage.domain.interview.schedule.service.InterviewScheduleService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController

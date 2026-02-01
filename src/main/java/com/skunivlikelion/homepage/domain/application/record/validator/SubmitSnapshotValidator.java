@@ -15,8 +15,7 @@ import com.skunivlikelion.homepage.domain.application.record.dto.request.Applica
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
 import com.skunivlikelion.homepage.domain.application.record.exception.ApplicationRecordErrorCode;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
-
-import backend.boilerplate.exception.CustomException;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
 @Component
 public class SubmitSnapshotValidator {

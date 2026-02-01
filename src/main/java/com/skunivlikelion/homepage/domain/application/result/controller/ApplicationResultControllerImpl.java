@@ -18,8 +18,8 @@ import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminA
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 import com.skunivlikelion.homepage.domain.application.result.service.ApplicationResultService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @Validated

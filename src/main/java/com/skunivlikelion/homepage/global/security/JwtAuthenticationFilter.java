@@ -21,10 +21,10 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
 import com.skunivlikelion.homepage.global.security.jwt.TokenType;
 
-import backend.boilerplate.response.BaseResponse;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;

@@ -30,8 +30,8 @@ import com.skunivlikelion.homepage.domain.application.question.mapper.Applicatio
 import com.skunivlikelion.homepage.domain.application.question.repository.ApplicationQuestionRepository;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationAnswerRepository;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

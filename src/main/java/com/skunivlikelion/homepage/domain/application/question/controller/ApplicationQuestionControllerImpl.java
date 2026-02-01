@@ -20,8 +20,8 @@ import com.skunivlikelion.homepage.domain.application.question.dto.response.Appl
 import com.skunivlikelion.homepage.domain.application.question.dto.response.ApplicationSummaryListResponse;
 import com.skunivlikelion.homepage.domain.application.question.service.ApplicationQuestionService;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @Validated

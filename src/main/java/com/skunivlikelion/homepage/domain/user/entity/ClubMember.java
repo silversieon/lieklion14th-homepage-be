@@ -8,8 +8,8 @@ import jakarta.persistence.*;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
+import com.skunivlikelion.homepage.global.common.BaseTimeEntity;
 
-import backend.boilerplate.common.BaseTimeEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

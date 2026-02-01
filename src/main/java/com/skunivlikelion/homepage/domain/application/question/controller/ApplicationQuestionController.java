@@ -21,8 +21,8 @@ import com.skunivlikelion.homepage.domain.application.question.dto.response.Appl
 import com.skunivlikelion.homepage.domain.application.question.dto.response.ApplicationQuestionUpsertResponse;
 import com.skunivlikelion.homepage.domain.application.question.dto.response.ApplicationSummaryListResponse;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 

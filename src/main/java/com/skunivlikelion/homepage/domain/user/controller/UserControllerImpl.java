@@ -19,8 +19,8 @@ import com.skunivlikelion.homepage.domain.user.dto.request.*;
 import com.skunivlikelion.homepage.domain.user.dto.response.*;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
 import com.skunivlikelion.homepage.domain.user.service.UserService;
+import com.skunivlikelion.homepage.global.common.BaseResponse;
 
-import backend.boilerplate.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 
 @Validated

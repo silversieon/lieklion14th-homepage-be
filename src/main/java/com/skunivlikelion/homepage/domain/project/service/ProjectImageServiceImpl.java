@@ -12,10 +12,10 @@ import com.skunivlikelion.homepage.domain.project.entity.Project;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
 import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectImageRepository;
+import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.s3.enums.PathName;
 import com.skunivlikelion.homepage.global.s3.service.S3Service;
 
-import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
