@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.skunivlikelion.homepage.domain.project.dto.response.ProjectAwardResponse;
 import com.skunivlikelion.homepage.domain.user.dto.response.UserInformationResponse;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.global.page.response.CreateUserInfiniteResponse;
@@ -40,6 +41,11 @@ public class InfiniteMapper {
 
   public InfiniteResponse<UserInformationResponse> toUserInformationInfiniteResponse(
       List<UserInformationResponse> content, Long lastCursor, boolean hasNext, int size) {
+    return toInfiniteResponse(content, lastCursor, hasNext, size);
+  }
+
+  public InfiniteResponse<ProjectAwardResponse> toProjectAwardInfiniteResponse(
+      List<ProjectAwardResponse> content, Long lastCursor, boolean hasNext, int size) {
     return toInfiniteResponse(content, lastCursor, hasNext, size);
   }
 }

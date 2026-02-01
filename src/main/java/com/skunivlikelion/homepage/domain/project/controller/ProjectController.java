@@ -8,7 +8,6 @@ import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
-import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.skunivlikelion.homepage.domain.project.dto.request.CreateProjectMultipartBody;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectTypeRequest;
+import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
+import com.skunivlikelion.homepage.domain.project.dto.request.UpdateProjectMultipartBody;
 import com.skunivlikelion.homepage.domain.project.dto.response.*;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import com.skunivlikelion.homepage.global.page.response.PageResponse;
 
 import backend.boilerplate.response.BaseResponse;
@@ -28,6 +30,17 @@ import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 프로젝트 관련 Controller interface 입니다.
+ *
+ * @since 2026.02.01
+ * @see com.skunivlikelion.homepage.domain.project.entity.Project
+ * @see com.skunivlikelion.homepage.domain.project.entity.ProjectImage
+ * @see com.skunivlikelion.homepage.domain.project.entity.ProjectMember
+ * @see com.skunivlikelion.homepage.domain.project.service.ProjectService
+ * @author
+ * @version latest: 1
+ */
 @RequestMapping("/api")
 @Tag(name = "Project", description = "프로젝트 관련 기능을 제공하는 API")
 public interface ProjectController {
@@ -39,7 +52,8 @@ public interface ProjectController {
             projectType : 프로젝트 타입   \n
 
             **Returns**  \n
-            생성된 프로젝트 타입 정보
+            projectTypeId: 프로젝트 타입 식별자  \n
+            projectTypeName: 프로젝트 타입명   \n
             """)
   @PostMapping(value = "/v1/admin/project-types")
   ResponseEntity<BaseResponse<ProjectTypeResponse>> createProjectType(
@@ -49,11 +63,11 @@ public interface ProjectController {
       summary = "[ 관리자 | 토큰 O | projectType-id 를 통한 프로젝트타입 삭제 ]",
       description =
           """
-            **Parameters**
-            id : 삭제할 프로젝트 타입 ID   \n
+            **Parameters** \n
+            project-type-id : 삭제할 프로젝트 타입 ID   \n
 
-            **Returns**
-            프로젝트 타입 삭제 성공/실패 여부
+            **Returns** \n
+            프로젝트 타입 삭제 성공/실패 여부 \n
             """)
   @DeleteMapping("/v1/admin/project-types/{project-type-id}")
   ResponseEntity<BaseResponse<Void>> deleteProjectType(
@@ -63,9 +77,9 @@ public interface ProjectController {
       summary = "[ 사용자 | 토큰 X | 등록된 프로젝트 타입 전체 오름차순 조회 ]",
       description = """
           **Returns**  \n
-          등록된 모든 프로젝트 타입 오름차순 목록
+          등록된 모든 프로젝트 타입 오름차순 목록 \n
           """)
-  @GetMapping("/v1/admin/project-types")
+  @GetMapping("/v1/project-types")
   ResponseEntity<BaseResponse<List<ProjectTypeResponse>>> getAllProjectTypes();
 
   @Operation(
@@ -95,7 +109,7 @@ public interface ProjectController {
                         @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
                       })))
   @PostMapping(value = "/v1/admin/projects", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  ResponseEntity<BaseResponse<ProjectPostResponse>> createProject(
+  ResponseEntity<BaseResponse<ProjectResponse>> createProject(
       @Valid @RequestPart("request") ProjectCreateRequest request,
       @RequestPart(value = "projectImages") MultipartFile[] projectImages);
 
@@ -109,9 +123,10 @@ public interface ProjectController {
            award : 수상 여부 \n
            projectType : 프로젝트 타입   \n
            content : 프로젝트 설명    \n
-           members : 트랙별 참여자 이름 목록 (Map<Track, List<String>> 형태)  \n
+           remainingProjectMemberIds: 수정 시 유지할 기존 멤버 식별자들   \n
+           newMembers : 새로 추가할 트랙별 참여자 이름 목록 (Map<Track, List<String>> 형태)  \n
            예시(JSON): {"FRONTEND":["홍길동","김철수"],"BACKEND":["이영희"]}  \n
-           remainingImageUrls : 수정 시 유지할 기존 이미지 URL 목록(선택)  \n
+           remainingProjectImageIds : 수정 시 유지할 기존 이미지 URL 목록(선택)  \n
            newImages : 새로 추가할 프로젝트 이미지 파일 배열(선택)
 
            **Returns**  \n
@@ -122,20 +137,16 @@ public interface ProjectController {
               content =
                   @Content(
                       mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                      schema = @Schema(implementation = CreateProjectMultipartBody.class),
+                      schema = @Schema(implementation = UpdateProjectMultipartBody.class),
                       encoding = {
-                        @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE),
-                        @Encoding(
-                            name = "remainingImageUrls",
-                            contentType = MediaType.APPLICATION_JSON_VALUE)
+                        @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
                       })))
   @PutMapping(
       value = "/v1/admin/projects/{project-id}",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   ResponseEntity<BaseResponse<ProjectUpdateResponse>> updateProject(
-      @PathVariable(value = "project-id") Long id,
-      @Valid @RequestPart("request") ProjectCreateRequest request,
-      @RequestPart(value = "remainingImageUrls", required = false) List<String> remainingImageUrls,
+      @PathVariable(value = "project-id") Long projectId,
+      @Valid @RequestPart("request") ProjectUpdateRequest request,
       @RequestPart(value = "newImages", required = false) MultipartFile[] newImages);
 
   @Operation(
@@ -167,7 +178,7 @@ public interface ProjectController {
            pageable : 페이징 정보 \\n
            """)
   @GetMapping("/v1/projects")
-  ResponseEntity<BaseResponse<PageResponse<ProjectResponse>>>
+  ResponseEntity<BaseResponse<PageResponse<ProjectPageResponse>>>
       getProjectByPageAndSemesterAndTypeAndSearch(
           @Parameter(description = "프로젝트 타입 ID") @RequestParam(required = false) Long projectTypeId,
           @Parameter(description = "기수") @RequestParam(required = false) @Positive Long semester,
@@ -180,14 +191,14 @@ public interface ProjectController {
       description =
           """
            **Parameters**  \n
-           id : 조회할 프로젝트 ID \n
+           project-id : 조회할 프로젝트 ID \n
 
            **Returns** \n
            단일 프로젝트 정보
            """)
   @GetMapping("/v1/projects/{project-id}")
   ResponseEntity<BaseResponse<ProjectDetailResponse>> getProjectByProjectId(
-      @PathVariable(value = "project-id") @Positive Long id);
+      @PathVariable(value = "project-id") @Positive Long projectId);
 
   @Operation(
       summary = "[ 사용자 | 토큰 X | [메인] 역대 수상작 목록 조회 ]",
@@ -201,6 +212,7 @@ public interface ProjectController {
           메인 화면에 표시되는 역대 수상작 프로젝트 목록 (무한스크롤용 페이징 데이터)
           """)
   @GetMapping("/v1/projects/awards")
-  public ResponseEntity<BaseResponse<Page<ProjectResponse>>> getAwardProjects(
-      @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size);
+  ResponseEntity<BaseResponse<InfiniteResponse<ProjectAwardResponse>>> getAwardProjects(
+      @RequestParam(value = "last-cursor-id", required = false) Long lastCursorId,
+      @RequestParam Integer size);
 }

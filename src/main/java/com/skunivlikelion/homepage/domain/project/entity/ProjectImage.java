@@ -24,6 +24,6 @@ public class ProjectImage {
   private String imageUrl;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "project_id") // 이부분 해결 필요
+  @JoinColumn(name = "project_id")
   private Project project;
 }

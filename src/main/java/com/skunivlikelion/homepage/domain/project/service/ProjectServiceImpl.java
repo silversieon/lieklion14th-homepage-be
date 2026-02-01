@@ -3,21 +3,28 @@
  */
 package com.skunivlikelion.homepage.domain.project.service;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
+import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
+import com.skunivlikelion.homepage.domain.project.dto.response.ProjectAwardResponse;
 import com.skunivlikelion.homepage.domain.project.dto.response.ProjectDetailResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectPostResponse;
+import com.skunivlikelion.homepage.domain.project.dto.response.ProjectImageResponse;
+import com.skunivlikelion.homepage.domain.project.dto.response.ProjectMemberResponse;
+import com.skunivlikelion.homepage.domain.project.dto.response.ProjectPageResponse;
 import com.skunivlikelion.homepage.domain.project.dto.response.ProjectResponse;
 import com.skunivlikelion.homepage.domain.project.dto.response.ProjectUpdateResponse;
 import com.skunivlikelion.homepage.domain.project.entity.Project;
@@ -26,12 +33,15 @@ import com.skunivlikelion.homepage.domain.project.entity.ProjectMember;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectType;
 import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectImageRepository;
+import com.skunivlikelion.homepage.domain.project.repository.ProjectMemberRepository;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectRepository;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectTypeRepository;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.exception.SemesterErrorCode;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
+import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 import backend.boilerplate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -40,27 +50,35 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProjectServiceImpl implements ProjectService {
   private final ProjectRepository projectRepository;
   private final ProjectImageRepository projectImageRepository;
   private final ProjectImageService projectImageService;
-  private final ProjectImageUpdateService projectImageUpdateService;
+  private final ProjectUpdateService projectUpdateService;
   private final SemesterRepository semesterRepository;
   private final SemesterService semesterService;
   private final ProjectTypeRepository projectTypeRepository;
+  private final InfiniteMapper infiniteMapper;
+  private final ProjectMemberRepository projectMemberRepository;
 
   @Override
-  public ProjectPostResponse createProject(
+  public ProjectResponse createProject(
       ProjectCreateRequest request, List<MultipartFile> projectImages) {
     validateCreateRequest(request, projectImages);
-    validateMembers(request.getMembers());
+    validateMembers(request.getProjectMembers());
 
     Semester semester = getSemester(request.getSemesterId());
     ProjectType projectType = getProjectType(request.getProjectTypeId());
-    validateDuplicateForCreate(request.getTitle(), request.getSemesterId(), projectType);
 
-    Project project = Project.builder().build();
-    project.update(request, semester, projectType);
+    Project project =
+        Project.builder()
+            .title(request.getTitle())
+            .content(request.getContent())
+            .award(request.isAward())
+            .projectType(projectType)
+            .semester(semester)
+            .build();
 
     Project savedProject = projectRepository.save(project);
 
@@ -72,32 +90,75 @@ public class ProjectServiceImpl implements ProjectService {
       throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
     }
 
-    log.info("[Project] 프로젝트 생성 완료 - projectId={}", savedProject.getId());
+    Map<Track, List<String>> projectMemberMap = request.getProjectMembers();
+    Set<Track> tracks = request.getProjectMembers().keySet();
+    for (Track track : tracks) {
+      List<String> projectMemberNames = projectMemberMap.get(track);
+      for (String name : projectMemberNames) {
+        ProjectMember projectMember =
+            ProjectMember.builder()
+                .track(track)
+                .projectMemberName(name)
+                .project(savedProject)
+                .build();
+        ProjectMember savedProjectMember = projectMemberRepository.save(projectMember);
+        savedProject.addProjectMember(savedProjectMember);
+      }
+    }
 
-    return ProjectPostResponse.builder()
-        .id(String.valueOf(savedProject.getId()))
-        .imageCount(savedImages.size())
+    log.info(
+        "[Project] 프로젝트 생성 완료 - projectId={}, 이미지 수: {}, 멤버 수: {}",
+        savedProject.getId(),
+        savedImages.size(),
+        savedProject.getProjectMembers().size());
+
+    return ProjectResponse.builder()
+        .projectId(savedProject.getId())
+        .title(savedProject.getTitle())
+        .award(savedProject.isAward())
+        .semester(savedProject.getSemester().getSemester())
+        .projectTypeName(savedProject.getProjectType().getProjectTypeName())
+        .content(savedProject.getContent())
+        .projectMembers(
+            savedProject.getProjectMembers().stream()
+                .map(
+                    projectMember ->
+                        ProjectMemberResponse.builder()
+                            .projectMemberId(projectMember.getId())
+                            .projectMemberName(projectMember.getProjectMemberName())
+                            .track(projectMember.getTrack())
+                            .build())
+                .toList())
+        .thumbnailUrl(savedProject.getProjectImages().getFirst().getImageUrl())
         .build();
   }
 
   @Override
   public ProjectUpdateResponse updateProject(
-      Long id,
-      ProjectCreateRequest request,
-      List<String> remainingImageUrls,
-      List<MultipartFile> newImages) {
+      Long id, ProjectUpdateRequest request, List<MultipartFile> newImages) {
 
     Project project = getProject(id);
 
     validateUpdateRequest(request);
-    validateMembers(request.getMembers());
+    validateMembers(request.getNewProjectMembers());
 
     Semester semester = getSemester(request.getSemesterId());
     ProjectType projectType = getProjectType(request.getProjectTypeId());
-    validateDuplicateForUpdate(request.getTitle(), request.getSemesterId(), projectType, id);
 
-    ProjectImageUpdateService.ImageUpdateResult imageResult =
-        projectImageUpdateService.updateProjectImages(project, remainingImageUrls, newImages);
+    List<ProjectImageResponse> projectImageResponses = new ArrayList<>();
+    if (request.getRemainingProjectImageIds() != null
+        && !request.getRemainingProjectImageIds().isEmpty()) {
+      projectImageResponses =
+          projectUpdateService.updateProjectImages(
+              project, request.getRemainingProjectImageIds(), newImages);
+    }
+
+    List<ProjectMember> projectMembers = new ArrayList<>();
+    if (request.getNewProjectMembers() != null && !request.getNewProjectMembers().isEmpty()) {
+      projectMembers =
+          projectUpdateService.updateProjectMembers(
+              project, request.getRemainingProjectMemberIds(), request.getNewProjectMembers());
+    }
 
     project.update(request, semester, projectType);
 
@@ -106,36 +167,44 @@ public class ProjectServiceImpl implements ProjectService {
     return ProjectUpdateResponse.builder()
         .id(project.getId())
         .title(project.getTitle())
-        .semester(project.getSemester())
+        .semester(project.getSemester().getSemester())
         .award(project.isAward())
-        .projectType(project.getProjectType())
+        .projectTypeName(project.getProjectType().getProjectTypeName())
         .content(project.getContent())
-        .members(toMembersMap(project))
-        .thumbnailUrl(imageResult.getThumbnailUrl())
-        .newImagesCount(imageResult.getNewImagesCount())
-        .deletedImagesCount(imageResult.getDeletedCount())
+        .projectMembers(
+            projectMembers.stream()
+                .map(
+                    projectMember ->
+                        ProjectMemberResponse.builder()
+                            .projectMemberId(projectMember.getId())
+                            .projectMemberName(projectMember.getProjectMemberName())
+                            .track(projectMember.getTrack())
+                            .build())
+                .toList())
+        .thumbnailUrl(projectImageResponses.getFirst().getImageUrl())
+        .projectImageResponses(projectImageResponses)
         .build();
   }
 
   @Override
   @Transactional(readOnly = true)
-  public Page<ProjectResponse> getProjectByPageAndSemesterAndTypeAndSearch(
+  public Page<ProjectPageResponse> getProjectByPageAndSemesterAndTypeAndSearch(
       Long projectType, Long semester, String search, Integer page) {
     Page<Project> projects =
         projectRepository.findProjectsByFilters(
             projectType, semester, search, PageRequest.of(page, 6));
 
-    if (semester != null) {
-      semesterService.getSemester(semester);
-    }
     return projects.map(
-        project -> {
-          List<ProjectImage> images = projectImageRepository.findImagesByProjectId(project.getId());
-          String thumbnailUrl =
-              images.stream().findFirst().map(ProjectImage::getImageUrl).orElse(null);
-
-          return toProjectResponse(project, thumbnailUrl);
-        });
+        project ->
+            ProjectPageResponse.builder()
+                .projectId(project.getId())
+                .title(project.getTitle())
+                .award(project.isAward())
+                .semester(project.getSemester().getSemester())
+                .projectTypeName(project.getProjectType().getProjectTypeName())
+                .content(project.getContent())
+                .thumbnailUrl(project.getProjectImages().getFirst().getImageUrl())
+                .build());
   }
 
   @Override
@@ -144,35 +213,53 @@ public class ProjectServiceImpl implements ProjectService {
 
     Project project = getProject(id);
 
-    List<String> imageUrls =
-        projectImageRepository.findImagesByProjectId(project.getId()).stream()
-            .map(ProjectImage::getImageUrl)
+    List<ProjectImageResponse> projectImageResponses =
+        projectImageRepository.findImagesByProjectId(id).stream()
+            .map(
+                projectImage ->
+                    ProjectImageResponse.builder()
+                        .projectImageId(projectImage.getId())
+                        .imageUrl(projectImage.getImageUrl())
+                        .build())
             .toList();
 
     return ProjectDetailResponse.builder()
         .id(project.getId())
         .title(project.getTitle())
-        .semester(project.getSemester())
+        .semester(project.getSemester().getSemester())
         .award(project.isAward())
-        .projectType(project.getProjectType())
+        .projectTypeName(project.getProjectType().getProjectTypeName())
         .content(project.getContent())
-        .members(toMembersMap(project))
-        .imageUrls(imageUrls)
+        .projectMembers(
+            project.getProjectMembers().stream()
+                .map(
+                    projectMember ->
+                        ProjectMemberResponse.builder()
+                            .projectMemberId(projectMember.getId())
+                            .projectMemberName(projectMember.getProjectMemberName())
+                            .track(projectMember.getTrack())
+                            .build())
+                .toList())
+        .projectImageResponses(projectImageResponses)
         .build();
   }
 
   @Override
-  public void deleteProject(Long id) {
+  public void deleteProject(Long projectId) {
 
-    Project project = getProject(id);
+    Project project = getProject(projectId);
 
-    projectImageRepository
-        .findImagesByProjectId(project.getId())
-        .forEach(image -> projectImageService.deleteProjectImageByUrl(image.getImageUrl()));
+    List<ProjectImage> projectImages =
+        projectImageRepository.findImagesByProjectId(project.getId());
 
+    projectImages.forEach(
+        image -> projectImageService.deleteProjectImageByUrl(image.getImageUrl()));
+
+    projectImageRepository.deleteAll(projectImages);
+    projectMemberRepository.deleteAll(project.getProjectMembers());
     projectRepository.delete(project);
 
-    log.info("[Project] 프로젝트 삭제 완료 - projectId={}", id);
+    log.info("[Project] 프로젝트 삭제 완료 - projectId={}", projectId);
   }
 
   private Project getProject(Long id) {
@@ -221,7 +308,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
   }
 
-  private void validateUpdateRequest(ProjectCreateRequest request) {
+  private void validateUpdateRequest(ProjectUpdateRequest request) {
     if (request == null
         || request.getTitle() == null
         || request.getTitle().isBlank()
@@ -246,77 +333,29 @@ public class ProjectServiceImpl implements ProjectService {
     }
   }
 
-  private void validateDuplicateForCreate(String title, Long semesterId, ProjectType projectType) {
-
-    if (projectRepository.existsByTitleAndSemester_SemesterAndProjectType(
-        title, semesterId, projectType)) {
-
-      log.info("[Project] 중복 프로젝트 생성 시도 - title={}", title);
-      throw new CustomException(ProjectErrorCode.ALREADY_EXIST_PROJECT);
-    }
-  }
-
-  private void validateDuplicateForUpdate(
-      String title, Long semesterId, ProjectType projectType, Long id) {
-
-    if (projectRepository.existsByTitleAndSemester_SemesterAndProjectTypeAndIdNot(
-        title, semesterId, projectType, id)) {
-
-      log.info("[Project] 중복 프로젝트 수정 시도 - projectId={}", id);
-      throw new CustomException(ProjectErrorCode.ALREADY_EXIST_PROJECT);
-    }
-  }
-
-  private ProjectResponse toProjectResponse(Project project, String thumbnailUrl) {
-    return ProjectResponse.builder()
-        .id(project.getId())
-        .title(project.getTitle())
-        .semester(project.getSemester())
-        .award(project.isAward())
-        .projectType(project.getProjectType())
-        .content(project.getContent())
-        .members(toMembersMap(project))
-        .thumbnailUrl(thumbnailUrl)
-        .build();
-  }
-
-  private Map<Track, List<String>> toMembersMap(Project project) {
-    return project.getMembers().stream()
-        .filter(m -> m.getTrack() != null && m.getName() != null && !m.getName().isBlank())
-        .collect(
-            Collectors.groupingBy(
-                ProjectMember::getTrack,
-                LinkedHashMap::new,
-                Collectors.mapping(ProjectMember::getName, Collectors.toList())));
-  }
-
   @Override
   @Transactional(readOnly = true)
-  public Page<ProjectResponse> getAwardProjectsByPage(Integer page, Integer size) {
+  public InfiniteResponse<ProjectAwardResponse> getAwardProjectsByPage(
+      Long lastCursorId, Integer size) {
+    size = (size == null || size <= 0) ? 3 : size;
+    Pageable pageable = PageRequest.of(0, size + 1, Sort.by(Direction.DESC, "id"));
+    List<Project> projects = projectRepository.findAwardProjects(pageable, lastCursorId);
 
-    int pageNumber = (page == null || page < 0) ? 0 : page;
-    int pageSize = (size == null || size <= 0) ? 6 : size;
+    boolean hasNext = projects.size() > size;
+    if (hasNext) {
+      projects = projects.subList(0, size);
+    }
+    Long lastCursor = projects.isEmpty() ? null : projects.getLast().getId();
+    List<ProjectAwardResponse> list =
+        projects.stream()
+            .map(
+                project ->
+                    ProjectAwardResponse.builder()
+                        .projectId(project.getId())
+                        .thumbnailUrl(project.getProjectImages().getFirst().getImageUrl())
+                        .build())
+            .toList();
 
-    Page<Project> projects =
-        projectRepository.findAwardProjects(PageRequest.of(pageNumber, pageSize));
-
-    Page<ProjectResponse> result =
-        projects.map(
-            project -> {
-              List<ProjectImage> images =
-                  projectImageRepository.findImagesByProjectId(project.getId());
-              String thumbnailUrl =
-                  images.stream().findFirst().map(ProjectImage::getImageUrl).orElse(null);
-
-              return toProjectResponse(project, thumbnailUrl);
-            });
-
-    log.info(
-        "[Project] 수상작 무한스크롤 조회 완료 - page={}, size={}, totalElements={}",
-        pageNumber,
-        pageSize,
-        projects.getTotalElements());
-
-    return result;
+    return infiniteMapper.toProjectAwardInfiniteResponse(list, lastCursor, hasNext, size);
   }
 }

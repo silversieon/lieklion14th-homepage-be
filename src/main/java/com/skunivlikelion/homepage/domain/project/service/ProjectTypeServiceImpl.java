@@ -35,7 +35,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
     String projectTypeName = request.getProjectTypeName();
 
     if (projectTypeRepository.existsByProjectTypeName(projectTypeName)) {
-      log.warn("[ProjectType] 프로젝트 타입 생성 실패. 이미 존재하는 프로젝트타입 - projectType={}", projectTypeName);
+      log.info("[ProjectType] 프로젝트 타입 생성 실패. 이미 존재하는 프로젝트타입 - projectType={}", projectTypeName);
       throw new CustomException(ProjectErrorCode.ALREADY_EXIST_PROJECT_TYPE);
     }
     try {
@@ -51,10 +51,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
   @Override
   public void deleteProjectType(Long projectTypeId) {
 
-    if (!projectTypeRepository.existsById(projectTypeId)) {
-      log.warn("[ProjectType] 프로젝트 타입 삭제 실패. 존재하지 않은 프로젝트 타입 - projectType={}", projectTypeId);
-      throw new CustomException(ProjectErrorCode.NOT_FOUND_PROJECT_TYPE);
-    }
+    checkProjectType(projectTypeId);
     try {
       int deleted = projectTypeRepository.deleteByProjectTypeIdNative(projectTypeId);
       log.info("[ProjectType] 프로젝트 타입 삭제 완료 - projectType={}, deleted={}", projectTypeId, deleted);
@@ -75,7 +72,6 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
   }
 
   @Override
-  @Transactional(readOnly = true)
   public void checkProjectType(Long projectTypeId) {
     if (!projectTypeRepository.existsById(projectTypeId)) {
       log.warn("[ProjectType] 해당 프로젝트 타입이 존재하지 않음 - projectType={}", projectTypeId);

@@ -8,7 +8,7 @@ import java.util.List;
 
 import jakarta.persistence.*;
 
-import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
+import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 
 import backend.boilerplate.common.BaseTimeEntity;
@@ -33,16 +33,11 @@ public class Project extends BaseTimeEntity {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
 
+  @Column private boolean award;
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "project_type_id", nullable = false)
   private ProjectType projectType;
-
-  @Builder.Default
-  @ElementCollection
-  @CollectionTable(name = "project_members", joinColumns = @JoinColumn(name = "project_id"))
-  private List<ProjectMember> members = new ArrayList<>();
-
-  @Column private boolean award;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "semester_id", nullable = false)
@@ -50,9 +45,13 @@ public class Project extends BaseTimeEntity {
 
   @Builder.Default
   @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ProjectMember> projectMembers = new ArrayList<>();
+
+  @Builder.Default
+  @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ProjectImage> projectImages = new ArrayList<>();
 
-  public void update(ProjectCreateRequest request) {
+  public void update(ProjectUpdateRequest request) {
     if (request == null) return;
 
     if (request.getTitle() != null) {
@@ -62,26 +61,20 @@ public class Project extends BaseTimeEntity {
       this.content = request.getContent();
     }
     this.award = request.isAward();
-
-    if (request.getMembers() != null) {
-      this.members.clear();
-      request
-          .getMembers()
-          .forEach(
-              (track, names) -> {
-                if (names == null) return;
-                for (String name : names) {
-                  if (name == null || name.isBlank()) continue;
-                  this.members.add(new ProjectMember(track, name.trim()));
-                }
-              });
-    }
   }
 
-  public void update(ProjectCreateRequest request, Semester semester, ProjectType projectType) {
+  public void update(ProjectUpdateRequest request, Semester semester, ProjectType projectType) {
     update(request);
 
     if (semester != null) this.semester = semester;
     if (projectType != null) this.projectType = projectType;
+  }
+
+  public void addProjectMember(ProjectMember projectMember) {
+    this.projectMembers.add(projectMember);
+  }
+
+  public void addProjectImage(ProjectImage projectImage) {
+    this.projectImages.add(projectImage);
   }
 }

@@ -14,13 +14,15 @@ import jakarta.validation.constraints.Size;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(title = "ProjectCreateRequest: 프로젝트 생성/수정 요청 DTO")
-public class ProjectCreateRequest {
+@Schema(title = "ProjectUpdateRequest: 프로젝트 수정 요청 DTO")
+public class ProjectUpdateRequest {
 
   @NotBlank(message = "title은 필수입니다.")
   @Size(max = 100, message = "title은 100자 이내여야 합니다.")
@@ -41,9 +43,15 @@ public class ProjectCreateRequest {
   @Schema(description = "프로젝트 설명", example = "2025년도 서경대학교 대동제 축제 안내 페이지입니다.")
   private String content;
 
+  @Schema(description = "변경 시 유지할 프로젝트 멤버 식별자들", example = "[1, 3, 7]")
+  private List<Long> remainingProjectMemberIds;
+
   @Schema(
-      description = "트랙별 참여자 이름 목록 (key=트랙, value=이름 리스트)",
+      description = "새로 추가할 트랙별 참여자 이름 목록 (key=트랙, value=이름 리스트)",
       example =
           "{\"PM\":[\"홍길동\"],\"DESIGN\":[\"김디자이너\"],\"FRONTEND\":[\"이프론트\",\"박프론트\"],\"BACKEND\":[\"최백\"]}")
-  private Map<Track, List<String>> projectMembers;
+  private Map<Track, List<String>> newProjectMembers;
+
+  @Schema(description = "변경 시 유지할 이미지 식별자들", example = "[1, 3, 7]")
+  private List<Long> remainingProjectImageIds;
 }
