@@ -15,6 +15,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Schema(title = "ProjectTypeResponse: 프로젝트 타입 조회 응답 DTO")
 public class ProjectTypeResponse {
+  @Schema(description = "프로젝트 타입 식별자", example = "1")
   private Long projectTypeId;
 
   @Schema(description = "프로젝트 타입", example = "중앙해커톤")

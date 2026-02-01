@@ -33,7 +33,7 @@ public interface ProjectTypeService {
   List<ProjectTypeResponse> getAllProjectTypes();
 
   /**
-   * [프로젝트 타입 존재 여부 확인 메서드] 해당 프로젝트 타입 존재 여부를 반환
+   * [프로젝트 타입 존재 여부 확인 메서드] 해당 프로젝트 타입 존재 여부 확인
    *
    * @param projectTypeId 확인할 프로젝트 타입 값
    */

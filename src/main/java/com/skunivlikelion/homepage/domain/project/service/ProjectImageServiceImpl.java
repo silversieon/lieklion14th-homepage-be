@@ -3,7 +3,6 @@
  */
 package com.skunivlikelion.homepage.domain.project.service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -31,18 +30,13 @@ public class ProjectImageServiceImpl implements ProjectImageService {
   @Override
   public List<ProjectImage> uploadProjectImages(
       List<MultipartFile> projectImages, Project project) {
-    if (projectImages == null || projectImages.isEmpty()) {
-      throw new CustomException(ProjectErrorCode.INVALID_PROJECT_REQUEST);
-    }
-
-    List<ProjectImage> savedImages = new ArrayList<>();
 
     for (MultipartFile file : projectImages) {
       String imageUrl = s3Service.uploadFile(PathName.PROJECT, file);
       ProjectImage image = ProjectImage.builder().project(project).imageUrl(imageUrl).build();
-      savedImages.add(projectImageRepository.save(image));
+      project.addProjectImage(projectImageRepository.save(image));
     }
-    return savedImages;
+    return project.getProjectImages();
   }
 
   @Override

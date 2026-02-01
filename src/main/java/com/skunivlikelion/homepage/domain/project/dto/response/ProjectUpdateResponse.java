@@ -4,11 +4,6 @@
 package com.skunivlikelion.homepage.domain.project.dto.response;
 
 import java.util.List;
-import java.util.Map;
-
-import com.skunivlikelion.homepage.domain.common.enums.Track;
-import com.skunivlikelion.homepage.domain.project.entity.ProjectType;
-import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -27,19 +22,16 @@ public class ProjectUpdateResponse {
   private boolean award;
 
   @Schema(description = "기수식별자", example = "14기")
-  private Semester semester;
+  private Long semester;
 
   @Schema(description = "프로젝트타입", example = "중앙해커톤")
-  private ProjectType projectType;
+  private String projectTypeName;
 
   @Schema(description = "프로젝트 설명", example = "2025년도 서경대학교 대동제 축제 안내 페이지입니다.")
   private String content;
 
-  @Schema(
-      description = "트랙별 참여자 이름 목록 (key=트랙, value=이름 리스트)",
-      example =
-          "{\"PM\":[\"홍길동\"],\"DESIGN\":[\"김디자이너\"],\"FRONTEND\":[\"이프론트\",\"박프론트\"],\"BACKEND\":[\"최백\"]}")
-  private Map<Track, List<String>> members;
+  @Schema(description = "트랙별 참여자 이름 목록 (key=트랙, value=이름 리스트)")
+  private List<ProjectMemberResponse> projectMembers;
 
   @Schema(
       description = "대표 이미지 URL",
@@ -47,11 +39,5 @@ public class ProjectUpdateResponse {
   private String thumbnailUrl;
 
   @Schema(description = "유지된 이미지 URL 리스트")
-  private List<String> remainingImageUrls;
-
-  @Schema(description = "새로 추가된 이미지 개수", example = "3")
-  private int newImagesCount;
-
-  @Schema(description = "삭제된 이미지 개수", example = "2")
-  private int deletedImagesCount;
+  private List<ProjectImageResponse> projectImageResponses;
 }

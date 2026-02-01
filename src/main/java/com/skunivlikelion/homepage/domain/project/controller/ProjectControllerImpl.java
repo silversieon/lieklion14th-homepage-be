@@ -15,10 +15,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectTypeRequest;
+import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.response.*;
 import com.skunivlikelion.homepage.domain.project.service.ProjectService;
 import com.skunivlikelion.homepage.domain.project.service.ProjectTypeService;
 import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
+import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import com.skunivlikelion.homepage.global.page.response.PageResponse;
 
 import backend.boilerplate.response.BaseResponse;
@@ -58,11 +60,11 @@ public class ProjectControllerImpl implements ProjectController {
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<BaseResponse<ProjectPostResponse>> createProject(
+  public ResponseEntity<BaseResponse<ProjectResponse>> createProject(
       @Valid @RequestPart("request") ProjectCreateRequest request,
       @RequestPart(value = "projectImages", required = false) MultipartFile[] projectImages) {
     List<MultipartFile> images = (projectImages == null) ? List.of() : List.of(projectImages);
-    ProjectPostResponse response = projectService.createProject(request, images);
+    ProjectResponse response = projectService.createProject(request, images);
     return ResponseEntity.status(201).body(BaseResponse.success(201, "프로젝트 생성을 성공했습니다.", response));
   }
 
@@ -70,14 +72,12 @@ public class ProjectControllerImpl implements ProjectController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ProjectUpdateResponse>> updateProject(
       @PathVariable(value = "project-id") Long projectId,
-      @Valid @RequestPart("request") ProjectCreateRequest request,
-      @RequestPart(value = "remainingImageUrls", required = false) List<String> remainingImageUrls,
+      @Valid @RequestPart("request") ProjectUpdateRequest request,
       @RequestPart(value = "projectImages", required = false) MultipartFile[] newImages) {
 
     List<MultipartFile> newImageList = (newImages == null) ? List.of() : List.of(newImages);
 
-    ProjectUpdateResponse response =
-        projectService.updateProject(projectId, request, remainingImageUrls, newImageList);
+    ProjectUpdateResponse response = projectService.updateProject(projectId, request, newImageList);
 
     return ResponseEntity.status(200).body(BaseResponse.success(200, "프로젝트 수정에 성공했습니다.", response));
   }
@@ -91,27 +91,29 @@ public class ProjectControllerImpl implements ProjectController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<PageResponse<ProjectResponse>>>
+  public ResponseEntity<BaseResponse<PageResponse<ProjectPageResponse>>>
       getProjectByPageAndSemesterAndTypeAndSearch(
           Long projectTypeId, Long semester, String search, Integer page) {
-    Page<ProjectResponse> projectPage =
+    Page<ProjectPageResponse> projectPage =
         projectService.getProjectByPageAndSemesterAndTypeAndSearch(
             projectTypeId, semester, search, page);
-    PageResponse<ProjectResponse> response = pageMapper.toPageResponse(projectPage);
+    PageResponse<ProjectPageResponse> response = pageMapper.toPageResponse(projectPage);
     return ResponseEntity.ok(BaseResponse.success(200, "프로젝트 목록 조회에 성공했습니다.", response));
   }
 
   @Override
-  public ResponseEntity<BaseResponse<ProjectDetailResponse>> getProjectByProjectId(Long id) {
-    ProjectDetailResponse response = projectService.getProjectByProjectId(id);
+  public ResponseEntity<BaseResponse<ProjectDetailResponse>> getProjectByProjectId(Long projectId) {
+    ProjectDetailResponse response = projectService.getProjectByProjectId(projectId);
     return ResponseEntity.ok(BaseResponse.success(200, "프로젝트 단일 조회에 성공했습니다.", response));
   }
 
   @Override
-  public ResponseEntity<BaseResponse<Page<ProjectResponse>>> getAwardProjects(
-      @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+  public ResponseEntity<BaseResponse<InfiniteResponse<ProjectAwardResponse>>> getAwardProjects(
+      @RequestParam(value = "last-cursor-id", required = false) Long lastCursorId,
+      @RequestParam Integer size) {
 
-    Page<ProjectResponse> result = projectService.getAwardProjectsByPage(page, size);
+    InfiniteResponse<ProjectAwardResponse> result =
+        projectService.getAwardProjectsByPage(lastCursorId, size);
 
     return ResponseEntity.ok(BaseResponse.success(200, "수상작 무한스크롤 조회 성공", result));
   }

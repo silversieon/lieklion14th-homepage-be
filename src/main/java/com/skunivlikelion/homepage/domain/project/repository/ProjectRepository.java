@@ -3,6 +3,8 @@
  */
 package com.skunivlikelion.homepage.domain.project.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,7 +46,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         SELECT p
         FROM Project p
         WHERE p.award = true
-        ORDER BY p.createdAt DESC
+        AND (:projectId IS NULL OR p.id < :projectId)
+        ORDER BY p.id DESC
         """)
-  Page<Project> findAwardProjects(Pageable pageable);
+  List<Project> findAwardProjects(Pageable pageable, @Param("projectId") Long projectId);
 }
