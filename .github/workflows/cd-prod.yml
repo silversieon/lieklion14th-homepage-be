@@ -31,7 +31,7 @@ jobs:
 
           echo "🔵 [PROD] Pushing Docker image"
           docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:prod-${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest-${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
