@@ -27,7 +27,7 @@ jobs:
           echo "🔵 [PROD] Building Docker image"
           docker build -f ./docker/Dockerfile \
             -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest \
-            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:prod-${{ github.sha }} .
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest-${{ github.sha }} .
 
           echo "🔵 [PROD] Pushing Docker image"
           docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.PROD_DOCKER_REPO }}:latest
