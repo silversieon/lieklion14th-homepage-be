@@ -26,8 +26,8 @@ jobs:
         run: |
           echo "🟢 [DEV] Building Docker image"
           docker build -f ./docker/Dockerfile \
-            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest \
-            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest-${{ github.sha }} .
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest \
+            -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest-${{ github.sha }} .
 
           echo "🟢 [DEV] Pushing Docker image"
           docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest
