@@ -30,8 +30,8 @@ jobs:
             -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:dev-${{ github.sha }} .
 
           echo "🟢 [DEV] Pushing Docker image"
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:dev
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:dev-${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DEV_DOCKER_REPO }}:latest-${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
