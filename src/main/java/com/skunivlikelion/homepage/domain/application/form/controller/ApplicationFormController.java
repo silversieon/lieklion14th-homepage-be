@@ -25,6 +25,15 @@ import com.skunivlikelion.homepage.global.common.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 모집 공고 일정 관련 Controller interface 입니다.
+ *
+ * @since 2026.01.20
+ * @see com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm
+ * @see com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService
+ * @author Kim Na Kyung
+ * @version latest: 1
+ */
 @RequestMapping("/api")
 @Tag(name = "ApplicationForm", description = "모집 공고 일정 관리 API")
 public interface ApplicationFormController {
@@ -55,7 +64,7 @@ public interface ApplicationFormController {
       description =
           """
               **Parameters**  \n
-              applicationFormId: 수정할 모집 공고 ID  \n
+              application-form-id: 수정할 모집 공고 ID  \n
 
               **RequestBody**  \n
               openAt: 모집 시작 일시  \n
@@ -67,9 +76,9 @@ public interface ApplicationFormController {
               **Returns**  \n
               수정된 모집 공고 정보
               """)
-  @PutMapping("/v1/admin/applications/forms/{applicationFormId}")
+  @PutMapping("/v1/admin/applications/forms/{application-form-id}")
   ResponseEntity<BaseResponse<ApplicationFormResponse>> updateApplicationForm(
-      @PathVariable @Positive Long applicationFormId,
+      @PathVariable("application-form-id") @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationFormUpsertRequest request);
 
   @Operation(
@@ -77,14 +86,14 @@ public interface ApplicationFormController {
       description =
           """
               **Parameters**  \n
-              applicationFormId: 삭제할 모집 공고 ID  \n
+              application-form-id: 삭제할 모집 공고 ID  \n
 
               **Returns**  \n
               지원 일정 삭제 성공/실패 여부
               """)
-  @DeleteMapping("/v1/admin/applications/forms/{applicationFormId}")
+  @DeleteMapping("/v1/admin/applications/forms/{application-form-id}")
   ResponseEntity<BaseResponse<Void>> deleteApplicationForm(
-      @PathVariable @Positive Long applicationFormId);
+      @PathVariable("application-form-id") @Positive Long applicationFormId);
 
   @Operation(
       summary = "[ 사용자 | 토큰 X | 진행중 지원 일정 조회 ]",

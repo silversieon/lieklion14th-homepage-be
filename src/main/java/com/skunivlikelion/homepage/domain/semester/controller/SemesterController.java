@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +23,15 @@ import com.skunivlikelion.homepage.global.common.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Validated
+/**
+ * 멋쟁이사자처럼 홈페이지 기수 관련 Controller interface 입니다.
+ *
+ * @since 2026.01.20
+ * @see com.skunivlikelion.homepage.domain.semester.entity.Semester
+ * @see com.skunivlikelion.homepage.domain.semester.service.SemesterService
+ * @author Kim Na Kyung
+ * @version latest: 1
+ */
 @RequestMapping("/api")
 @Tag(name = "Semester", description = "기수 관리 API")
 public interface SemesterController {

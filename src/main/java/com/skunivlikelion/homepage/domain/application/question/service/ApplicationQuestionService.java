@@ -9,6 +9,16 @@ import com.skunivlikelion.homepage.domain.application.question.dto.response.Appl
 import com.skunivlikelion.homepage.domain.application.question.dto.response.ApplicationSummaryListResponse;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 지원서 질문 관련 Service interface 입니다.
+ *
+ * @see com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord
+ * @see com.skunivlikelion.homepage.domain.application.record.controller.ApplicationRecordController
+ * @see com.skunivlikelion.homepage.domain.application.record.service.ApplicationRecordDraftHandler
+ * @see com.skunivlikelion.homepage.domain.application.record.validator.SubmitSnapshotValidator
+ * @since 2026.01.23
+ * @author Kim Na Kyung
+ */
 public interface ApplicationQuestionService {
 
   /**

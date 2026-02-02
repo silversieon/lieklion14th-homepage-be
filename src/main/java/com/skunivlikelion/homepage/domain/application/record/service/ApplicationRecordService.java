@@ -14,6 +14,14 @@ import com.skunivlikelion.homepage.domain.application.record.dto.response.Applic
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 모집 공고 일정 관련 Service interface 입니다.
+ *
+ * @see com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm
+ * @see com.skunivlikelion.homepage.domain.application.form.controller.ApplicationFormController
+ * @since 2026.01.27
+ * @author Kim Na Kyung
+ */
 public interface ApplicationRecordService {
 
   /**

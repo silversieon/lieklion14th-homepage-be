@@ -32,7 +32,7 @@ public class ApplicationResultControllerImpl implements ApplicationResultControl
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<AdminDocumentResultUpdateResponse>> updateDocumentResult(
-      @PathVariable Long applicationRecordId,
+      @PathVariable("application-record-id") Long applicationRecordId,
       @Valid @RequestBody AdminDocumentResultUpdateRequest request) {
 
     AdminDocumentResultUpdateResponse response =
@@ -47,8 +47,9 @@ public class ApplicationResultControllerImpl implements ApplicationResultControl
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<AdminApplicationResultConfirmResponse>>
       confirmApplicationResult(
-          @PathVariable Long applicationRecordId,
+          @PathVariable("application-record-id") Long applicationRecordId,
           @Valid @RequestBody AdminApplicationResultConfirmRequest request) {
+
     return ResponseEntity.status(201)
         .body(
             BaseResponse.success(
@@ -60,6 +61,7 @@ public class ApplicationResultControllerImpl implements ApplicationResultControl
 
   @Override
   public ResponseEntity<BaseResponse<MyInterviewResultResponse>> getMyInterviewResult() {
+
     return ResponseEntity.status(200)
         .body(
             BaseResponse.success(

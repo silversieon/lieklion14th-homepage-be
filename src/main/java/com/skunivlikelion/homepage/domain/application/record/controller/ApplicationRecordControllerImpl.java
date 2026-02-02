@@ -113,7 +113,7 @@ public class ApplicationRecordControllerImpl implements ApplicationRecordControl
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationRecordResponse>> getApplicationDetail(
-      @PathVariable Long applicationRecordId) {
+      @PathVariable("application-record-id") Long applicationRecordId) {
 
     ApplicationRecordResponse response =
         applicationRecordService.getApplicationDetail(applicationRecordId);

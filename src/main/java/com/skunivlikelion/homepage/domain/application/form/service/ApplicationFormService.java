@@ -9,6 +9,14 @@ import com.skunivlikelion.homepage.domain.application.form.dto.request.Applicati
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 모집 공고 일정 관련 Service interface 입니다.
+ *
+ * @see com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm
+ * @see com.skunivlikelion.homepage.domain.application.form.controller.ApplicationFormController
+ * @since 2026.01.20
+ * @author Kim Na Kyung
+ */
 public interface ApplicationFormService {
 
   /**

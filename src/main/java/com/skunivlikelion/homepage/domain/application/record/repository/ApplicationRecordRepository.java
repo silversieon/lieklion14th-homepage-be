@@ -101,4 +101,6 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
             and r.isSubmitted = true
           """)
   Optional<ApplicationRecord> findSubmittedWithUserAndForm(@Param("recordId") Long recordId);
+
+  boolean existsByApplicationFormId(Long applicationFormId);
 }

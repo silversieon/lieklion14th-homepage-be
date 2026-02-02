@@ -36,6 +36,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
       @Valid @RequestBody ApplicationFormUpsertRequest request) {
 
     ApplicationFormResponse response = applicationFormService.createApplicationForm(request);
+
     return ResponseEntity.status(201)
         .body(BaseResponse.success(201, "지원 일정 등록에 성공했습니다.", response));
   }
@@ -43,7 +44,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationFormResponse>> updateApplicationForm(
-      @PathVariable @Positive Long applicationFormId,
+      @PathVariable("application-form-id") @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationFormUpsertRequest request) {
 
     ApplicationFormResponse response =
@@ -56,9 +57,10 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<Void>> deleteApplicationForm(
-      @PathVariable @Positive Long applicationFormId) {
+      @PathVariable("application-form-id") @Positive Long applicationFormId) {
 
     applicationFormService.deleteApplicationForm(applicationFormId);
+
     return ResponseEntity.status(200).body(BaseResponse.success(200, "지원 일정 삭제에 성공했습니다.", null));
   }
 
@@ -66,6 +68,7 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   public ResponseEntity<BaseResponse<ApplicationFormResponse>> getCurrentApplicationForm() {
 
     ApplicationFormResponse response = applicationFormService.getCurrentApplicationFormResponse();
+
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "진행중 지원 일정 조회에 성공했습니다.", response));
   }
@@ -73,7 +76,9 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<List<ApplicationFormResponse>>> getAllApplicationForms() {
+
     List<ApplicationFormResponse> result = applicationFormService.getAllApplicationForms();
+
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "모집 공고 내림차순 전체 조회에 성공했습니다.", result));
   }

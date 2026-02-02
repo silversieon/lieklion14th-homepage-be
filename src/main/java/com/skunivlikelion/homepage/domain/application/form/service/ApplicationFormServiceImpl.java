@@ -16,6 +16,7 @@ import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationFor
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.mapper.ApplicationFormMapper;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
+import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
@@ -31,6 +32,8 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
 
   private final ApplicationFormRepository applicationFormRepository;
   private final SemesterRepository semesterRepository;
+  private final ApplicationRecordRepository applicationRecordRepository;
+
   private final ApplicationFormMapper applicationFormMapper;
 
   @Override
@@ -148,6 +151,14 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
           found.getId(),
           found.getSemester().getSemester());
       throw new CustomException(ApplicationFormErrorCode.CANNOT_DELETE_FORM_WITH_QUESTIONS);
+    }
+
+    if (applicationRecordRepository.existsByApplicationFormId(found.getId())) {
+      log.warn(
+          "[ApplicationForm] 삭제 실패 - 지원서 존재 - formId={}, semester={}",
+          found.getId(),
+          found.getSemester().getSemester());
+      throw new CustomException(ApplicationFormErrorCode.CANNOT_DELETE_FORM_WITH_RECORDS);
     }
 
     applicationFormRepository.delete(found);
