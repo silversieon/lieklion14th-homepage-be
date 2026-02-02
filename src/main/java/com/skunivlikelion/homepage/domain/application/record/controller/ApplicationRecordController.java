@@ -29,6 +29,15 @@ import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 지원서 질문 관련 Controller interface 입니다.
+ *
+ * @since 2026.01.27
+ * @see com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord
+ * @see com.skunivlikelion.homepage.domain.application.record.service.ApplicationRecordService
+ * @author Kim Na Kyung
+ * @version latest: 1
+ */
 @RequestMapping("/api")
 @Tag(name = "ApplicationRecord", description = "사용자 지원서 관련 API")
 public interface ApplicationRecordController {
@@ -136,12 +145,12 @@ public interface ApplicationRecordController {
       description =
           """
               **Path Parameters**  \n
-              applicationRecordId: 지원서 식별자  \n
+              application-record-id: 지원서 식별자  \n
 
               **Returns**  \n
               사용자 정보 + 공통/트랙 질문/답변
               """)
-  @GetMapping("/v1/admin/applications/records/{applicationRecordId}")
+  @GetMapping("/v1/admin/applications/records/{application-record-id}")
   ResponseEntity<BaseResponse<ApplicationRecordResponse>> getApplicationDetail(
-      @PathVariable Long applicationRecordId);
+      @PathVariable("application-record-id") Long applicationRecordId);
 }

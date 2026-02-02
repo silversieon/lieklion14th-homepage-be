@@ -26,6 +26,15 @@ import com.skunivlikelion.homepage.global.common.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 지원서 질문 관련 Controller interface 입니다.
+ *
+ * @since 2026.01.20
+ * @see com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm
+ * @see com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService
+ * @author Kim Na Kyung
+ * @version latest: 1
+ */
 @RequestMapping("/api")
 @Tag(name = "ApplicationQuestion", description = "지원서 질문 관리 API")
 public interface ApplicationQuestionController {
@@ -53,7 +62,7 @@ public interface ApplicationQuestionController {
       description =
           """
               **Path Parameter**
-              applicationFormId: 모집 공고 식별자
+              application-form-id: 모집 공고 식별자
 
               **Request Body**
               트랙별 질문 목록 (문항번호, 질문 내용)
@@ -61,9 +70,9 @@ public interface ApplicationQuestionController {
               **Returns**
               수정된 지원서 질문 목록
               """)
-  @PutMapping("/v1/admin/applications/forms/{applicationFormId}/questions")
+  @PutMapping("/v1/admin/applications/forms/{application-form-id}/questions")
   ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>> updateQuestions(
-      @PathVariable @Positive Long applicationFormId,
+      @PathVariable("application-form-id") @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationQuestionUpsertRequest request);
 
   @Operation(
@@ -71,14 +80,14 @@ public interface ApplicationQuestionController {
       description =
           """
               **Path Parameter**
-              applicationFormId: 모집 공고 식별자
+              application-form-id: 모집 공고 식별자
 
               **Returns**
               삭제 성공 여부
               """)
-  @DeleteMapping("/v1/admin/applications/forms/{applicationFormId}/questions")
+  @DeleteMapping("/v1/admin/applications/forms/{application-form-id}/questions")
   ResponseEntity<BaseResponse<Void>> deleteQuestions(
-      @PathVariable @Positive Long applicationFormId);
+      @PathVariable("application-form-id") @Positive Long applicationFormId);
 
   @Operation(
       summary = "[ 사용자 | 토큰 O | 진행중 지원서 질문 조회 ]",

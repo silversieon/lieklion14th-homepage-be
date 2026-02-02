@@ -36,8 +36,10 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
   public ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>> createQuestions(
       @PathVariable @Positive Long semester,
       @Valid @RequestBody ApplicationQuestionUpsertRequest request) {
+
     ApplicationQuestionUpsertResponse response =
         applicationQuestionService.createQuestions(semester, request);
+
     return ResponseEntity.status(201)
         .body(BaseResponse.success(201, "지원서 질문 등록에 성공했습니다.", response));
   }
@@ -45,10 +47,12 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>> updateQuestions(
-      @PathVariable @Positive Long applicationFormId,
+      @PathVariable("application-form-id") @Positive Long applicationFormId,
       @Valid @RequestBody ApplicationQuestionUpsertRequest request) {
+
     ApplicationQuestionUpsertResponse response =
         applicationQuestionService.updateQuestions(applicationFormId, request);
+
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "지원서 질문 수정에 성공했습니다.", response));
   }
@@ -56,8 +60,10 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<Void>> deleteQuestions(
-      @PathVariable @Positive Long applicationFormId) {
+      @PathVariable("application-form-id") @Positive Long applicationFormId) {
+
     applicationQuestionService.deleteQuestions(applicationFormId);
+
     return ResponseEntity.status(200).body(BaseResponse.success(200, "지원서 질문 삭제에 성공했습니다.", null));
   }
 
@@ -66,6 +72,7 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
       @RequestParam Track track) {
     ApplicationQuestionGetResponse response =
         applicationQuestionService.getCurrentQuestionsByTrack(track);
+
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "지원서 질문 조회에 성공했습니다.", response));
   }
@@ -73,7 +80,9 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ApplicationSummaryListResponse>> getApplicationSummaries() {
+
     ApplicationSummaryListResponse response = applicationQuestionService.getApplicationSummaries();
+
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "등록된 지원서 목록 조회에 성공했습니다.", response));
   }

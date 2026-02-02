@@ -7,6 +7,13 @@ import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminA
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 지원 결과 관련 Service interface 입니다.
+ *
+ * @see com.skunivlikelion.homepage.domain.application.result.controller.ApplicationResultController
+ * @since 2026.01.29
+ * @author Kim Na Kyung
+ */
 public interface ApplicationResultService {
 
   /**

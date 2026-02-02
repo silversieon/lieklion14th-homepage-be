@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -105,6 +106,8 @@ public class SecurityConfig {
                 .requestMatchers("/error")
                 .permitAll()
                 .requestMatchers("/actuator/prometheus")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/")
                 .permitAll()
                 .requestMatchers(
                     "/api/v1/auth/**",

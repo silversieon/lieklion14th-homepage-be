@@ -9,6 +9,14 @@ import com.skunivlikelion.homepage.domain.semester.dto.request.SemesterRequest;
 import com.skunivlikelion.homepage.domain.semester.dto.response.SemesterResponse;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 
+/**
+ * 멋쟁이사자처럼 홈페이지 기수 관련 Service interface 입니다.
+ *
+ * @see com.skunivlikelion.homepage.domain.semester.entity.Semester
+ * @see com.skunivlikelion.homepage.domain.semester.controller.SemesterController
+ * @since 2026.01.20
+ * @author Kim Na Kyung
+ */
 public interface SemesterService {
 
   /**
