@@ -30,7 +30,7 @@ public class JwtCookieWriter {
         .httpOnly(true)
         .secure(jwtProperties.isSecure())
         .sameSite(jwtProperties.getSameSite())
-        .path("/api")
+        .path("/")
         .maxAge(jwtProperties.getAccessTokenValidityInSeconds())
         .build();
   }
@@ -40,7 +40,7 @@ public class JwtCookieWriter {
         .httpOnly(true)
         .secure(jwtProperties.isSecure())
         .sameSite(jwtProperties.getSameSite())
-        .path("/api")
+        .path("/")
         .maxAge(jwtProperties.getRefreshTokenValidityInSeconds())
         .build();
   }
@@ -50,7 +50,7 @@ public class JwtCookieWriter {
         .httpOnly(true)
         .secure(jwtProperties.isSecure())
         .sameSite(jwtProperties.getSameSite())
-        .path("/api")
+        .path("/")
         .maxAge(0)
         .build();
   }
