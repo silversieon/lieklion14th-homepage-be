@@ -105,7 +105,7 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers("/error")
                 .permitAll()
-                .requestMatchers("/actuator/prometheus")
+                .requestMatchers("/actuator/health")
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, "/")
                 .permitAll()

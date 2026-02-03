@@ -155,4 +155,15 @@ public interface AuthController {
           """)
   @PostMapping("/v1/auth/logout")
   ResponseEntity<BaseResponse<Void>> logout(HttpServletRequest request);
+
+  @Operation(
+      summary = "[ 관리자 | 토큰 O | 임의의 이메일 인증 완료 처리 ]",
+      description =
+          """
+          **Parameters**  \n
+          email: 인증을 받을 사람의 이메일 주소 (임의로 입력)  \n
+          """)
+  @PostMapping("/v1/admin/auth/email/verify/option")
+  ResponseEntity<BaseResponse<Void>> verifyOptionEmail(
+      @Valid @RequestBody EmailVerificationSendRequest request);
 }

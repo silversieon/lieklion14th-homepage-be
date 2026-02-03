@@ -138,4 +138,13 @@ public class AuthControllerImpl implements AuthController {
         .headers(tokenHeaders)
         .body(BaseResponse.success(200, "로그아웃에 성공하였습니다.", null));
   }
+
+  @Override
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<BaseResponse<Void>> verifyOptionEmail(
+      @Valid @RequestBody EmailVerificationSendRequest request) {
+    authService.verifyOptionEmail(request.getEmail());
+    return ResponseEntity.status(200)
+        .body(BaseResponse.success(200, "해당 메일 인증에 성공했습니다. (회원가입 가능)", null));
+  }
 }

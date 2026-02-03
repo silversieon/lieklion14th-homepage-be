@@ -274,4 +274,10 @@ public class AuthServiceImpl implements AuthService {
     jwtProvider.addToBlackList(refreshToken);
     log.info("[Auth] 사용자 로그아웃 - 이메일: {}", email);
   }
+
+  @Override
+  public void verifyOptionEmail(String email) {
+    redisTemplate.opsForValue().set(VERIFIED_EMAIL_CODE + email, "true", 24, TimeUnit.HOURS);
+    log.info("[Auth] 임의의 이메일 검증 성공 - 인증된 이메일: {}", email);
+  }
 }
