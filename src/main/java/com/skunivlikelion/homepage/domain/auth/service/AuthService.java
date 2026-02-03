@@ -91,4 +91,11 @@ public interface AuthService {
    * @param refreshToken 삭제 및 블랙리스트 처리 할 리프레시 토큰
    */
   void logout(String refreshToken);
+
+  /**
+   * [ 임의의 이메일 인증 완료 처리 메서드 ] 회원가입 테스트용
+   *
+   * @param email 인증 처리를 완료시킬 이메일
+   */
+  void verifyOptionEmail(String email);
 }

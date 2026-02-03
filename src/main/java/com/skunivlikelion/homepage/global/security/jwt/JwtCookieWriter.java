@@ -28,7 +28,8 @@ public class JwtCookieWriter {
   public ResponseCookie addAccessTokenToCookie(String accessToken) {
     return ResponseCookie.from(TokenType.ACCESS_TOKEN.name(), accessToken)
         .httpOnly(true)
-        .secure(true)
+        .secure(jwtProperties.isSecure())
+        .sameSite(jwtProperties.getSameSite())
         .path("/api")
         .maxAge(jwtProperties.getAccessTokenValidityInSeconds())
         .build();
@@ -37,7 +38,8 @@ public class JwtCookieWriter {
   public ResponseCookie addRefreshTokenToCookie(String refreshToken) {
     return ResponseCookie.from(TokenType.REFRESH_TOKEN.name(), refreshToken)
         .httpOnly(true)
-        .secure(true)
+        .secure(jwtProperties.isSecure())
+        .sameSite(jwtProperties.getSameSite())
         .path("/api")
         .maxAge(jwtProperties.getRefreshTokenValidityInSeconds())
         .build();
@@ -46,7 +48,8 @@ public class JwtCookieWriter {
   public ResponseCookie removeTokenFromCookie(TokenType tokenType) {
     return ResponseCookie.from(tokenType.name(), null)
         .httpOnly(true)
-        .secure(true)
+        .secure(jwtProperties.isSecure())
+        .sameSite(jwtProperties.getSameSite())
         .path("/api")
         .maxAge(0)
         .build();
