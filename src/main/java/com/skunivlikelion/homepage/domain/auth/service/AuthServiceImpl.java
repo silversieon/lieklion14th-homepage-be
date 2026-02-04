@@ -233,11 +233,7 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional(readOnly = true)
   public TokenResponse refresh(String refreshToken) {
-    if (!jwtProvider.validateTokenType(refreshToken, TokenType.REFRESH_TOKEN)
-        || !jwtProvider.validateRefreshToken(refreshToken)) {
-      log.info("[Auth] 유효하지 않은 리프레시 토큰을 통한 리프레시 요청");
-      throw new CustomException(AuthErrorCode.UNAUTHORIZED_TOKEN);
-    }
+    validateRefreshToken(refreshToken);
     String email = jwtProvider.getEmailFromToken(refreshToken);
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
@@ -270,6 +266,7 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public void logout(String refreshToken) {
+    validateRefreshToken(refreshToken);
     String email = jwtProvider.getEmailFromToken(refreshToken);
     jwtProvider.addToBlackList(refreshToken);
     log.info("[Auth] 사용자 로그아웃 - 이메일: {}", email);
@@ -279,5 +276,13 @@ public class AuthServiceImpl implements AuthService {
   public void verifyOptionEmail(String email) {
     redisTemplate.opsForValue().set(VERIFIED_EMAIL_CODE + email, "true", 24, TimeUnit.HOURS);
     log.info("[Auth] 임의의 이메일 검증 성공 - 인증된 이메일: {}", email);
+  }
+
+  private void validateRefreshToken(String refreshToken) {
+    if (!jwtProvider.validateTokenType(refreshToken, TokenType.REFRESH_TOKEN)
+        || !jwtProvider.validateRefreshToken(refreshToken)) {
+      log.info("[Auth] 유효하지 않은 리프레시 토큰을 통한 리프레시 요청");
+      throw new CustomException(AuthErrorCode.UNAUTHORIZED_TOKEN);
+    }
   }
 }
