@@ -359,7 +359,7 @@ class AuthServiceUnitTest {
     verify(jwtProvider).validateRefreshToken(refreshToken);
     verify(jwtProvider).getEmailFromToken(refreshToken);
     verify(userDetailsService).loadUserByUsername(email);
-    verify(jwtProvider).addToBlackList(refreshToken);
+    verify(jwtProvider).deleteRefreshToken(refreshToken);
     verify(jwtProvider)
         .generateTokenResponse(
             argThat(auth -> auth instanceof UsernamePasswordAuthenticationToken));

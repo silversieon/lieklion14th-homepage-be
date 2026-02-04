@@ -239,7 +239,7 @@ public class AuthServiceImpl implements AuthService {
     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
     Authentication authentication =
         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-    jwtProvider.addToBlackList(refreshToken);
+    jwtProvider.deleteRefreshToken(refreshToken);
     return jwtProvider.generateTokenResponse(authentication);
   }
 
@@ -268,7 +268,7 @@ public class AuthServiceImpl implements AuthService {
   public void logout(String refreshToken) {
     validateRefreshToken(refreshToken);
     String email = jwtProvider.getEmailFromToken(refreshToken);
-    jwtProvider.addToBlackList(refreshToken);
+    jwtProvider.deleteRefreshToken(refreshToken);
     log.info("[Auth] 사용자 로그아웃 - 이메일: {}", email);
   }
 
