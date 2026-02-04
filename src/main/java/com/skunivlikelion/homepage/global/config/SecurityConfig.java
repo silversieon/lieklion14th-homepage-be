@@ -111,7 +111,7 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers(
                     "/api/v1/auth/**",
-                    "/api/v1/users/club-members/",
+                    "/api/v1/users/club-members/**",
                     "/api/v1/semesters",
                     "/api/v1/applications/current-forms",
                     "/api/v1/projects/**",
