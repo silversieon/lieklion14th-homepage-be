@@ -44,7 +44,7 @@ public final class InterviewBookingMaskUtil {
 
   public static String maskName(String name) {
     if (name == null || name.isBlank()) {
-      return null;
+      return "*";
     }
 
     String n = name.trim();
@@ -62,7 +62,7 @@ public final class InterviewBookingMaskUtil {
 
   public static String maskStudentNumber(String studentNumber) {
     if (studentNumber == null || studentNumber.isBlank()) {
-      return null;
+      return "****";
     }
 
     String s = studentNumber.trim();

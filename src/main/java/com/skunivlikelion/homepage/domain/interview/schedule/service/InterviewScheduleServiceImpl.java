@@ -4,9 +4,11 @@
 package com.skunivlikelion.homepage.domain.interview.schedule.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +28,7 @@ import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSch
 import com.skunivlikelion.homepage.domain.interview.schedule.exception.InterviewScheduleErrorCode;
 import com.skunivlikelion.homepage.domain.interview.schedule.mapper.InterviewScheduleMapper;
 import com.skunivlikelion.homepage.domain.interview.schedule.repository.InterviewScheduleRepository;
+import com.skunivlikelion.homepage.domain.interview.schedule.validator.InterviewScheduleValidator;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
@@ -46,6 +49,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
   private final CurrentUserProvider currentUserProvider;
   private final ApplicationRecordRepository applicationRecordRepository;
   private final ApplicationFormService applicationFormService;
+  private final InterviewScheduleValidator interviewScheduleValidator;
 
   @Override
   public InterviewScheduleResponse createInterviewSchedule(
@@ -60,9 +64,12 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         request != null ? request.getEndTime() : null);
 
     validateSemesterExists(semester);
-    validateTrack(track);
-    validateRequestBody(request);
-    validateTimeRange(request);
+
+    interviewScheduleValidator.validateCreateRequest(semester, track, request);
+
+    LocalDateTime slotStartAt =
+        LocalDateTime.of(Objects.requireNonNull(request).getDate(), request.getStartTime());
+    interviewScheduleValidator.validateCreateWindow(semester, slotStartAt);
 
     boolean overlap =
         interviewScheduleRepository.existsOverlappingSchedule(
@@ -248,35 +255,6 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     if (semester == null || !semesterRepository.existsById(semester)) {
       log.warn("[InterviewSchedule] 기수 검증 실패 - semester={}", semester);
       throw new CustomException(InterviewScheduleErrorCode.NOT_FOUND_SEMESTER);
-    }
-  }
-
-  private void validateTrack(Track track) {
-    if (track == null) {
-      log.warn("[InterviewSchedule] 트랙 누락 - track=null");
-      throw new CustomException(InterviewScheduleErrorCode.INVALID_TRACK);
-    }
-  }
-
-  private void validateRequestBody(InterviewScheduleCreateRequest request) {
-    if (request == null) {
-      log.warn("[InterviewSchedule] 요청 바디 누락 - request=null");
-      throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
-    }
-  }
-
-  private void validateTimeRange(InterviewScheduleCreateRequest request) {
-    if (request.getStartTime() == null || request.getEndTime() == null) {
-      log.warn("[InterviewSchedule] 시간 값 누락");
-      throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
-    }
-
-    if (!request.getStartTime().isBefore(request.getEndTime())) {
-      log.info(
-          "[InterviewSchedule] 시간 검증 실패 - startTime >= endTime - startTime={}, endTime={}",
-          request.getStartTime(),
-          request.getEndTime());
-      throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
     }
   }
 

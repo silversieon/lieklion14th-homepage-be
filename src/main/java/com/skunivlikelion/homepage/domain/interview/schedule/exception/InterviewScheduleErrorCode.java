@@ -18,12 +18,20 @@ public enum InterviewScheduleErrorCode implements BaseErrorCode {
   REQUIRED_SEMESTER(
       "IVTSCH4003", "semester가 없습니다. 조회할 기수를 선택해서 다시 요청해주세요.", HttpStatus.BAD_REQUEST),
   INVALID_TRACK("IVTSCH4004", "track은 필수입니다.", HttpStatus.BAD_REQUEST),
+  INTERVIEW_DATE_OUT_OF_RANGE(
+      "IVTSCH4005",
+      "면접 일정은 interviewScheduleConfirmedAt ~ finalResultAt 기간 내에서만 생성할 수 있습니다.",
+      HttpStatus.BAD_REQUEST),
 
   NOT_PASSED_APPLICATION("IVTSCH4011", "서류 합격자만 면접 일정을 조회할 수 있습니다.", HttpStatus.UNAUTHORIZED),
+
+  INTERVIEW_SCHEDULE_CREATE_AFTER_CLOSE(
+      "IVTSCH4031", "면접 일정 확정 이후에는 면접 일정을 생성할 수 없습니다.", HttpStatus.FORBIDDEN),
 
   NOT_FOUND_SEMESTER("IVTSCH4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_APPLICATION_RECORD("IVTSCH4042", "지원 내역이 없습니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_SCHEDULE("IVTSCH4043", "존재하지 않는 면접 일정입니다.", HttpStatus.NOT_FOUND),
+  APPLICATION_FORM_NOT_FOUND("IVTSCH4044", "해당 기수의 모집 공고가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
 
   CANNOT_DELETE_BOOKED_SCHEDULE("IVTSCH4091", "예약된 면접 일정은 삭제할 수 없습니다.", HttpStatus.CONFLICT);
   private final String code;

@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,7 +46,12 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
 
   @Override
   public ResponseEntity<BaseResponse<AdminInterviewScheduleResponse>> getAdminInterviewSchedules(
-      Long semester, Track track, LocalDate dateFrom, LocalDate dateTo) {
+      @PathVariable @Positive Long semester,
+      @RequestParam(required = false) Track track,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dateFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dateTo) {
 
     AdminInterviewScheduleResponse result =
         interviewScheduleService.getAdminInterviewSchedules(semester, track, dateFrom, dateTo);
@@ -55,7 +61,11 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
 
   @Override
   public ResponseEntity<BaseResponse<UserInterviewScheduleResponse>> getUserInterviewSchedules(
-      Long semester, LocalDate dateFrom, LocalDate dateTo) {
+      @RequestParam(required = false) @Positive Long semester,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dateFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate dateTo) {
 
     UserInterviewScheduleResponse result =
         interviewScheduleService.getUserInterviewSchedules(semester, dateFrom, dateTo);
@@ -64,7 +74,8 @@ public class InterviewScheduleControllerImpl implements InterviewScheduleControl
   }
 
   @Override
-  public ResponseEntity<BaseResponse<Void>> deleteInterviewSchedule(@Positive Long scheduleId) {
+  public ResponseEntity<BaseResponse<Void>> deleteInterviewSchedule(
+      @PathVariable @Positive Long scheduleId) {
 
     interviewScheduleService.deleteInterviewSchedule(scheduleId);
 

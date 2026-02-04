@@ -6,13 +6,9 @@ package com.skunivlikelion.homepage.domain.interview.booking.service;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingCursorUtil.Cursor;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingCursorUtil.decodeCursor;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingCursorUtil.encodeCursor;
-import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil.maskEmail;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil.maskName;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil.maskStudentNumber;
-import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil.sha256Hex;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,6 +34,8 @@ import com.skunivlikelion.homepage.domain.interview.booking.exception.InterviewB
 import com.skunivlikelion.homepage.domain.interview.booking.mapper.InterviewBookingMapper;
 import com.skunivlikelion.homepage.domain.interview.booking.repository.AdminInterviewSlotView;
 import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
+import com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil;
+import com.skunivlikelion.homepage.domain.interview.booking.validator.InterviewBookingValidator;
 import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSchedule;
 import com.skunivlikelion.homepage.domain.interview.schedule.repository.InterviewScheduleRepository;
 import com.skunivlikelion.homepage.domain.user.entity.User;
@@ -62,17 +60,21 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
   private final InterviewBookingMapper interviewBookingMapper;
   private final ApplicationFormService applicationFormService;
   private final UserRepository userRepository;
+  private final InterviewBookingValidator interviewBookingValidator;
 
   @Override
   public InterviewBookingResponse createBooking(InterviewBookingCreateRequest request) {
+    if (request == null || request.getScheduleId() == null) {
+      throw new CustomException(InterviewBookingErrorCode.INVALID_REQUEST);
+    }
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
     Long scheduleId = request.getScheduleId();
 
     String email = user.getEmail();
-    String applicantKey = sha256Hex(email.toLowerCase());
-    String maskedEmail = maskEmail(email);
+    String applicantKey = InterviewBookingMaskUtil.sha256Hex(email.toLowerCase());
+    String maskedEmail = InterviewBookingMaskUtil.maskEmail(email);
 
     log.info("[InterviewBooking] 예약 요청 - userId={}, scheduleId={}", userId, scheduleId);
 
@@ -80,6 +82,9 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
         interviewScheduleRepository
             .findByIdForUpdate(scheduleId)
             .orElseThrow(() -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_SCHEDULE));
+
+    interviewBookingValidator.validateBookingWindow(schedule.getSemester());
+    interviewBookingValidator.validateSlotNotStarted(schedule);
 
     ApplicationRecord record =
         applicationRecordRepository
@@ -135,7 +140,16 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
       return interviewBookingMapper.toResponse(saved);
 
     } catch (DataIntegrityViolationException e) {
-      throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_SCHEDULE);
+      String msg = e.getMostSpecificCause().getMessage();
+      log.error("[InterviewBooking] rootCause={}", msg, e);
+
+      if (msg != null && msg.contains("uk_interview_booking_schedule")) {
+        throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_SCHEDULE);
+      }
+      if (msg != null && msg.contains("uk_interview_booking_semester_applicant")) {
+        throw new CustomException(InterviewBookingErrorCode.ALREADY_BOOKED_USER);
+      }
+      throw e;
     }
   }
 
@@ -258,7 +272,7 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
     User user = currentUserProvider.getCurrentUser();
 
     // applicantKey: 이메일 기반 해시
-    String applicantKey = sha256Hex(user.getEmail().toLowerCase());
+    String applicantKey = InterviewBookingMaskUtil.sha256Hex(user.getEmail().toLowerCase());
 
     Long resolvedSemester;
     if (semester != null) {
@@ -310,19 +324,19 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
   @Transactional
   public UserInterviewBookingResponse updateMyBooking(Long semester, Long newScheduleId) {
 
+    if (newScheduleId == null) {
+      throw new CustomException(InterviewBookingErrorCode.NOT_FOUND_SCHEDULE);
+    }
+
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
 
-    String applicantKey = sha256Hex(user.getEmail().toLowerCase());
+    String applicantKey = InterviewBookingMaskUtil.sha256Hex(user.getEmail().toLowerCase());
 
     Long resolvedSemester =
         (semester != null) ? semester : applicationFormService.getCurrentApplicationSemester();
 
-    log.info(
-        "[InterviewBooking] 예약 변경 요청 - userId={}, semester={}, newScheduleId={}",
-        userId,
-        resolvedSemester,
-        newScheduleId);
+    interviewBookingValidator.validateBookingWindow(resolvedSemester);
 
     InterviewBooking booking =
         interviewBookingRepository
@@ -335,6 +349,14 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
                       resolvedSemester);
                   return new CustomException(InterviewBookingErrorCode.NOT_FOUND_BOOKING);
                 });
+
+    interviewBookingValidator.validateSlotNotStarted(booking.getInterviewSchedule());
+
+    log.info(
+        "[InterviewBooking] 예약 변경 요청 - userId={}, semester={}, newScheduleId={}",
+        userId,
+        resolvedSemester,
+        newScheduleId);
 
     Long currentScheduleId = booking.getInterviewSchedule().getId();
 
@@ -352,6 +374,12 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
                   log.warn("[InterviewBooking] 변경 실패 - 일정 없음 - newScheduleId={}", newScheduleId);
                   return new CustomException(InterviewBookingErrorCode.NOT_FOUND_SCHEDULE);
                 });
+
+    if (!newSchedule.getSemester().equals(resolvedSemester)) {
+      throw new CustomException(InterviewBookingErrorCode.NOT_FOUND_SCHEDULE);
+    }
+
+    interviewBookingValidator.validateSlotNotStarted(newSchedule);
 
     if (interviewBookingRepository.existsByInterviewSchedule_Id(newScheduleId)) {
       log.warn("[InterviewBooking] 변경 실패 - 슬롯 중복 예약 - newScheduleId={}", newScheduleId);
@@ -445,41 +473,11 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
   @Transactional(readOnly = true)
   public boolean existInterviewBookingByUserAndSemester(User user, Long semester) {
 
-    String applicantKey = sha256Hex(user.getEmail().toLowerCase());
+    String applicantKey = InterviewBookingMaskUtil.sha256Hex(user.getEmail().toLowerCase());
 
     Optional<InterviewBooking> booking =
         interviewBookingRepository.findBySemesterIdAndApplicantKey(semester, applicantKey);
 
     return booking.isPresent();
-  }
-
-  private static String maskEmail(String email) {
-    if (email == null || !email.contains("@")) {
-      return "****";
-    }
-    String[] parts = email.split("@", 2);
-    String local = parts[0];
-    String domain = parts[1];
-
-    if (local.length() <= 2) {
-      return local.charAt(0) + "*@" + domain;
-    }
-    String head = local.substring(0, 2);
-    String tail = local.substring(Math.max(2, local.length() - 2));
-    return head + "****" + tail + "@" + domain;
-  }
-
-  private static String sha256Hex(String input) {
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
-      StringBuilder sb = new StringBuilder();
-      for (byte b : hash) {
-        sb.append(String.format("%02x", b));
-      }
-      return sb.toString();
-    } catch (Exception e) {
-      throw new IllegalStateException("SHA-256 hashing failed", e);
-    }
   }
 }
