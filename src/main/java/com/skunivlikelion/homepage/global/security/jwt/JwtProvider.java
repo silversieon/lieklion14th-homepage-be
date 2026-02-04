@@ -144,7 +144,7 @@ public class JwtProvider {
     return refreshToken.equals(storedRefreshToken);
   }
 
-  public void addToBlackList(String refreshToken) {
+  public void deleteRefreshToken(String refreshToken) {
     if (!validateTokenType(refreshToken, TokenType.REFRESH_TOKEN)) {
       log.warn("[Jwt] 올바르지 않은 Token 타입");
       return;
@@ -158,13 +158,6 @@ public class JwtProvider {
             .getPayload();
 
     String jti = claims.getId();
-    String redisKey =
-        jwtProperties.getBlackListPrefix() + jwtProperties.getRefreshTokenPrefix() + jti;
-
-    long ttl = claims.getExpiration().toInstant().getEpochSecond() - Instant.now().getEpochSecond();
-    if (ttl <= 0) return;
-
-    redisTemplate.opsForValue().set(redisKey, "blacklisted", ttl, TimeUnit.SECONDS);
 
     redisTemplate.delete(jwtProperties.getRefreshTokenPrefix() + jti);
   }
