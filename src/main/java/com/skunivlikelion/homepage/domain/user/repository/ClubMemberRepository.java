@@ -72,4 +72,13 @@ WHERE cm.user.id IN :userIds
   boolean existsByUser_IdIn(Collection<Long> userIds);
 
   boolean existsByUser_Id(Long userId);
+
+  @Query(
+      """
+select cm.position as position, cm.track as track, count(cm) as count
+from ClubMember cm
+where cm.semester.semester = :semester
+group by cm.position, cm.track
+""")
+  List<ClubMemberCountRow> countByPositionTrack(@Param("semester") Long semester);
 }

@@ -6,7 +6,9 @@ package com.skunivlikelion.homepage.domain.user.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +40,7 @@ import com.skunivlikelion.homepage.domain.user.enums.Position;
 import com.skunivlikelion.homepage.domain.user.exception.UserErrorCode;
 import com.skunivlikelion.homepage.domain.user.mapper.ClubMemberMapper;
 import com.skunivlikelion.homepage.domain.user.mapper.UserMapper;
+import com.skunivlikelion.homepage.domain.user.repository.ClubMemberCountRow;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
@@ -123,7 +126,9 @@ public class UserServiceImpl implements UserService {
   @Transactional(readOnly = true)
   public ClubMemberCursorResponse<List<ClubMemberPageResponse>> getClubMemberList(
       Long semester, Position nextPositionCursor, Track nextTrackCursor) {
-    if (nextPositionCursor == null || !(nextPositionCursor instanceof Position)) {
+    if (nextPositionCursor == null
+        || ((nextPositionCursor != Position.LEAD && nextPositionCursor != Position.COLEAD)
+            && nextTrackCursor == null)) {
       throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
     }
     Long safeSemester = semesterService.getSemester(semester).getSemester();
@@ -142,13 +147,17 @@ public class UserServiceImpl implements UserService {
 
     List<Track> tracksToFetchAvailable = Track.getCurrentSemesterTracks(safeSemester);
 
+    Map<Position, Map<Track, Long>> countMap =
+        clubMemberRepository.countByPositionTrack(safeSemester).stream()
+            .collect(
+                Collectors.groupingBy(
+                    ClubMemberCountRow::getPosition,
+                    Collectors.toMap(ClubMemberCountRow::getTrack, ClubMemberCountRow::getCount)));
+
     List<Position> positionsToFetch;
     List<Track> tracksToFetch = new ArrayList<>();
     List<ClubMemberPageResponse> clubMemberPageResponses = new ArrayList<>();
 
-    Position newPositionCursor = null;
-    Track newTrackCursor = null;
-    boolean hasNext = false;
     if (nextPositionCursor == Position.LEAD || nextPositionCursor == Position.COLEAD) {
       positionsToFetch = List.of(Position.LEAD, Position.COLEAD);
       tracksToFetch.addAll(tracksToFetchAvailable);
@@ -158,9 +167,6 @@ public class UserServiceImpl implements UserService {
               safeSemester, positionsToFetch, tracksToFetch);
       clubMemberPageResponses.addAll(
           clubMemberMapper.toClubMemberPageResponses(clubMembers, positionsToFetch, tracksToFetch));
-      newPositionCursor = Position.COREMEMBER;
-      newTrackCursor = tracksToFetchAvailable.getFirst();
-      hasNext = true;
     } else if (nextPositionCursor == Position.COREMEMBER) {
       positionsToFetch = List.of(Position.LEAD, Position.COLEAD);
       tracksToFetch.addAll(tracksToFetchAvailable);
@@ -176,23 +182,9 @@ public class UserServiceImpl implements UserService {
       clubMembers.clear();
 
       positionsToFetch = List.of(Position.COREMEMBER);
-      for (int i = 0; i < tracksToFetchAvailable.size(); i++) {
-        Track track = tracksToFetchAvailable.get(i);
+      for (Track track : tracksToFetchAvailable) {
         tracksToFetch.add(track);
-        if (track == nextTrackCursor) {
-          if (i == tracksToFetchAvailable.size() - 1) {
-            if (canExposeBabyLion) {
-              newPositionCursor = Position.BABYLION;
-              newTrackCursor = tracksToFetchAvailable.getFirst();
-              hasNext = true;
-            }
-          } else {
-            newPositionCursor = Position.COREMEMBER;
-            newTrackCursor = tracksToFetchAvailable.get(++i);
-            hasNext = true;
-          }
-          break;
-        }
+        if (track == nextTrackCursor) break;
       }
       clubMembers =
           clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
@@ -216,17 +208,9 @@ public class UserServiceImpl implements UserService {
       clubMembers.clear();
 
       positionsToFetch = List.of(Position.BABYLION);
-      for (int i = 0; i < tracksToFetchAvailable.size(); i++) {
-        Track track = tracksToFetchAvailable.get(i);
+      for (Track track : tracksToFetchAvailable) {
         tracksToFetch.add(track);
-        if (track == nextTrackCursor) {
-          if (i != tracksToFetchAvailable.size() - 1) {
-            newPositionCursor = Position.BABYLION;
-            newTrackCursor = tracksToFetchAvailable.get(++i);
-            hasNext = true;
-            break;
-          }
-        }
+        if (track == nextTrackCursor) break;
       }
       clubMembers =
           clubMemberRepository.findAllBySemester_SemesterAndPositionInAndTrackIn(
@@ -239,6 +223,82 @@ public class UserServiceImpl implements UserService {
       log.info("[User] 해당 기수의 구성원을 찾을 수 없음 - semester: {}", safeSemester);
       throw new CustomException(UserErrorCode.USER_NOT_FOUND);
     }
+
+    Position candidatePos = null;
+    Track candidateTrack = null;
+
+    if (nextPositionCursor == Position.LEAD || nextPositionCursor == Position.COLEAD) {
+      candidatePos = Position.COREMEMBER;
+      candidateTrack = tracksToFetchAvailable.getFirst();
+    } else if (nextPositionCursor == Position.COREMEMBER) {
+      int idx = tracksToFetchAvailable.indexOf(nextTrackCursor);
+      if (idx == -1) throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+
+      if (idx < tracksToFetchAvailable.size() - 1) {
+        candidatePos = Position.COREMEMBER;
+        candidateTrack = tracksToFetchAvailable.get(idx + 1);
+      } else {
+        if (canExposeBabyLion) {
+          candidatePos = Position.BABYLION;
+          candidateTrack = tracksToFetchAvailable.getFirst();
+        }
+      }
+    } else if (nextPositionCursor == Position.BABYLION) {
+      if (!canExposeBabyLion) throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+
+      int idx = tracksToFetchAvailable.indexOf(nextTrackCursor);
+      if (idx == -1) throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+
+      if (idx < tracksToFetchAvailable.size() - 1) {
+        candidatePos = Position.BABYLION;
+        candidateTrack = tracksToFetchAvailable.get(idx + 1);
+      }
+    }
+
+    Position newPositionCursor = null;
+    Track newTrackCursor = null;
+    boolean hasNext = false;
+
+    if (candidatePos != null && candidateTrack != null) {
+
+      if (candidatePos == Position.COREMEMBER) {
+        int start = tracksToFetchAvailable.indexOf(candidateTrack);
+        for (int i = start; i < tracksToFetchAvailable.size(); i++) {
+          Track t = tracksToFetchAvailable.get(i);
+          if (hasAny(countMap, List.of(Position.COREMEMBER), List.of(t))) {
+            newPositionCursor = Position.COREMEMBER;
+            newTrackCursor = t;
+            hasNext = true;
+            break;
+          }
+        }
+
+        if (!hasNext && canExposeBabyLion) {
+          for (Track t : tracksToFetchAvailable) {
+            if (hasAny(countMap, List.of(Position.BABYLION), List.of(t))) {
+              newPositionCursor = Position.BABYLION;
+              newTrackCursor = t;
+              hasNext = true;
+              break;
+            }
+          }
+        }
+      } else if (candidatePos == Position.BABYLION) {
+        if (canExposeBabyLion) {
+          int start = tracksToFetchAvailable.indexOf(candidateTrack);
+          for (int i = start; i < tracksToFetchAvailable.size(); i++) {
+            Track t = tracksToFetchAvailable.get(i);
+            if (hasAny(countMap, List.of(Position.BABYLION), List.of(t))) {
+              newPositionCursor = Position.BABYLION;
+              newTrackCursor = t;
+              hasNext = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     log.info("[User] 기수별 구성원 화면 조회 발생");
     return clubMemberMapper.toClubMemberCursorResponse(
         clubMemberPageResponses, newPositionCursor, newTrackCursor, hasNext);
@@ -499,5 +559,16 @@ public class UserServiceImpl implements UserService {
 
     log.info("[User] 해당 구성원들 일괄 삭제 완료(게스트로 분류됨)");
     clubMemberRepository.deleteAllByIdInBatch(request.getClubMemberIds());
+  }
+
+  private boolean hasAny(
+      Map<Position, Map<Track, Long>> countMap, List<Position> positions, List<Track> tracks) {
+    for (Position p : positions) {
+      Map<Track, Long> byTrack = countMap.getOrDefault(p, Map.of());
+      for (Track t : tracks) {
+        if (byTrack.getOrDefault(t, 0L) > 0) return true;
+      }
+    }
+    return false;
   }
 }
