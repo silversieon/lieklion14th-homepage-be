@@ -17,6 +17,8 @@ public enum ApplicationResultErrorCode implements BaseErrorCode {
   ONLY_PASSED_DOCUMENT_ALLOWED(
       "APPRES4002", "서류 결과가 합격 처리된 지원서만 면접 합격 요청이 가능합니다.", HttpStatus.BAD_REQUEST),
 
+  INTERVIEW_RESULT_VIEW_PERIOD_EXPIRED("APPRES4031", "면접 결과 조회 기간이 만료되었습니다.", HttpStatus.FORBIDDEN),
+
   NOT_FOUND_RECORD("APPRES4041", "진행중 공고에 대한 지원서가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
   DOCUMENT_RESULT_ALREADY_ANNOUNCED(
       "APPRES4091", "서류 결과 발표 이후에는 서류 합격 여부를 수정할 수 없습니다.", HttpStatus.CONFLICT),

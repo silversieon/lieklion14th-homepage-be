@@ -117,4 +117,15 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
           where af.id = :applicationFormId
           """)
   Optional<ApplicationForm> findByIdForUpdate(@Param("applicationFormId") Long applicationFormId);
+
+  @Query(
+      """
+          select af
+          from ApplicationForm af
+          join fetch af.semester s
+          where af.openAt <= :now
+          and af.finalResultAt >= :threshold
+          """)
+  Optional<ApplicationForm> findCurrentOrGraceApplicationForm(
+      @Param("now") LocalDateTime now, @Param("threshold") LocalDateTime threshold);
 }

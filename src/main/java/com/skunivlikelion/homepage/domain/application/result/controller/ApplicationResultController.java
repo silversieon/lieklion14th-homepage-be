@@ -26,10 +26,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 /**
  * 멋쟁이사자처럼 홈페이지 지원 결과 관련 Controller interface 입니다.
  *
- * @since 2026.01.29
- * @see com.skunivlikelion.homepage.domain.application.result.service.ApplicationResultService
  * @author Kim Na Kyung
  * @version latest: 1
+ * @see com.skunivlikelion.homepage.domain.application.result.service.ApplicationResultService
+ * @since 2026.01.29
  */
 @RequestMapping("/api")
 @Tag(name = "ApplicationResult", description = "지원 결과(서류/면접 합불) 관련 API")
@@ -75,6 +75,8 @@ public interface ApplicationResultController {
       summary = "[ 사용자 | 토큰 O | 본인 면접 합격 결과 조회 ]",
       description =
           """
+              조회 가능일: ~ 최종발표일 + 7일 \n
+
               **Returns** \n
               documentPassed: 서류 합격 여부 \n
               interviewPassed: 면접 합격 여부 \n
