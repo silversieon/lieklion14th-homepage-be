@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
@@ -92,34 +91,36 @@ public class UserServiceImpl implements UserService {
   public MyPageResponse getCurrentUserPage() {
     User currentUser = currentUserProvider.getCurrentUser();
 
-    ApplicationFormResponse currentApplicationForm =
-        applicationFormService.getCurrentApplicationFormResponse();
-    Optional<ApplicationRecord> applicationRecord =
-        applicationRecordRepository.findLatestByFormIdAndUserId(
-            currentApplicationForm.getId(), currentUser.getId());
+    Long latestSemester = semesterService.getLatestSemester().getSemester();
+    Optional<ApplicationForm> applicationForm =
+        applicationFormRepository.findBySemester_Semester(latestSemester);
     boolean documentSubmitted = false;
-    if (applicationRecord.isPresent()) documentSubmitted = applicationRecord.get().isSubmitted();
+    boolean interviewScheduleChangeable = false;
 
-    LocalDateTime now = LocalDateTime.now();
-    boolean interviewScheduleChangable;
-    if (currentApplicationForm.getApplicationResultAt().isAfter(now)
-        || currentApplicationForm.getInterviewScheduleConfirmedAt().isBefore(now)) {
-      interviewScheduleChangable = false;
-    } else {
-      interviewScheduleChangable = true;
+    if (applicationForm.isPresent()) {
+      ApplicationForm existingApplicationForm = applicationForm.get();
+      Optional<ApplicationRecord> applicationRecord =
+          applicationRecordRepository.findLatestByFormIdAndUserId(
+              existingApplicationForm.getId(), currentUser.getId());
+
+      if (applicationRecord.isPresent()) documentSubmitted = applicationRecord.get().isSubmitted();
+
+      LocalDateTime now = LocalDateTime.now();
+      if (now.isAfter(existingApplicationForm.getApplicationResultAt())
+          && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt())) {
+        interviewScheduleChangeable = true;
+      }
     }
 
-    Long currentSemester = currentApplicationForm.getSemester();
     boolean interviewScheduleSubmitted =
-        interviewBookingService.existInterviewBookingByUserAndSemester(
-            currentUser, currentSemester);
+        interviewBookingService.existInterviewBookingByUserAndSemester(currentUser, latestSemester);
     log.info(
         "[User] 내 정보 조회 발생 - 사용자 식별자: {}, 이름: {}, 이메일: {}",
         currentUser.getId(),
         currentUser.getName(),
         currentUser.getEmail());
     return userMapper.toMyPageResponse(
-        currentUser, documentSubmitted, interviewScheduleChangable, interviewScheduleSubmitted);
+        currentUser, documentSubmitted, interviewScheduleChangeable, interviewScheduleSubmitted);
   }
 
   @Override
@@ -450,31 +451,33 @@ public class UserServiceImpl implements UserService {
       s3Service.deleteFile(s3Service.extractKeyNameFromUrl(currentImageUrl));
     }
 
-    ApplicationFormResponse currentApplicationForm =
-        applicationFormService.getCurrentApplicationFormResponse();
-    Optional<ApplicationRecord> applicationRecord =
-        applicationRecordRepository.findLatestByFormIdAndUserId(
-            currentApplicationForm.getId(), currentUser.getId());
+    Long latestSemester = semesterService.getLatestSemester().getSemester();
+    Optional<ApplicationForm> applicationForm =
+        applicationFormRepository.findBySemester_Semester(latestSemester);
     boolean documentSubmitted = false;
-    if (applicationRecord.isPresent()) documentSubmitted = applicationRecord.get().isSubmitted();
+    boolean interviewScheduleChangeable = false;
 
-    LocalDateTime now = LocalDateTime.now();
-    boolean interviewScheduleChangable;
-    if (currentApplicationForm.getApplicationResultAt().isAfter(now)
-        || currentApplicationForm.getInterviewScheduleConfirmedAt().isBefore(now)) {
-      interviewScheduleChangable = false;
-    } else {
-      interviewScheduleChangable = true;
+    if (applicationForm.isPresent()) {
+      ApplicationForm existingApplicationForm = applicationForm.get();
+      Optional<ApplicationRecord> applicationRecord =
+          applicationRecordRepository.findLatestByFormIdAndUserId(
+              existingApplicationForm.getId(), currentUser.getId());
+
+      if (applicationRecord.isPresent()) documentSubmitted = applicationRecord.get().isSubmitted();
+
+      LocalDateTime now = LocalDateTime.now();
+      if (now.isAfter(existingApplicationForm.getApplicationResultAt())
+          && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt())) {
+        interviewScheduleChangeable = true;
+      }
     }
 
-    Long currentSemester = currentApplicationForm.getSemester();
     boolean interviewScheduleSubmitted =
-        interviewBookingService.existInterviewBookingByUserAndSemester(
-            currentUser, currentSemester);
+        interviewBookingService.existInterviewBookingByUserAndSemester(currentUser, latestSemester);
 
     log.info("[User] 프로필 이미지 업로드 성공 - userId: {}", currentUser.getId());
     return userMapper.toMyPageResponse(
-        currentUser, documentSubmitted, interviewScheduleChangable, interviewScheduleSubmitted);
+        currentUser, documentSubmitted, interviewScheduleChangeable, interviewScheduleSubmitted);
   }
 
   @Override
