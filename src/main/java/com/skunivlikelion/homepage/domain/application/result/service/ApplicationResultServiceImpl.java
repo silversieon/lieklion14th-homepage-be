@@ -8,11 +8,9 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
-import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminApplicationResultConfirmResponse;
@@ -37,9 +35,10 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class ApplicationResultServiceImpl implements ApplicationResultService {
 
+  private static final long INTERVIEW_RESULT_GRACE_DAYS = 7L;
+
   private final ApplicationRecordRepository applicationRecordRepository;
   private final CurrentUserProvider currentUserProvider;
-  private final ApplicationFormService applicationFormService;
   private final ClubMemberRepository clubMemberRepository;
   private final UserRepository userRepository;
   private final ApplicationFormRepository applicationFormRepository;
@@ -160,22 +159,37 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
 
     User currentUser = currentUserProvider.getCurrentUser();
 
-    ApplicationFormResponse currentApplicationForm =
-        applicationFormService.getCurrentApplicationFormResponse();
-    Long currentSemester = currentApplicationForm.getSemester();
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime threshold = now.minusDays(INTERVIEW_RESULT_GRACE_DAYS);
+
+    ApplicationForm form =
+        applicationFormRepository
+            .findCurrentOrGraceApplicationForm(now, threshold)
+            .orElseThrow(
+                () -> {
+                  log.info(
+                      "[ApplicationResult] 면접 결과 조회 가능 모집 공고 없음 - now={}, threshold={}, graceDays={}",
+                      now,
+                      threshold,
+                      INTERVIEW_RESULT_GRACE_DAYS);
+                  return new CustomException(
+                      ApplicationResultErrorCode.INTERVIEW_RESULT_VIEW_PERIOD_EXPIRED);
+                });
+
     ApplicationRecord applicationRecord =
         applicationRecordRepository
-            .findLatestByFormIdAndUserId(currentApplicationForm.getId(), currentUser.getId())
+            .findLatestByFormIdAndUserId(form.getId(), currentUser.getId())
             .orElseThrow(() -> new CustomException(ApplicationResultErrorCode.NOT_FOUND_RECORD));
 
-    if (!applicationRecord.isSubmitted())
+    if (!applicationRecord.isSubmitted()) {
       throw new CustomException(ApplicationResultErrorCode.ONLY_SUBMITTED_RECORD_ALLOWED);
+    }
 
     return MyInterviewResultResponse.builder()
         .documentPassed(applicationRecord.isDocumentPassed())
         .interviewPassed(applicationRecord.isInterviewPassed())
         .track(applicationRecord.getTrack())
-        .semester(currentSemester)
+        .semester(form.getSemester().getSemester())
         .build();
   }
 }

@@ -10,9 +10,9 @@ import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInte
 /**
  * 멋쟁이사자처럼 홈페이지 지원 결과 관련 Service interface 입니다.
  *
+ * @author Kim Na Kyung
  * @see com.skunivlikelion.homepage.domain.application.result.controller.ApplicationResultController
  * @since 2026.01.29
- * @author Kim Na Kyung
  */
 public interface ApplicationResultService {
 
@@ -37,7 +37,7 @@ public interface ApplicationResultService {
       Long applicationRecordId, boolean passed);
 
   /**
-   * [ 현재 사용자의 면접 합격 결과 조회 메서드 ]
+   * [ 현재 사용자의 면접 합격 결과 조회 메서드 ] 현재 진행 중인 모집 공고이거나 최종 결과 발표일로부터 7일 이내인 경우에 한해 면접 합격 결과를 조회
    *
    * @return 면접 합격 결과 정보를 담은 객체
    */
