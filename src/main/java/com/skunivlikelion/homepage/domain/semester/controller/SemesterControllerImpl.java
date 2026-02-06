@@ -46,7 +46,10 @@ public class SemesterControllerImpl implements SemesterController {
 
   @Override
   public ResponseEntity<BaseResponse<List<SemesterResponse>>> getAllSemesters() {
+    long start = System.currentTimeMillis();
     List<SemesterResponse> result = semesterService.getAllSemesters();
+    long end = System.currentTimeMillis();
+    System.out.println("[기수 조회에 걸린 시간] end - start = " + (end - start));
     return ResponseEntity.status(200).body(BaseResponse.success(200, "기수 전체 조회에 성공했습니다.", result));
   }
 }
