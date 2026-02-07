@@ -25,8 +25,11 @@ public class MyPageResponse {
   private boolean documentSubmitted;
 
   @Schema(description = "면접 일정 변경 가능 여부", example = "false")
-  private boolean interviewScheduleChangable;
+  private boolean interviewScheduleChangeable;
 
   @Schema(description = "면접 일정 제출 여부", example = "false")
   private boolean interviewScheduleSubmitted;
+
+  @Schema(description = "최종 결과 확인 가능 여부", example = "true")
+  private boolean finalResultConfirmation;
 }

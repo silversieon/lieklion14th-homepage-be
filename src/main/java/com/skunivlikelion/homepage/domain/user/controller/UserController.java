@@ -65,7 +65,8 @@ public interface UserController {
             profieImageUrl: 프로필 이미지 URL \n
             documentSubmitted: 지원서 제출 여부  \n
             interviewScheduleSubmitted: 면접 일정 제출 여부 \n
-            interviewScheduleChangable: 면접 일정 변경 가능 여부 \n
+            interviewScheduleChangeable: 면접 일정 변경 가능 여부 \n
+            finalResultConfirmation: 최종 결과 확인 가능 여부 \n
             """)
   @GetMapping("/v1/users/me")
   ResponseEntity<BaseResponse<MyPageResponse>> getMyPage();
@@ -215,7 +216,8 @@ public interface UserController {
             profieImageUrl: 프로필 이미지 URL \n
             documentSubmitted: 지원서 제출 여부  \n
             interviewScheduleSubmitted: 면접 일정 제출 여부 \n
-            interviewScheduleChangable: 면접 일정 변경 가능 여부 \n
+            interviewScheduleChangeable: 면접 일정 변경 가능 여부 \n
+            finalResultConfirmation: 최종 결과 확인 가능 여부 \n
             """)
   @PatchMapping(value = "/v1/users/me/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   ResponseEntity<BaseResponse<MyPageResponse>> updateProfileImage(

@@ -35,14 +35,16 @@ public class UserMapper {
       User user,
       boolean documentSubmitted,
       boolean interviewScheduleChangable,
-      boolean interviewScheduleSubmitted) {
+      boolean interviewScheduleSubmitted,
+      boolean finalResultConfirmation) {
     return MyPageResponse.builder()
         .name(user.getName())
         .email(user.getEmail())
         .profileImageUrl(user.getProfileImageUrl())
         .documentSubmitted(documentSubmitted)
-        .interviewScheduleChangable(interviewScheduleChangable)
+        .interviewScheduleChangeable(interviewScheduleChangable)
         .interviewScheduleSubmitted(interviewScheduleSubmitted)
+        .finalResultConfirmation(finalResultConfirmation)
         .build();
   }
 
