@@ -32,4 +32,8 @@ public enum Track {
       return List.of(PO, FRONTEND, BACKEND);
     }
   }
+
+  public static List<Track> getTracksByPriority() {
+    return List.of(PO, PMDESIGN, PM, DESIGN, FRONTEND, BACKEND);
+  }
 }

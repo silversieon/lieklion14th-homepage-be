@@ -7,7 +7,6 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +19,10 @@ import com.skunivlikelion.homepage.domain.project.dto.response.*;
 import com.skunivlikelion.homepage.domain.project.service.ProjectService;
 import com.skunivlikelion.homepage.domain.project.service.ProjectTypeService;
 import com.skunivlikelion.homepage.global.common.BaseResponse;
+import com.skunivlikelion.homepage.global.exception.CustomException;
+import com.skunivlikelion.homepage.global.page.exception.PageErrorStatus;
 import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
-import com.skunivlikelion.homepage.global.page.response.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -91,13 +91,16 @@ public class ProjectControllerImpl implements ProjectController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<PageResponse<ProjectPageResponse>>>
+  public ResponseEntity<BaseResponse<ProjectPageWrapperResponse<ProjectPageResponse>>>
       getProjectByPageAndSemesterAndTypeAndSearch(
-          Long projectTypeId, Long semester, String search, Integer page) {
-    Page<ProjectPageResponse> projectPage =
+          Long projectTypeId, Long semester, String search, Integer pageNum, Integer pageSize) {
+    if (pageNum < 1 || pageSize < 1) {
+      throw new CustomException(PageErrorStatus.PAGE_SIZE_ERROR);
+    }
+    ProjectPageWrapperResponse<ProjectPageResponse> response =
         projectService.getProjectByPageAndSemesterAndTypeAndSearch(
-            projectTypeId, semester, search, page);
-    PageResponse<ProjectPageResponse> response = pageMapper.toPageResponse(projectPage);
+            projectTypeId, semester, search, pageNum - 1, pageSize);
+
     return ResponseEntity.ok(BaseResponse.success(200, "프로젝트 목록 조회에 성공했습니다.", response));
   }
 
@@ -110,7 +113,7 @@ public class ProjectControllerImpl implements ProjectController {
   @Override
   public ResponseEntity<BaseResponse<InfiniteResponse<ProjectAwardResponse>>> getAwardProjects(
       @RequestParam(value = "last-cursor-id", required = false) Long lastCursorId,
-      @RequestParam Integer size) {
+      @RequestParam(value = "size", defaultValue = "3") Integer size) {
 
     InfiniteResponse<ProjectAwardResponse> result =
         projectService.getAwardProjectsByPage(lastCursorId, size);
