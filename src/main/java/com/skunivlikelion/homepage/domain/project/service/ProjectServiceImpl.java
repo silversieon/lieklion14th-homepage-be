@@ -3,10 +3,7 @@
  */
 package com.skunivlikelion.homepage.domain.project.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,13 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectAwardResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectDetailResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectImageResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectMemberResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectPageResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectUpdateResponse;
+import com.skunivlikelion.homepage.domain.project.dto.response.*;
 import com.skunivlikelion.homepage.domain.project.entity.Project;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectMember;
@@ -42,6 +33,7 @@ import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
+import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -61,6 +53,7 @@ public class ProjectServiceImpl implements ProjectService {
   private final ProjectTypeRepository projectTypeRepository;
   private final InfiniteMapper infiniteMapper;
   private final ProjectMemberRepository projectMemberRepository;
+  private final PageMapper pageMapper;
 
   @Override
   public ProjectResponse createProject(
@@ -82,14 +75,6 @@ public class ProjectServiceImpl implements ProjectService {
 
     Project savedProject = projectRepository.save(project);
 
-    List<ProjectImage> savedImages =
-        projectImageService.uploadProjectImages(projectImages, savedProject);
-
-    if (savedImages == null || savedImages.isEmpty()) {
-      log.warn("[Project] 프로젝트 생성 실패 - 이미지 저장 실패 projectId={}", savedProject.getId());
-      throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
-    }
-
     Map<Track, List<String>> projectMemberMap = request.getProjectMembers();
     Set<Track> tracks = request.getProjectMembers().keySet();
     for (Track track : tracks) {
@@ -104,6 +89,14 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectMember savedProjectMember = projectMemberRepository.save(projectMember);
         savedProject.addProjectMember(savedProjectMember);
       }
+    }
+
+    List<ProjectImage> savedImages =
+        projectImageService.uploadProjectImages(projectImages, savedProject);
+
+    if (savedImages == null || savedImages.isEmpty()) {
+      log.warn("[Project] 프로젝트 생성 실패 - 이미지 저장 실패 projectId={}", savedProject.getId());
+      throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
     }
 
     log.info(
@@ -188,23 +181,30 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<ProjectPageResponse> getProjectByPageAndSemesterAndTypeAndSearch(
-      Long projectType, Long semester, String search, Integer page) {
+  public ProjectPageWrapperResponse<ProjectPageResponse>
+      getProjectByPageAndSemesterAndTypeAndSearch(
+          Long projectType, Long semester, String search, Integer pageNum, Integer pageSize) {
     Page<Project> projects =
         projectRepository.findProjectsByFilters(
-            projectType, semester, search, PageRequest.of(page, 6));
+            projectType, semester, search, PageRequest.of(pageNum, pageSize));
 
-    return projects.map(
-        project ->
-            ProjectPageResponse.builder()
-                .projectId(project.getId())
-                .title(project.getTitle())
-                .award(project.isAward())
-                .semester(project.getSemester().getSemester())
-                .projectTypeName(project.getProjectType().getProjectTypeName())
-                .content(project.getContent())
-                .thumbnailUrl(project.getProjectImages().getFirst().getImageUrl())
-                .build());
+    List<Long> allProjectIdsByFilters =
+        projectRepository.findProjectIdsByFilters(projectType, semester, search);
+
+    Page<ProjectPageResponse> projectPage =
+        projects.map(
+            project ->
+                ProjectPageResponse.builder()
+                    .projectId(project.getId())
+                    .title(project.getTitle())
+                    .award(project.isAward())
+                    .semester(project.getSemester().getSemester())
+                    .projectTypeName(project.getProjectType().getProjectTypeName())
+                    .content(project.getContent())
+                    .thumbnailUrl(project.getProjectImages().getFirst().getImageUrl())
+                    .build());
+
+    return pageMapper.toProjectPageWrapperResponse(projectPage, allProjectIdsByFilters);
   }
 
   @Override
@@ -222,6 +222,15 @@ public class ProjectServiceImpl implements ProjectService {
                         .imageUrl(projectImage.getImageUrl())
                         .build())
             .toList();
+
+    List<Track> tracksByPriority = Track.getTracksByPriority();
+    List<ProjectMember> projectMembers = project.getProjectMembers();
+
+    Map<Track, Integer> trackOrderMap = new HashMap<>();
+    for (int i = 0; i < tracksByPriority.size(); i++) {
+      trackOrderMap.put(tracksByPriority.get(i), i);
+    }
+    projectMembers.sort(Comparator.comparingInt(pm -> trackOrderMap.get(pm.getTrack())));
 
     return ProjectDetailResponse.builder()
         .id(project.getId())

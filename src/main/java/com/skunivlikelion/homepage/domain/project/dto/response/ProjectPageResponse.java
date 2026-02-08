@@ -9,7 +9,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(title = "ProjectPageResponse: 프로젝트 모아보기 페이지 응답 DTO")
+@Schema(title = "ProjectPageResponse: 프로젝트 모아보기 페이지의 프로젝트 페이지 DTO")
 public class ProjectPageResponse {
 
   @Schema(description = "프로젝트 식별자", example = "1")

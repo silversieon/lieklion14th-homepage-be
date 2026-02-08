@@ -5,16 +5,11 @@ package com.skunivlikelion.homepage.domain.project.service;
 
 import java.util.List;
 
-import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectAwardResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectDetailResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectPageResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectResponse;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectUpdateResponse;
+import com.skunivlikelion.homepage.domain.project.dto.response.*;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 /**
@@ -25,7 +20,7 @@ import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
  * @see com.skunivlikelion.homepage.domain.project.entity.ProjectImage
  * @see com.skunivlikelion.homepage.domain.project.entity.ProjectMember
  * @see com.skunivlikelion.homepage.domain.project.controller.ProjectController
- * @author
+ * @author Lim Da Hyun, Keum Si Eon
  * @version latest: 1
  */
 public interface ProjectService {
@@ -62,11 +57,12 @@ public interface ProjectService {
    * @param projectTypeId 조회할 프로젝트 타입 값
    * @param semester 조회할 기수 값
    * @param search 조회할 검색어
-   * @param page 조회할 페이지
+   * @param pageNum 조회할 페이지 번호
+   * @param pageSize 조회할 페이지 크기
    * @return 조회 응답 DTO
    */
-  Page<ProjectPageResponse> getProjectByPageAndSemesterAndTypeAndSearch(
-      Long projectTypeId, Long semester, String search, Integer page);
+  ProjectPageWrapperResponse<ProjectPageResponse> getProjectByPageAndSemesterAndTypeAndSearch(
+      Long projectTypeId, Long semester, String search, Integer pageNum, Integer pageSize);
 
   /**
    * [프로젝트 단일 조회 메서드] 특정 프로젝트 정보 상세 조회

@@ -50,4 +50,22 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         ORDER BY p.id DESC
         """)
   List<Project> findAwardProjects(Pageable pageable, @Param("projectId") Long projectId);
+
+  @Query(
+      """
+    SELECT p.id
+    FROM Project p
+    WHERE (:projectTypeId IS NULL OR p.projectType.id = :projectTypeId)
+    AND (:semester IS NULL OR p.semester.semester = :semester )
+    AND(
+        :search IS NULL OR :search = ''
+        OR LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%'))
+    )
+    ORDER BY p.createdAt DESC
+""")
+  List<Long> findProjectIdsByFilters(
+      @Param("projectTypeId") Long projectTypeId,
+      @Param("semester") Long semester,
+      @Param("search") String search);
 }
