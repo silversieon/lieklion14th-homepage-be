@@ -93,12 +93,13 @@ public class UserServiceImpl implements UserService {
   @Transactional(readOnly = true)
   public MyPageResponse getCurrentUserPage() {
     User currentUser = currentUserProvider.getCurrentUser();
+    LocalDateTime now = LocalDateTime.now();
 
-    Long latestSemester = semesterService.getLatestSemester().getSemester();
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findBySemester_Semester(latestSemester);
+        applicationFormRepository.findCurrentApplicationForm(now);
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
+    boolean interviewScheduleSubmitted = false;
     boolean finalResultConfirmation = false;
 
     if (applicationForm.isPresent()) {
@@ -107,7 +108,6 @@ public class UserServiceImpl implements UserService {
           applicationRecordRepository.findLatestByFormIdAndUserId(
               existingApplicationForm.getId(), currentUser.getId());
 
-      LocalDateTime now = LocalDateTime.now();
       if (applicationRecord.isPresent()) {
         documentSubmitted = applicationRecord.get().isSubmitted();
         if (now.isAfter(existingApplicationForm.getApplicationResultAt())
@@ -121,10 +121,12 @@ public class UserServiceImpl implements UserService {
           finalResultConfirmation = true;
         }
       }
+
+      interviewScheduleSubmitted =
+          interviewBookingService.existInterviewBookingByUserAndSemester(
+              currentUser, existingApplicationForm.getSemester().getSemester());
     }
 
-    boolean interviewScheduleSubmitted =
-        interviewBookingService.existInterviewBookingByUserAndSemester(currentUser, latestSemester);
     log.info(
         "[User] 내 정보 조회 발생 - 사용자 식별자: {}, 이름: {}, 이메일: {}",
         currentUser.getId(),
@@ -466,12 +468,13 @@ public class UserServiceImpl implements UserService {
       s3Service.deleteFile(s3Service.extractKeyNameFromUrl(currentImageUrl));
     }
 
-    Long latestSemester = semesterService.getLatestSemester().getSemester();
+    LocalDateTime now = LocalDateTime.now();
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findBySemester_Semester(latestSemester);
+        applicationFormRepository.findCurrentApplicationForm(now);
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
     boolean finalResultConfirmation = false;
+    boolean interviewScheduleSubmitted = false;
 
     if (applicationForm.isPresent()) {
       ApplicationForm existingApplicationForm = applicationForm.get();
@@ -479,7 +482,6 @@ public class UserServiceImpl implements UserService {
           applicationRecordRepository.findLatestByFormIdAndUserId(
               existingApplicationForm.getId(), currentUser.getId());
 
-      LocalDateTime now = LocalDateTime.now();
       if (applicationRecord.isPresent()) {
         documentSubmitted = applicationRecord.get().isSubmitted();
         if (now.isAfter(existingApplicationForm.getApplicationResultAt())
@@ -495,10 +497,11 @@ public class UserServiceImpl implements UserService {
           finalResultConfirmation = true;
         }
       }
-    }
 
-    boolean interviewScheduleSubmitted =
-        interviewBookingService.existInterviewBookingByUserAndSemester(currentUser, latestSemester);
+      interviewScheduleSubmitted =
+          interviewBookingService.existInterviewBookingByUserAndSemester(
+              currentUser, existingApplicationForm.getSemester().getSemester());
+    }
 
     log.info("[User] 프로필 이미지 업로드 성공 - userId: {}", currentUser.getId());
     return userMapper.toMyPageResponse(
