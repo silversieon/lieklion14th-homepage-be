@@ -13,6 +13,7 @@ import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
+import com.skunivlikelion.homepage.global.filter.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 

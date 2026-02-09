@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skunivlikelion.homepage.global.security;
+package com.skunivlikelion.homepage.global.filter;
 
 import java.io.IOException;
 
@@ -22,6 +22,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.global.common.BaseResponse;
+import com.skunivlikelion.homepage.global.security.CustomUserDetails;
+import com.skunivlikelion.homepage.global.security.CustomUserDetailsService;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
 import com.skunivlikelion.homepage.global.security.jwt.TokenType;
 
