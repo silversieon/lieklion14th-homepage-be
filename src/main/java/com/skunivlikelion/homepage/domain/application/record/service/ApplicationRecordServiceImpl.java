@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
-import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
+import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
@@ -57,6 +57,8 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
   private final SubmitSnapshotValidator submitSnapshotValidator;
   private final ApplicationRecordDraftHandler draftHandler;
 
+  private final ApplicationFormService applicationFormService;
+
   @Override
   public ApplicationRecordMeta saveFirstDraft(ApplicationDraftSaveRequest request) {
 
@@ -66,19 +68,17 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
     Long userId = user.getId();
     LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm current = getCurrentFormOrThrow(now);
+    ApplicationForm current = getSubmittableFormOrThrow(now);
     Long formId = current.getId();
     Long semester = current.getSemester().getSemester();
 
-    validateNotSubmitted(formId, userId, semester);
-
-    if (applicationRecordRepository.findDraft(formId, userId).isPresent()) {
+    if (applicationRecordRepository.findByApplicationFormIdAndUserId(formId, userId).isPresent()) {
       log.warn(
-          "[ApplicationRecord] 최초 임시저장 실패: 이미 draft 존재 - semester={}, formId={}, userId={}",
+          "[ApplicationRecord] 최초 임시저장 실패: 작성중 또는 제출된 지원서 존재 - semester={}, formId={}, userId={}",
           semester,
           formId,
           userId);
-      throw new CustomException(ApplicationRecordErrorCode.ALREADY_DRAFT_EXISTS);
+      throw new CustomException(ApplicationRecordErrorCode.ALREADY_RECORD_EXISTS);
     }
 
     ApplicationRecord record =
@@ -107,19 +107,20 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
     Long userId = user.getId();
     LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm current = getCurrentFormOrThrow(now);
+    ApplicationForm current = getSubmittableFormOrThrow(now);
     Long formId = current.getId();
 
     ApplicationRecord record =
         applicationRecordRepository
-            .findDraft(formId, userId)
+            .findByApplicationFormIdAndUserId(formId, userId)
             .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_DRAFT));
 
     if (record.isSubmitted()) {
       log.warn(
-          "[ApplicationRecord] draft 저장 실패: 이미 제출됨 - recordId={}, userId={}",
-          record.getId(),
-          userId);
+          "[ApplicationRecord] draft 저장 실패: 이미 제출됨 - formId={}, userId={}, recordId={}",
+          formId,
+          userId,
+          record.getId());
       throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
     }
 
@@ -144,16 +145,23 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
     Long userId = user.getId();
     LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm current = getCurrentFormOrThrow(now);
+    ApplicationForm current = getSubmittableFormOrThrow(now);
     Long formId = current.getId();
     Long semester = current.getSemester().getSemester();
 
-    validateNotSubmitted(formId, userId, semester);
+    if (applicationRecordRepository.existsSubmitted(formId, userId)) {
+      log.warn(
+          "[ApplicationRecord] 중복 제출 시도 - semester={}, formId={}, userId={}",
+          semester,
+          formId,
+          userId);
+      throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
+    }
 
     QuestionsBundle q = draftHandler.loadQuestions(formId, request.getTrack());
     submitSnapshotValidator.validate(q.commonQuestions(), q.trackQuestions(), request);
 
-    ApplicationRecord record = upsertDraftRecord(current, user, request.getTrack(), semester);
+    ApplicationRecord record = getOrCreateRecord(current, user, request.getTrack(), semester);
 
     draftHandler.applyDraftSave(record, formId, request);
     record.markSubmitted(now);
@@ -175,9 +183,8 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
-    LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm current = getCurrentFormOrThrow(now);
+    ApplicationForm current = applicationFormService.getCurrentApplicationForm();
 
     ApplicationRecord record =
         applicationRecordRepository
@@ -208,13 +215,12 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
 
     User user = currentUserProvider.getCurrentUser();
     Long userId = user.getId();
-    LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm current = getCurrentFormOrThrow(now);
+    ApplicationForm current = applicationFormService.getCurrentApplicationForm();
 
     Track trackOrNull =
         applicationRecordRepository
-            .findDraft(current.getId(), userId)
+            .findByApplicationFormIdAndUserId(current.getId(), userId)
             .map(ApplicationRecord::getTrack)
             .orElse(null);
 
@@ -240,12 +246,16 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
     Long userId = user.getId();
     LocalDateTime now = LocalDateTime.now();
 
-    ApplicationForm current = getCurrentFormOrThrow(now);
+    ApplicationForm current = getSubmittableFormOrThrow(now);
 
     ApplicationRecord draft =
         applicationRecordRepository
-            .findDraft(current.getId(), userId)
+            .findByApplicationFormIdAndUserId(current.getId(), userId)
             .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_DRAFT));
+
+    if (draft.isSubmitted()) {
+      throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
+    }
 
     List<ApplicationAnswer> answers =
         applicationAnswerRepository.findAllWithQuestionByRecordIdAndTrack(draft.getId(), track);
@@ -312,42 +322,36 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
     if (request == null || request.getTrack() == null) {
       throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
     }
-  }
 
-  private ApplicationForm getCurrentFormOrThrow(LocalDateTime now) {
-    return applicationFormRepository
-        .findCurrentApplicationForm(now)
-        .orElseThrow(
-            () -> {
-              log.info("[ApplicationRecord] 현재 진행중 모집 공고 없음 - now={}", now);
-              return new CustomException(
-                  ApplicationFormErrorCode.NOT_FOUND_CURRENT_APPLICATION_FORM);
-            });
-  }
-
-  private void validateNotSubmitted(Long formId, Long userId, Long semester) {
-    if (applicationRecordRepository.existsSubmitted(formId, userId)) {
-      log.warn(
-          "[ApplicationRecord] 중복 제출 시도 - semester={}, formId={}, userId={}",
-          semester,
-          formId,
-          userId);
-      throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
+    if (request.getTrack() == Track.COMMON) {
+      throw new CustomException(ApplicationRecordErrorCode.INVALID_REQUEST_TRACK);
     }
   }
 
-  private ApplicationRecord upsertDraftRecord(
+  // 최초 임시저장, 임시저장, 임지저장된 답변 조회, 제출에서만 사용
+  private ApplicationForm getSubmittableFormOrThrow(LocalDateTime now) {
+    return applicationFormRepository
+        .findSubmittableApplicationForm(now)
+        .orElseThrow(
+            () -> {
+              log.info("[ApplicationRecord] 현재 서류 지원기간 모집 공고 없음 - now={}", now);
+              return new CustomException(
+                  ApplicationRecordErrorCode.NOT_FOUND_SUBMITTABLE_APPLICATION_FORM);
+            });
+  }
+
+  private ApplicationRecord getOrCreateRecord(
       ApplicationForm form, User user, Track requestedTrack, Long semester) {
 
     Long formId = form.getId();
     Long userId = user.getId();
 
     return applicationRecordRepository
-        .findDraft(formId, userId)
+        .findByApplicationFormIdAndUserId(formId, userId)
         .map(
             existing -> {
               log.info(
-                  "[ApplicationRecord] draft 재사용 - semester={}, formId={}, userId={}, recordId={}, track={}",
+                  "[ApplicationRecord] record 재사용 - semester={}, formId={}, userId={}, recordId={}, track={}",
                   semester,
                   formId,
                   userId,
@@ -361,7 +365,7 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
                   applicationRecordRepository.save(
                       applicationRecordMapper.toNewDraftRecord(form, user, requestedTrack));
               log.info(
-                  "[ApplicationRecord] draft 생성 - semester={}, formId={}, userId={}, recordId={}, track={}",
+                  "[ApplicationRecord] record 생성 - semester={}, formId={}, userId={}, recordId={}, track={}",
                   semester,
                   formId,
                   userId,

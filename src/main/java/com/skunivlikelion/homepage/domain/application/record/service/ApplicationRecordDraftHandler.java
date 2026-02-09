@@ -48,11 +48,20 @@ public class ApplicationRecordDraftHandler {
   }
 
   public QuestionsBundle loadQuestions(Long formId, Track track) {
-    return new QuestionsBundle(
-        applicationQuestionRepository.findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
-            formId, Track.COMMON),
-        applicationQuestionRepository.findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
-            formId, track));
+    List<ApplicationQuestion> all =
+        applicationQuestionRepository.findAllByFormIdAndTracksOrderByTrackAndOrder(
+            formId, List.of(Track.COMMON, track));
+
+    List<ApplicationQuestion> common = new ArrayList<>();
+    List<ApplicationQuestion> trackQs = new ArrayList<>();
+    for (ApplicationQuestion q : all) {
+      if (q.getTrack() == Track.COMMON) {
+        common.add(q);
+      } else {
+        trackQs.add(q);
+      }
+    }
+    return new QuestionsBundle(common, trackQs);
   }
 
   public Map<Long, ApplicationAnswer> loadAnswerMap(Long recordId) {
@@ -88,8 +97,6 @@ public class ApplicationRecordDraftHandler {
         before,
         requested,
         deleted);
-
-    ensureAnswersInit(record, formId, requested);
   }
 
   private void ensureAnswersInit(ApplicationRecord record, Long formId, Track track) {

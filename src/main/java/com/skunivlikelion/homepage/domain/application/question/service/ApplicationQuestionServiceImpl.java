@@ -192,12 +192,8 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
   @Transactional(readOnly = true)
   public ApplicationQuestionGetResponse getCurrentQuestionsByTrack(Track track) {
 
-    Long formId = applicationFormService.getCurrentApplicationFormId();
-    ApplicationForm form =
-        applicationFormRepository
-            .findById(formId)
-            .orElseThrow(
-                () -> new CustomException(ApplicationQuestionErrorCode.NOT_FOUND_APPLICATION_FORM));
+    ApplicationForm form = applicationFormService.getCurrentApplicationForm();
+    Long formId = form.getId();
 
     if (!form.isHasQuestions()) {
       log.warn("[ApplicationQuestion] 질문 조회 실패: 지원서 미설정 공고 - formId={}, track={}", formId, track);
@@ -256,6 +252,12 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
         applicationQuestionRepository.findAllByApplicationForm_IdOrderByTrackAscOrderNumberAsc(
             form.getId());
 
+    log.info(
+        "[ApplicationQuestion] 개발자 | 특정 기수 질문 전체 조회 완료 - formId={}, semester={}, count={}",
+        form.getId(),
+        form.getSemester().getSemester(),
+        questions.size());
+
     return applicationQuestionMapper.toUpsertResponse(form, questions);
   }
 
@@ -310,6 +312,24 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
   }
 
   private void validateRequestForUpsert(List<TrackQuestionGroupRequest> groups) {
+    TrackQuestionGroupRequest commonGroup =
+        groups.stream()
+            .filter(g -> g.getTrack() == Track.COMMON)
+            .findFirst()
+            .orElseThrow(
+                () -> {
+                  log.warn("[ApplicationQuestion] COMMON 트랙 누락");
+                  return new CustomException(ApplicationQuestionErrorCode.COMMON_QUESTION_REQUIRED);
+                });
+
+    List<QuestionItemRequest> commonQuestions =
+        Optional.ofNullable(commonGroup.getQuestions()).orElse(List.of());
+
+    if (commonQuestions.isEmpty()) {
+      log.warn("[ApplicationQuestion] COMMON 질문 비어있음");
+      throw new CustomException(ApplicationQuestionErrorCode.COMMON_QUESTION_REQUIRED);
+    }
+
     for (TrackQuestionGroupRequest group : groups) {
       List<Integer> orders =
           group.getQuestions().stream().map(QuestionItemRequest::getOrderNumber).toList();

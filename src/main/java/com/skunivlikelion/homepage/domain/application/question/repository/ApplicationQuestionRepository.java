@@ -34,4 +34,15 @@ public interface ApplicationQuestionRepository extends JpaRepository<Application
   @Modifying(flushAutomatically = true)
   @Query("delete from ApplicationQuestion q where q.applicationForm.id = :applicationFormId")
   void deleteAllByApplicationFormId(@Param("applicationFormId") Long applicationFormId);
+
+  @Query(
+      """
+        select q
+        from ApplicationQuestion q
+        where q.applicationForm.id = :formId
+          and q.track in :tracks
+        order by q.track asc, q.orderNumber asc
+      """)
+  List<ApplicationQuestion> findAllByFormIdAndTracksOrderByTrackAndOrder(
+      @Param("formId") Long formId, @Param("tracks") List<Track> tracks);
 }

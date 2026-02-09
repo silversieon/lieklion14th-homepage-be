@@ -178,7 +178,7 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
 
     ApplicationRecord applicationRecord =
         applicationRecordRepository
-            .findLatestByFormIdAndUserId(form.getId(), currentUser.getId())
+            .findByApplicationFormIdAndUserId(form.getId(), currentUser.getId())
             .orElseThrow(() -> new CustomException(ApplicationResultErrorCode.NOT_FOUND_RECORD));
 
     if (!applicationRecord.isSubmitted()) {
