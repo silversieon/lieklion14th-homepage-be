@@ -26,7 +26,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 import com.skunivlikelion.homepage.global.common.BaseResponse;
-import com.skunivlikelion.homepage.global.security.JwtAuthenticationFilter;
+import com.skunivlikelion.homepage.global.filter.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
