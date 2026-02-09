@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService {
     if (applicationForm.isPresent()) {
       ApplicationForm existingApplicationForm = applicationForm.get();
       Optional<ApplicationRecord> applicationRecord =
-          applicationRecordRepository.findLatestByFormIdAndUserId(
+          applicationRecordRepository.findByApplicationFormIdAndUserId(
               existingApplicationForm.getId(), currentUser.getId());
 
       if (applicationRecord.isPresent()) {
@@ -482,7 +482,7 @@ public class UserServiceImpl implements UserService {
     if (applicationForm.isPresent()) {
       ApplicationForm existingApplicationForm = applicationForm.get();
       Optional<ApplicationRecord> applicationRecord =
-          applicationRecordRepository.findLatestByFormIdAndUserId(
+          applicationRecordRepository.findByApplicationFormIdAndUserId(
               existingApplicationForm.getId(), currentUser.getId());
 
       if (applicationRecord.isPresent()) {

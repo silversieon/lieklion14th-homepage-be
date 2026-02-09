@@ -33,10 +33,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Getter
 @Builder
-@Table(
-    uniqueConstraints = {
-      @UniqueConstraint(columnNames = {"application_form_id", "user_id", "track"})
-    })
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"application_form_id", "user_id"})})
 public class ApplicationRecord extends BaseTimeEntity {
 
   @Id

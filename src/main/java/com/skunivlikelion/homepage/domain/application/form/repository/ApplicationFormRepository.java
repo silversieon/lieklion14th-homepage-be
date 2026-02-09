@@ -108,6 +108,17 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
           """)
   Optional<ApplicationForm> findCurrentApplicationForm(@Param("now") LocalDateTime now);
 
+  // 정각 허용 (자정이라면 closeAt을 23:59로 설정 필요)
+  @Query(
+      """
+          select af
+          from ApplicationForm af
+          join fetch af.semester s
+          where af.openAt <= :now
+            and af.closeAt > :now
+          """)
+  Optional<ApplicationForm> findSubmittableApplicationForm(@Param("now") LocalDateTime now);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       """

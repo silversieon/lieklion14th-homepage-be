@@ -14,7 +14,6 @@ import com.skunivlikelion.homepage.domain.application.question.entity.Applicatio
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationAnswerSaveItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
 import com.skunivlikelion.homepage.domain.application.record.exception.ApplicationRecordErrorCode;
-import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 
 @Component
@@ -30,15 +29,13 @@ public class SubmitSnapshotValidator {
       List<ApplicationQuestion> trackQuestions,
       ApplicationDraftSaveRequest request) {
 
-    validateSnapshotGroup(commonQuestions, request.getCommonAnswers(), Track.COMMON);
+    validateSnapshotGroup(commonQuestions, request.getCommonAnswers());
 
-    validateSnapshotGroup(trackQuestions, request.getTrackAnswers(), request.getTrack());
+    validateSnapshotGroup(trackQuestions, request.getTrackAnswers());
   }
 
   private void validateSnapshotGroup(
-      List<ApplicationQuestion> expectedQuestions,
-      List<ApplicationAnswerSaveItem> requestAnswers,
-      Track track) {
+      List<ApplicationQuestion> expectedQuestions, List<ApplicationAnswerSaveItem> requestAnswers) {
 
     if (requestAnswers == null || requestAnswers.isEmpty()) {
       throw new CustomException(ApplicationRecordErrorCode.INVALID_SUBMIT_SNAPSHOT);

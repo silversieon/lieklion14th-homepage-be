@@ -17,26 +17,7 @@ import com.skunivlikelion.homepage.domain.common.enums.Track;
 
 public interface ApplicationRecordRepository extends JpaRepository<ApplicationRecord, Long> {
 
-  @Query(
-      """
-              select r
-              from ApplicationRecord r
-              where r.applicationForm.id = :formId
-                and r.user.id = :userId
-                and r.isSubmitted = false
-          """)
-  Optional<ApplicationRecord> findDraft(@Param("formId") Long formId, @Param("userId") Long userId);
-
-  @Query(
-      """
-              select r
-              from ApplicationRecord r
-              where r.applicationForm.id = :formId
-                and r.user.id = :userId
-              order by r.isSubmitted desc, r.id desc
-          """)
-  Optional<ApplicationRecord> findLatestByFormIdAndUserId(
-      @Param("formId") Long formId, @Param("userId") Long userId);
+  Optional<ApplicationRecord> findByApplicationFormIdAndUserId(Long formId, Long userId);
 
   @Query(
       """
@@ -50,12 +31,13 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
 
   @Query(
       """
-              select r
-              from ApplicationRecord r
-              where r.applicationForm.semester.semester = :semesterId
-                and r.user.id = :userId
-                and r.isSubmitted = true
-          """)
+        select r
+        from ApplicationRecord r
+        join fetch r.applicationForm f
+        where f.semester.semester = :semesterId
+          and r.user.id = :userId
+          and r.isSubmitted = true
+      """)
   Optional<ApplicationRecord> findSubmittedBySemesterAndUserId(
       @Param("semesterId") Long semesterId, @Param("userId") Long userId);
 
@@ -97,6 +79,7 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
           from ApplicationRecord r
           join fetch r.user u
           join fetch r.applicationForm f
+          join fetch f.semester s
           where r.id = :recordId
             and r.isSubmitted = true
           """)

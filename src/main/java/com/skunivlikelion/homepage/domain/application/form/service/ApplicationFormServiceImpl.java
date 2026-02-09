@@ -273,7 +273,9 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     return current.getId();
   }
 
-  private ApplicationForm getCurrentApplicationForm() {
+  @Override
+  @Transactional(readOnly = true)
+  public ApplicationForm getCurrentApplicationForm() {
     LocalDateTime now = LocalDateTime.now();
     ApplicationForm current =
         applicationFormRepository

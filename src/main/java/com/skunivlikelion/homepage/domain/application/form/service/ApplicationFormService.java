@@ -8,14 +8,15 @@ import java.util.List;
 import com.skunivlikelion.homepage.domain.application.form.dto.request.ApplicationFormUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormResponse;
 import com.skunivlikelion.homepage.domain.application.form.dto.response.ApplicationFormSummaryResponse;
+import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 
 /**
  * 멋쟁이사자처럼 홈페이지 모집 공고 일정 관련 Service interface 입니다.
  *
+ * @author Kim Na Kyung
  * @see com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm
  * @see com.skunivlikelion.homepage.domain.application.form.controller.ApplicationFormController
  * @since 2026.01.20
- * @author Kim Na Kyung
  */
 public interface ApplicationFormService {
 
@@ -60,11 +61,11 @@ public interface ApplicationFormService {
   List<ApplicationFormSummaryResponse> getApplicationFormSummariesForQuestionRegistration();
 
   /**
-   * [ 현재 진행중인 모집 공고 조회 메서드 ]
+   * [ 현재 진행중인 모집 공고 조회 메서드 (Response용) ]
    *
    * <p>진행중 기준: now >= openAt AND now <= finalResultAt
    *
-   * @return 현재 진행중인 모집 공고 엔티티
+   * @return 현재 진행중인 모집 공고 응답
    */
   ApplicationFormResponse getCurrentApplicationFormResponse();
 
@@ -81,4 +82,13 @@ public interface ApplicationFormService {
    * @return 현재 진행중인 모집 공고의 ApplicationForm ID
    */
   Long getCurrentApplicationFormId();
+
+  /**
+   * [ 현재 진행중인 모집 공고 조회 메서드 ]
+   *
+   * <p>진행중 기준: now >= openAt AND now <= finalResultAt
+   *
+   * @return 현재 진행중인 모집 공고 엔티티
+   */
+  ApplicationForm getCurrentApplicationForm();
 }
