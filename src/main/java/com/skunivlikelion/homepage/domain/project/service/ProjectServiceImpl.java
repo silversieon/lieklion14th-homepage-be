@@ -133,25 +133,17 @@ public class ProjectServiceImpl implements ProjectService {
     Project project = getProject(id);
 
     validateUpdateRequest(request);
-    validateMembers(request.getNewProjectMembers());
 
     Semester semester = getSemester(request.getSemesterId());
     ProjectType projectType = getProjectType(request.getProjectTypeId());
 
-    List<ProjectImageResponse> projectImageResponses = new ArrayList<>();
-    if (request.getRemainingProjectImageIds() != null
-        && !request.getRemainingProjectImageIds().isEmpty()) {
-      projectImageResponses =
-          projectUpdateService.updateProjectImages(
-              project, request.getRemainingProjectImageIds(), newImages);
-    }
+    List<ProjectImageResponse> projectImageResponses =
+        projectUpdateService.updateProjectImages(
+            project, request.getRemainingProjectImageIds(), newImages);
 
-    List<ProjectMember> projectMembers = new ArrayList<>();
-    if (request.getNewProjectMembers() != null && !request.getNewProjectMembers().isEmpty()) {
-      projectMembers =
-          projectUpdateService.updateProjectMembers(
-              project, request.getRemainingProjectMemberIds(), request.getNewProjectMembers());
-    }
+    List<ProjectMember> projectMembers =
+        projectUpdateService.updateProjectMembers(
+            project, request.getRemainingProjectMemberIds(), request.getNewProjectMembers());
 
     project.update(request, semester, projectType);
 

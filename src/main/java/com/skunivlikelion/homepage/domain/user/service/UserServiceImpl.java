@@ -97,6 +97,7 @@ public class UserServiceImpl implements UserService {
 
     Optional<ApplicationForm> applicationForm =
         applicationFormRepository.findCurrentApplicationForm(now);
+    boolean documentActive = applicationForm.isPresent();
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
     boolean interviewScheduleSubmitted = false;
@@ -134,6 +135,7 @@ public class UserServiceImpl implements UserService {
         currentUser.getEmail());
     return userMapper.toMyPageResponse(
         currentUser,
+        documentActive,
         documentSubmitted,
         interviewScheduleChangeable,
         interviewScheduleSubmitted,
@@ -471,6 +473,7 @@ public class UserServiceImpl implements UserService {
     LocalDateTime now = LocalDateTime.now();
     Optional<ApplicationForm> applicationForm =
         applicationFormRepository.findCurrentApplicationForm(now);
+    boolean documentActive = applicationForm.isPresent();
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
     boolean finalResultConfirmation = false;
@@ -506,6 +509,7 @@ public class UserServiceImpl implements UserService {
     log.info("[User] 프로필 이미지 업로드 성공 - userId: {}", currentUser.getId());
     return userMapper.toMyPageResponse(
         currentUser,
+        documentActive,
         documentSubmitted,
         interviewScheduleChangeable,
         interviewScheduleSubmitted,
