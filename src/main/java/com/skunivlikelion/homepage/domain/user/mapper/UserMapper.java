@@ -33,6 +33,7 @@ public class UserMapper {
 
   public MyPageResponse toMyPageResponse(
       User user,
+      boolean documentActive,
       boolean documentSubmitted,
       boolean interviewScheduleChangable,
       boolean interviewScheduleSubmitted,
@@ -41,6 +42,7 @@ public class UserMapper {
         .name(user.getName())
         .email(user.getEmail())
         .profileImageUrl(user.getProfileImageUrl())
+        .documentActive(documentActive)
         .documentSubmitted(documentSubmitted)
         .interviewScheduleChangeable(interviewScheduleChangable)
         .interviewScheduleSubmitted(interviewScheduleSubmitted)

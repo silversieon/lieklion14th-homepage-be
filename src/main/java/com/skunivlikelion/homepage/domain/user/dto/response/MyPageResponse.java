@@ -21,6 +21,9 @@ public class MyPageResponse {
   @Schema(description = "사용자 프로필 이미지 URL", example = "https://amazon.image.jpg")
   private String profileImageUrl;
 
+  @Schema(description = "지원서 작성 또는 확인 가능 여부", example = "true")
+  private boolean documentActive;
+
   @Schema(description = "지원서 제출 여부", example = "true")
   private boolean documentSubmitted;
 
