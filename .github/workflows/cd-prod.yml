@@ -61,16 +61,29 @@ jobs:
           key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           script: |
             cd ~/app/docker
+            
+            echo "🔵 [PROD] homepage-network 생성"
+            docker network inspect homepage-network >/dev/null 2>&1 \
+              || docker network create homepage-network
 
             echo "🔵 [PROD] .env 생성 중..."
             printf "${{ secrets.PROD_ENV_FILE }}" > .env
 
-            echo "🔵 [PROD] 최신 이미지 pull (app만)"
-            docker compose -f docker-compose.yml -f docker-compose-prod.yml pull app
+            echo "🔵 [PROD] MySQL 상태 확인 중..."
+            MYSQL_STATUS=$(docker inspect -f '{{.State.Status}}' mysql 2>/dev/null || echo "not_found")
 
-            echo "🔵 [PROD] 앱 컨테이너만 재기동"
-            docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d --no-deps app
+            if [ "$MYSQL_STATUS" = "running" ]; then
+              echo "🟡 [PROD] MySQL running → app만 재기동"
 
+              docker compose -f docker-compose.yml -f docker-compose-prod.yml pull app
+              docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d --no-deps app
+            else
+              echo "🟢 [PROD] MySQL not running → 전체 스택 기동"
+
+              docker compose -f docker-compose.yml -f docker-compose-prod.yml pull
+              docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d
+            fi
+            
             echo "🔵 [PROD] 사용하지 않는 이미지 정리"
             docker image prune -f
 

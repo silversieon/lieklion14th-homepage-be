@@ -56,7 +56,7 @@ public interface ApplicationRecordService {
   ApplicantUserInfo getMyDraftPersonalInfo();
 
   /**
-   * [ 사용자 본인 임시 저장 지원서 트랙별 조회 ]현재 진행중인 모집 공고 기준 draft record가 없으면 NOT_FOUND_DRAFT
+   * [ 사용자 본인 임시 저장 지원서 트랙별 조회 ]현재 진행중인 모집 공고 기준 draft record가 없으면 빈 리스트 반환
    *
    * @param track 조회할 트랙
    * @return 질문별 답변 목록

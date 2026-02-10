@@ -80,7 +80,7 @@ services:
 
 networks:
   homepage-network:
-    driver: bridge
+    external: true
 
 volumes:
   mysql-data:

@@ -58,10 +58,9 @@ public class ApplicationRecordControllerImpl implements ApplicationRecordControl
   @Override
   public ResponseEntity<BaseResponse<ApplicationRecordMeta>> submit(
       @Valid @RequestBody ApplicationDraftSaveRequest request) {
-    long start = System.currentTimeMillis();
+
     ApplicationRecordMeta response = applicationRecordService.submit(request);
-    long end = System.currentTimeMillis();
-    System.out.println("[지원서 제출 성공에 걸린 시간] (end - start) = " + (end - start));
+
     return ResponseEntity.status(200).body(BaseResponse.success(200, "지원서 제출에 성공했습니다.", response));
   }
 
@@ -77,10 +76,9 @@ public class ApplicationRecordControllerImpl implements ApplicationRecordControl
   @Override
   public ResponseEntity<BaseResponse<List<ApplicationAnswerItem>>> getMyDraftAnswersByTrack(
       @RequestParam Track track) {
-    long start = System.currentTimeMillis();
+
     List<ApplicationAnswerItem> response = applicationRecordService.getMyDraftAnswersByTrack(track);
-    long end = System.currentTimeMillis();
-    System.out.println("[내 임시 저장 지원서 답변 조회에 걸린 시간] (end - start) = " + (end - start));
+
     return ResponseEntity.status(200)
         .body(BaseResponse.success(200, "내 임시 저장 지원서 답변 조회에 성공했습니다.", response));
   }

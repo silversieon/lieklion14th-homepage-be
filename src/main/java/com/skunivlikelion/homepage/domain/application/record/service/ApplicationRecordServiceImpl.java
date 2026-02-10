@@ -6,6 +6,7 @@ package com.skunivlikelion.homepage.domain.application.record.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -248,10 +249,20 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
 
     ApplicationForm current = getSubmittableFormOrThrow(now);
 
-    ApplicationRecord draft =
-        applicationRecordRepository
-            .findByApplicationFormIdAndUserId(current.getId(), userId)
-            .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_DRAFT));
+    Optional<ApplicationRecord> draftOpt =
+        applicationRecordRepository.findByApplicationFormIdAndUserId(current.getId(), userId);
+
+    if (draftOpt.isEmpty()) {
+      log.info(
+          "[ApplicationRecord] draft answers 없음 - currentFormId={}, semester={}, userId={}, requestedTrack={}",
+          current.getId(),
+          current.getSemester().getSemester(),
+          userId,
+          track);
+      return List.of();
+    }
+
+    ApplicationRecord draft = draftOpt.get();
 
     if (draft.isSubmitted()) {
       throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
