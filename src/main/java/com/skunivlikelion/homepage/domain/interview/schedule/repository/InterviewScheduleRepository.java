@@ -16,6 +16,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.interview.booking.repository.AdminInterviewSlotView;
 import com.skunivlikelion.homepage.domain.interview.schedule.entity.InterviewSchedule;
 
 public interface InterviewScheduleRepository extends JpaRepository<InterviewSchedule, Long> {
@@ -82,4 +83,28 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select s from InterviewSchedule s where s.id = :scheduleId")
   Optional<InterviewSchedule> findByIdForUpdate(@Param("scheduleId") Long scheduleId);
+
+  @Query(
+      """
+            select
+              s.id as scheduleId,
+              s.track as track,
+              s.date as date,
+              s.startTime as startTime,
+              s.endTime as endTime,
+
+              b.id as bookingId,
+              b.userId as userId,
+              b.userNameMasked as snapshotName,
+              b.userStudentNumberMasked as snapshotStudentNumber,
+              b.applicationRecordId as applicationRecordId
+            from InterviewSchedule s
+            left join InterviewBooking b on b.interviewSchedule.id = s.id
+            where s.semester = :semester
+              and s.date = :date
+              and (:track is null or s.track = :track)
+            order by s.track asc, s.startTime asc, s.id asc
+          """)
+  List<AdminInterviewSlotView> findAdminBookingSchedulesBySemesterAndDate(
+      @Param("semester") Long semester, @Param("date") LocalDate date, @Param("track") Track track);
 }

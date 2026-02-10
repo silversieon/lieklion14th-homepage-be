@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
-import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingInfiniteResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
 import com.skunivlikelion.homepage.global.common.BaseResponse;
@@ -56,38 +56,30 @@ public interface InterviewBookingController {
       @Valid @RequestBody InterviewBookingCreateRequest request);
 
   @Operation(
-      summary = "[ 관리자 | 토큰 O | 면접 일정(슬롯) 조회·검색 - 커서 기반 무한스크롤 ]",
+      summary = "[ 관리자 | 토큰 O | 면접 예약 일정 조회 ]",
       description =
           """
-              **조회 조건**
-              - semester (필수): 기수
-              - track (선택): 트랙
-              - dateFrom / dateTo (선택): 날짜 범위
-              - search (선택): 이름 / 학번 검색 (검색 시 예약된 슬롯만 반환)
-              - cursor (선택): 다음 페이지 커서
-              - size (선택): 페이지 크기 (default=30, max=100)
+              **필수 Query**
+              - semester: 기수
+              - date: 면접일(yyyy-MM-dd)
 
-              **정렬**
-              - track ASC, date ASC, startTime ASC, scheduleId ASC (이른 날짜/시간 순)
+              **선택 Query**
+              - track: 트랙 필터
+              - search: 이름/학번 검색 (기수+날짜(+track) 필터 이후 예약자 정보에 대해 적용)
 
-              **응답 구조**
-              - 예약된 슬롯(InterviewBooking 존재)만 반환
-              - 슬롯(InterviewSchedule) 단위 flat list
-              - bookingInfo 항상 존재(booked=true)
-              - tracks: 기수별 존재 트랙 목록
+              **응답**
+              - 조회 단위는 예약(Booking)이 아니라 **면접 슬롯(InterviewSchedule)** 입니다.
+              - 예약이 없는 슬롯도 포함되어 **booked=false** 로 내려갑니다.
+              - booked=false 인 경우 bookingInfo는 null 입니다.
+              - search가 있는 경우에도 슬롯은 유지되며, 매칭되는 예약자만 bookingInfo가 채워집니다.
               """)
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/v1/admin/interviews/bookings")
-  ResponseEntity<BaseResponse<AdminInterviewBookingInfiniteResponse>> getAdminBookings(
+  ResponseEntity<BaseResponse<AdminInterviewBookingResponse>> getAdminBookings(
       @RequestParam @Positive Long semester,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) Track track,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate dateFrom,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate dateTo,
-      @RequestParam(required = false) String search,
-      @RequestParam(required = false) String cursor,
-      @RequestParam(required = false) @Positive Integer size);
+      @RequestParam(required = false) String search);
 
   @Operation(
       summary = "[ 사용자 | 토큰 O | 내 면접 예약 조회 ]",

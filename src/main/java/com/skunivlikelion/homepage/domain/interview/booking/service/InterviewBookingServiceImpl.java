@@ -3,9 +3,6 @@
  */
 package com.skunivlikelion.homepage.domain.interview.booking.service;
 
-import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingCursorUtil.Cursor;
-import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingCursorUtil.decodeCursor;
-import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingCursorUtil.encodeCursor;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil.maskName;
 import static com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil.maskStudentNumber;
 
@@ -26,13 +23,12 @@ import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationR
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
-import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingInfiniteResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.entity.InterviewBooking;
 import com.skunivlikelion.homepage.domain.interview.booking.exception.InterviewBookingErrorCode;
 import com.skunivlikelion.homepage.domain.interview.booking.mapper.InterviewBookingMapper;
-import com.skunivlikelion.homepage.domain.interview.booking.repository.AdminInterviewSlotView;
 import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
 import com.skunivlikelion.homepage.domain.interview.booking.util.InterviewBookingMaskUtil;
 import com.skunivlikelion.homepage.domain.interview.booking.validator.InterviewBookingValidator;
@@ -41,7 +37,6 @@ import com.skunivlikelion.homepage.domain.interview.schedule.repository.Intervie
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
-import com.skunivlikelion.homepage.global.page.exception.PageErrorStatus;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
 import lombok.RequiredArgsConstructor;
@@ -155,51 +150,61 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
 
   @Override
   @Transactional(readOnly = true)
-  public AdminInterviewBookingInfiniteResponse getAdminBookings(
-      Long semester,
-      Track track,
-      LocalDate dateFrom,
-      LocalDate dateTo,
-      String search,
-      String cursor,
-      Integer size) {
+  public AdminInterviewBookingResponse getAdminBookings(
+      Long semester, LocalDate date, Track track, String search) {
 
-    int resolvedSize = (size == null) ? 30 : size;
-    if (resolvedSize <= 0 || resolvedSize > 100) {
-      throw new CustomException(PageErrorStatus.PAGE_SIZE_ERROR);
+    if (semester == null || date == null) {
+      log.warn(
+          "[InterviewBooking] 관리자 예약 조회 실패 - 필수 파라미터 누락 - semester={}, date={}", semester, date);
+      throw new CustomException(InterviewBookingErrorCode.INVALID_REQUEST);
     }
 
     String normalized = (search == null || search.isBlank()) ? null : search.trim().toLowerCase();
-    Cursor c = (cursor == null || cursor.isBlank()) ? null : decodeCursor(cursor);
 
-    var pageable = org.springframework.data.domain.PageRequest.of(0, resolvedSize + 1);
+    log.info(
+        "[InterviewBooking] 관리자 예약 조회 요청 - semester={}, date={}, track={}, search={}",
+        semester,
+        date,
+        track,
+        (normalized == null ? null : "***"));
 
-    List<AdminInterviewSlotView> rows =
-        interviewBookingRepository.findAdminBookedSlotsInfinite(
-            semester,
-            track,
-            dateFrom,
-            dateTo,
-            normalized,
-            c == null ? null : c.track(),
-            c == null ? null : c.date(),
-            c == null ? null : c.startTime(),
-            c == null ? null : c.scheduleId(),
-            pageable);
+    List<com.skunivlikelion.homepage.domain.interview.booking.repository.AdminInterviewSlotView>
+        rows =
+            interviewScheduleRepository.findAdminBookingSchedulesBySemesterAndDate(
+                semester, date, track);
 
-    boolean hasNext = rows.size() > resolvedSize;
-    if (hasNext) {
-      rows = rows.subList(0, resolvedSize);
+    log.info(
+        "[InterviewBooking] 관리자 예약 조회 - 슬롯 조회 완료 - semester={}, date={}, track={}, slotCount={}",
+        semester,
+        date,
+        track,
+        rows.size());
+
+    if (rows.isEmpty()) {
+      List<String> allTracks =
+          Track.getCurrentSemesterTracks(semester).stream().map(Enum::name).toList();
+
+      log.info(
+          "[InterviewBooking] 관리자 예약 조회 결과 - 해당 날짜/트랙에 슬롯 없음 - semester={}, date={}, track={}, tracks={}",
+          semester,
+          date,
+          track,
+          allTracks);
+
+      List<AdminInterviewBookingResponse.TrackGroup> empty =
+          allTracks.stream()
+              .map(t -> new AdminInterviewBookingResponse.TrackGroup(t, List.of()))
+              .toList();
+
+      return new AdminInterviewBookingResponse(semester.intValue(), empty);
     }
-
-    List<String> tracks =
-        interviewScheduleRepository.findDistinctTracksBySemester(semester).stream()
-            .map(Enum::name)
-            .toList();
 
     List<Long> userIds =
         rows.stream()
-            .map(AdminInterviewSlotView::getUserId)
+            .map(
+                com.skunivlikelion.homepage.domain.interview.booking.repository
+                        .AdminInterviewSlotView
+                    ::getUserId)
             .filter(Objects::nonNull)
             .distinct()
             .toList();
@@ -207,62 +212,114 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
     Map<Long, User> userMap =
         userRepository.findAllById(userIds).stream().collect(Collectors.toMap(User::getId, u -> u));
 
-    List<AdminInterviewBookingInfiniteResponse.Item> items =
+    log.info(
+        "[InterviewBooking] 관리자 예약 조회 - 예약자 정보 조회 완료 - slotUserIdsCount={}, userEntityLoadedCount={}",
+        userIds.size(),
+        userMap.size());
+
+    List<String> allTracks =
+        Track.getCurrentSemesterTracks(semester).stream().map(Enum::name).toList();
+
+    Map<String, List<AdminInterviewBookingResponse.TimeSlot>> timesByTrack =
         rows.stream()
+            .collect(
+                Collectors.groupingBy(
+                    v -> v.getTrack().name(),
+                    Collectors.mapping(
+                        v -> {
+                          boolean booked = (v.getBookingId() != null);
+
+                          if (!booked) {
+                            if (normalized != null) {
+                              return null; // 검색어가 있으면 예약 없는 슬롯 제외
+                            }
+                            return new AdminInterviewBookingResponse.TimeSlot(
+                                v.getScheduleId(), v.getStartTime(), v.getEndTime(), false, null);
+                          }
+
+                          User u = (v.getUserId() == null) ? null : userMap.get(v.getUserId());
+
+                          String name;
+                          String studentNumber;
+                          String department = null;
+                          String phone = null;
+
+                          if (u != null) {
+                            name = u.getName();
+                            studentNumber = u.getStudentNumber();
+                            department = u.getDepartment();
+                            phone = u.getPhoneNumber();
+                          } else {
+                            name = v.getSnapshotName();
+                            studentNumber = v.getSnapshotStudentNumber();
+                          }
+
+                          boolean matched =
+                              (normalized == null)
+                                  || (name != null && name.toLowerCase().contains(normalized))
+                                  || (studentNumber != null
+                                      && studentNumber.toLowerCase().contains(normalized));
+
+                          if (!matched) {
+                            return null;
+                          }
+
+                          var info =
+                              new AdminInterviewBookingResponse.BookingInfo(
+                                  v.getBookingId(),
+                                  name,
+                                  department,
+                                  studentNumber,
+                                  phone,
+                                  v.getApplicationRecordId());
+
+                          return new AdminInterviewBookingResponse.TimeSlot(
+                              v.getScheduleId(), v.getStartTime(), v.getEndTime(), true, info);
+                        },
+                        Collectors.toList())));
+
+    timesByTrack.replaceAll((k, list) -> list.stream().filter(Objects::nonNull).toList());
+
+    List<AdminInterviewBookingResponse.TrackGroup> trackGroups =
+        allTracks.stream()
             .map(
-                v -> {
-                  // booked 슬롯만 내려오도록 쿼리에서 필터링했으므로 true 고정
-                  boolean booked = true;
+                trackName -> {
+                  List<AdminInterviewBookingResponse.TimeSlot> times =
+                      timesByTrack.getOrDefault(trackName, List.of());
 
-                  User u = (v.getUserId() == null) ? null : userMap.get(v.getUserId());
+                  List<AdminInterviewBookingResponse.DateGroup> dates =
+                      times.isEmpty()
+                          ? List.of()
+                          : List.of(new AdminInterviewBookingResponse.DateGroup(date, times));
 
-                  String name;
-                  String studentNumber;
-                  String department = null;
-                  String phone = null;
-
-                  if (u != null) {
-                    // 유저 존재: User 테이블 기반 (마스킹 X)
-                    name = u.getName();
-                    studentNumber = u.getStudentNumber();
-                    department = u.getDepartment();
-                    phone = u.getPhoneNumber();
-                  } else {
-                    // 유저 삭제: 스냅샷만 사용
-                    name = v.getSnapshotName();
-                    studentNumber = v.getSnapshotStudentNumber();
-                  }
-
-                  AdminInterviewBookingInfiniteResponse.BookingInfo info =
-                      new AdminInterviewBookingInfiniteResponse.BookingInfo(
-                          v.getBookingId(),
-                          name,
-                          department,
-                          studentNumber,
-                          phone,
-                          v.getApplicationRecordId());
-
-                  return new AdminInterviewBookingInfiniteResponse.Item(
-                      v.getScheduleId(),
-                      v.getTrack().name(),
-                      v.getDate(),
-                      v.getStartTime(),
-                      v.getEndTime(),
-                      booked,
-                      info);
+                  return new AdminInterviewBookingResponse.TrackGroup(trackName, dates);
                 })
             .toList();
 
-    String nextCursor = null;
-    if (hasNext && !items.isEmpty()) {
-      var last = items.get(items.size() - 1);
-      nextCursor =
-          encodeCursor(
-              Track.valueOf(last.track()), last.date(), last.startTime(), last.scheduleId());
-    }
+    long totalSlotsReturned =
+        trackGroups.stream()
+            .flatMap(tg -> tg.dates().stream())
+            .flatMap(dg -> dg.times().stream())
+            .count();
 
-    return new AdminInterviewBookingInfiniteResponse(
-        semester.intValue(), tracks, items, nextCursor, hasNext, resolvedSize);
+    long bookedSlotsReturned =
+        trackGroups.stream()
+            .flatMap(tg -> tg.dates().stream())
+            .flatMap(dg -> dg.times().stream())
+            .filter(AdminInterviewBookingResponse.TimeSlot::booked)
+            .count();
+
+    log.info(
+        "[InterviewBooking] 관리자 예약 조회 응답 - semester={}, date={}, trackFilter={}, searchApplied={}, tracksCount={}, returnedSlots={}, returnedBookedSlots={}",
+        semester,
+        date,
+        track,
+        (normalized != null),
+        trackGroups.size(),
+        totalSlotsReturned,
+        bookedSlotsReturned);
+
+    return new AdminInterviewBookingResponse(semester.intValue(), trackGroups);
   }
 
   @Override
