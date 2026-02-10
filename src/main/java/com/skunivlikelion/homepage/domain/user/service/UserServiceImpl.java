@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
-import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
@@ -153,17 +152,15 @@ public class UserServiceImpl implements UserService {
     }
     Long safeSemester = semesterService.getSemester(semester).getSemester();
 
-    ApplicationForm applicationForm =
-        applicationFormRepository
-            .findBySemester_Semester(safeSemester)
-            .orElseThrow(
-                () -> {
-                  log.info("[User] 해당 기수의 지원 공고 없음, 지원 공고 필요 - semester: {}", safeSemester);
-                  return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
-                });
+    Optional<ApplicationForm> applicationForm =
+        applicationFormRepository.findBySemester_Semester(safeSemester);
+
+    boolean canExposeBabyLion = true;
 
     LocalDateTime now = LocalDateTime.now();
-    boolean canExposeBabyLion = now.isAfter(applicationForm.getFinalResultAt().plusDays(3));
+    if (applicationForm.isPresent()) {
+      canExposeBabyLion = now.isAfter(applicationForm.get().getFinalResultAt().plusDays(3));
+    }
 
     List<Track> tracksToFetchAvailable = Track.getCurrentSemesterTracks(safeSemester);
 
