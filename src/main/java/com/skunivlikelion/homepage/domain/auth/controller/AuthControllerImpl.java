@@ -84,8 +84,7 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<TokenResponse>> login(
-      @Valid @RequestBody LoginRequest request) {
+  public ResponseEntity<BaseResponse<Void>> login(@Valid @RequestBody LoginRequest request) {
     TokenResponse tokenResponse = authService.login(request);
     HttpHeaders tokenHeaders = new HttpHeaders();
     tokenHeaders.add(
@@ -96,7 +95,7 @@ public class AuthControllerImpl implements AuthController {
         jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken()).toString());
     return ResponseEntity.status(200)
         .headers(tokenHeaders)
-        .body(BaseResponse.success(200, "로그인에 성공했습니다.", tokenResponse));
+        .body(BaseResponse.success(200, "로그인에 성공했습니다.", null));
   }
 
   @Override
@@ -107,7 +106,7 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<TokenResponse>> refresh(HttpServletRequest request) {
+  public ResponseEntity<BaseResponse<Void>> refresh(HttpServletRequest request) {
     String refreshToken = jwtProvider.extractRefreshToken(request);
     TokenResponse tokenResponse = authService.refresh(refreshToken);
     HttpHeaders tokenHeaders = new HttpHeaders();
@@ -119,7 +118,7 @@ public class AuthControllerImpl implements AuthController {
         jwtCookieWriter.addRefreshTokenToCookie(tokenResponse.getRefreshToken()).toString());
     return ResponseEntity.status(200)
         .headers(tokenHeaders)
-        .body(BaseResponse.success(200, "토큰 재발급에 성공했습니다.", tokenResponse));
+        .body(BaseResponse.success(200, "토큰 재발급에 성공했습니다.", null));
   }
 
   @Override

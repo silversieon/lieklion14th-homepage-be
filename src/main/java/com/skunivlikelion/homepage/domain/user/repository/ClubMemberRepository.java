@@ -32,6 +32,7 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
         OR cm.user.name LIKE CONCAT('%', :keyword, '%')
         OR cm.user.department LIKE CONCAT('%', :keyword, '%')
       )
+    ORDER BY cm.createdAt DESC
     """)
   List<ClubMember> searchClubMembersByPositionAndTrackAndKeywordIn(
       @Param("position") Position position,
@@ -51,6 +52,7 @@ WHERE cm.semester.semester = :semesterId
     OR cm.user.name LIKE CONCAT('%', :keyword, '%')
     OR cm.user.department LIKE CONCAT('%', :keyword, '%')
   )
+ORDER BY cm.createdAt DESC
 """)
   List<ClubMember> searchClubMembersBySemesterAndPositionAndTrackAndKeywordIn(
       @Param("semesterId") Long semesterId,

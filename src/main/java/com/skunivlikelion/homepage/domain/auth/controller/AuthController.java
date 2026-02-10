@@ -18,7 +18,6 @@ import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStat
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.SignUpRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueResponse;
-import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.global.common.BaseResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,12 +109,12 @@ public interface AuthController {
           email: 사용자 이메일 주소  \n
           password: 사용자 비밀번호 \n
 
-          **Returns (쿠키에 전달 [개발에서는 응답값 활용])**  \n
+          **Returns (쿠키에 전달)**  \n
           ACCESS_TOKEN: JWT 액세스 토큰 \n
           REFRESH_TOKEN: JWT 리프레시 토큰 \n
           """)
   @PostMapping("/v1/auth/login")
-  ResponseEntity<BaseResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request);
+  ResponseEntity<BaseResponse<Void>> login(@Valid @RequestBody LoginRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 X | 비밀번호 재발급 ]",
@@ -138,12 +137,12 @@ public interface AuthController {
       summary = "[ 사용자 | 토큰 O | 토큰 재발급 ]",
       description =
           """
-          **Returns (쿠키에 전달 [개발에서는 응답값 활용])**  \n
+          **Returns (쿠키에 전달)**  \n
           ACCESS_TOKEN: JWT 액세스 토큰 \n
           REFRESH_TOKEN: JWT 리프레시 토큰 \n
           """)
   @PostMapping("/v1/auth/refresh")
-  ResponseEntity<BaseResponse<TokenResponse>> refresh(HttpServletRequest request);
+  ResponseEntity<BaseResponse<Void>> refresh(HttpServletRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 O | 로그아웃 ]",
