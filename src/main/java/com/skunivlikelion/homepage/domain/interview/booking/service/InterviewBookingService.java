@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
-import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingInfiniteResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.user.entity.User;
@@ -25,31 +25,26 @@ public interface InterviewBookingService {
   InterviewBookingResponse createBooking(InterviewBookingCreateRequest request);
 
   /**
-   * [ 관리자 | 토큰 O | 면접 일정 조회 - 커서 기반 무한스크롤 ]
+   * [ 관리자 | 토큰 O | 면접 예약 일정 조회 ]
    *
    * <p>조회 단위: - InterviewSchedule(시간 슬롯) 기준
    *
-   * <p>정렬 기준: - track ASC - date ASC - startTime ASC - scheduleId ASC
+   * <p>필수 조건: - semester(기수), date(면접일)
    *
-   * <p>특징: - 예약이 존재하는 슬롯 → booked=true + bookingInfo 포함 - 예약이 없는 슬롯 → booked=false +
-   * bookingInfo=null - tracks: 해당 기수에 실제 존재하는 트랙 목록 반환
+   * <p>정렬 기준: - track ASC, startTime ASC, scheduleId ASC
+   *
+   * <p>특징: - 예약이 없는 슬롯도 포함하여 반환 (booked=false, bookingInfo=null) - 예약이 있는 슬롯은 booked=true,
+   * bookingInfo 포함 - tracks: 해당 기수 정책 기반 트랙 목록을 모두 반환 - search가 존재하는 경우에도 슬롯은 유지되며 검색어가 이름/학번에 매칭되는
+   * 예약자만 bookingInfo가 채워짐 (매칭되지 않는 예약 슬롯은 booked=true 이지만 bookingInfo=null)
    *
    * @param semester 기수 (필수)
+   * @param date 면접일 (필수)
    * @param track 트랙 필터 (선택)
-   * @param dateFrom 시작 날짜 (선택)
-   * @param dateTo 종료 날짜 (선택)
-   * @param search 이름 / 학번 검색어 (선택, 검색 시 예약된 슬롯만 반환)
-   * @param cursor 다음 페이지 커서 (선택)
-   * @param size 페이지 크기 (선택, default=30, max=100)
+   * @param search 이름/학번 검색어 (선택)
+   * @return 관리자 면접 예약일정 조회 응답
    */
-  AdminInterviewBookingInfiniteResponse getAdminBookings(
-      Long semester,
-      Track track,
-      LocalDate dateFrom,
-      LocalDate dateTo,
-      String search,
-      String cursor,
-      Integer size);
+  AdminInterviewBookingResponse getAdminBookings(
+      Long semester, LocalDate date, Track track, String search);
 
   /**
    * [ 사용자 | 토큰 O | 내 면접 예약 조회 ]

@@ -116,17 +116,22 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     validateSemesterExists(semester);
 
+    List<Track> tracksToReturn =
+        (track != null) ? List.of(track) : Track.getCurrentSemesterTracks(semester);
+
     List<InterviewSchedule> schedules =
         interviewScheduleRepository.findAdminSchedules(semester, track, dateFrom, dateTo);
 
+    Set<Long> bookedIds;
+
     if (schedules.isEmpty()) {
-      return new AdminInterviewScheduleResponse(semester.intValue(), List.of());
+      bookedIds = Set.of();
+    } else {
+      Set<Long> scheduleIds =
+          schedules.stream().map(InterviewSchedule::getId).collect(Collectors.toSet());
+
+      bookedIds = interviewBookingRepository.findBookedScheduleIds(scheduleIds);
     }
-
-    Set<Long> scheduleIds =
-        schedules.stream().map(InterviewSchedule::getId).collect(Collectors.toSet());
-
-    Set<Long> bookedIds = interviewBookingRepository.findBookedScheduleIds(scheduleIds);
 
     Map<Track, Map<LocalDate, List<InterviewSchedule>>> grouped =
         schedules.stream()
@@ -136,12 +141,11 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                     Collectors.groupingBy(InterviewSchedule::getDate)));
 
     List<AdminInterviewScheduleResponse.TrackGroup> trackGroups =
-        grouped.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
+        tracksToReturn.stream()
             .map(
-                trackEntry -> {
-                  Track t = trackEntry.getKey();
-                  Map<LocalDate, List<InterviewSchedule>> byDate = trackEntry.getValue();
+                t -> {
+                  Map<LocalDate, List<InterviewSchedule>> byDate =
+                      grouped.getOrDefault(t, Map.of());
 
                   List<AdminInterviewScheduleResponse.DateGroup> dateGroups =
                       byDate.entrySet().stream()

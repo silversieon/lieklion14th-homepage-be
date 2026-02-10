@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
-import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingInfiniteResponse;
+import com.skunivlikelion.homepage.domain.interview.booking.dto.response.AdminInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.InterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.response.UserInterviewBookingResponse;
 import com.skunivlikelion.homepage.domain.interview.booking.service.InterviewBookingService;
@@ -41,20 +41,12 @@ public class InterviewBookingControllerImpl implements InterviewBookingControlle
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<BaseResponse<AdminInterviewBookingInfiniteResponse>> getAdminBookings(
-      Long semester,
-      Track track,
-      LocalDate dateFrom,
-      LocalDate dateTo,
-      String search,
-      String cursor,
-      Integer size) {
+  public ResponseEntity<BaseResponse<AdminInterviewBookingResponse>> getAdminBookings(
+      Long semester, LocalDate date, Track track, String search) {
+    AdminInterviewBookingResponse result =
+        interviewBookingService.getAdminBookings(semester, date, track, search);
 
-    AdminInterviewBookingInfiniteResponse result =
-        interviewBookingService.getAdminBookings(
-            semester, track, dateFrom, dateTo, search, cursor, size);
-
-    return ResponseEntity.ok(BaseResponse.success(200, "관리자 면접 일정 조회에 성공했습니다.", result));
+    return ResponseEntity.ok(BaseResponse.success(200, "면접 예약 조회에 성공했습니다.", result));
   }
 
   @Override

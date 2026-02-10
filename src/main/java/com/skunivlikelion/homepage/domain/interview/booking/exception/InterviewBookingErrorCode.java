@@ -13,8 +13,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum InterviewBookingErrorCode implements BaseErrorCode {
-  INVALID_CURSOR("IVTBK4001", "잘못된 커서 형식입니다.", HttpStatus.BAD_REQUEST),
-  INVALID_REQUEST("IVTBK4002", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST),
+  INVALID_REQUEST("IVTBK4001", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST),
 
   NOT_PASSED_DOCUMENT("IVTBK4031", "서류 합격자만 면접 일정을 예약할 수 있습니다.", HttpStatus.FORBIDDEN),
   PAST_SCHEDULE("IVTBK4032", "이미 시작된 면접 일정의 예약은 삭제할 수 없습니다.", HttpStatus.FORBIDDEN),

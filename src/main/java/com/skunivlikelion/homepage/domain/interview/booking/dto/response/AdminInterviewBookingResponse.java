@@ -21,5 +21,10 @@ public record AdminInterviewBookingResponse(Integer semester, List<TrackGroup> t
       BookingInfo bookingInfo) {}
 
   public record BookingInfo(
-      Long bookingId, String name, String studentNumber, Long applicationRecordId) {}
+      Long bookingId,
+      String name,
+      String department, // 유저 존재 시만 값, 삭제 시 null
+      String studentNumber,
+      String phone, // 유저 존재 시만 값, 삭제 시 null
+      Long applicationRecordId) {}
 }
