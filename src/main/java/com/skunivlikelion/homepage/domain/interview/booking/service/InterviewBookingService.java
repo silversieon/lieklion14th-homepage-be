@@ -4,7 +4,6 @@
 package com.skunivlikelion.homepage.domain.interview.booking.service;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.interview.booking.dto.request.InterviewBookingCreateRequest;
@@ -30,7 +29,7 @@ public interface InterviewBookingService {
    *
    * <p>조회 단위: - InterviewSchedule(시간 슬롯) 기준 - 예약된 슬롯만 반환 (예약이 없는 슬롯은 제외)
    *
-   * <p>필수 조건: - semester(기수) - dates (면접일 목록, 1개 이상)
+   * <p>필수 조건: - semester(기수) - date
    *
    * <p>선택 조건: - track: 트랙 필터 (지정 시 해당 트랙만 반환) - search: 이름/학번 검색어
    *
@@ -40,13 +39,13 @@ public interface InterviewBookingService {
    * 필터가 존재하면 tracks 배열에는 해당 트랙만 포함됨
    *
    * @param semester 기수 (필수)
-   * @param dates 면접일 목록 (필수, 1개 이상)
+   * @param date 면접일 목록 (필수)
    * @param track 트랙 필터 (선택)
    * @param search 이름/학번 검색어 (선택)
-   * @return 관리자 면접 예약일정 조회 응답
+   * @return 관리자 면접 예약 일정 조회 응답
    */
   AdminInterviewBookingResponse getAdminBookings(
-      Long semester, List<LocalDate> dates, Track track, String search);
+      Long semester, LocalDate date, Track track, String search);
 
   /**
    * [ 사용자 | 토큰 O | 내 면접 예약 조회 ]

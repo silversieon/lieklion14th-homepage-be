@@ -4,7 +4,6 @@
 package com.skunivlikelion.homepage.domain.interview.booking.controller;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -62,7 +61,7 @@ public interface InterviewBookingController {
           """
               **필수 Query**
               - semester: 기수
-              - dates: 면접일 목록(yyyy-MM-dd) (여러 개 가능)
+              - dates: 면접일 (yyyy-MM-dd)
 
               **선택 Query**
               - track: 트랙 필터
@@ -71,13 +70,12 @@ public interface InterviewBookingController {
               **변경 사항**
               - track 지정 시 해당 트랙만 반환
               - booked=true(예약된 슬롯)만 반환
-              - dates는 다건 지원
               """)
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/v1/admin/interviews/bookings")
   ResponseEntity<BaseResponse<AdminInterviewBookingResponse>> getAdminBookings(
       @RequestParam @Positive Long semester,
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) List<LocalDate> dates,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) Track track,
       @RequestParam(required = false) String search);
 

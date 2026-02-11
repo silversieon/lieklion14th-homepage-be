@@ -86,27 +86,25 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
 
   @Query(
       """
-            select
-              s.id as scheduleId,
-              s.track as track,
-              s.date as date,
-              s.startTime as startTime,
-              s.endTime as endTime,
+          select
+            s.id as scheduleId,
+            s.track as track,
+            s.date as date,
+            s.startTime as startTime,
+            s.endTime as endTime,
 
-              b.id as bookingId,
-              b.userId as userId,
-              b.userNameMasked as snapshotName,
-              b.userStudentNumberMasked as snapshotStudentNumber,
-              b.applicationRecordId as applicationRecordId
-            from InterviewSchedule s
-            join InterviewBooking b on b.interviewSchedule.id = s.id
-            where s.semester = :semester
-              and s.date in :dates
-              and (:track is null or s.track = :track)
-            order by s.track asc, s.date asc, s.startTime asc, s.id asc
-          """)
-  List<AdminInterviewSlotView> findAdminBookedSchedulesBySemesterAndDates(
-      @Param("semester") Long semester,
-      @Param("dates") List<LocalDate> dates,
-      @Param("track") Track track);
+            b.id as bookingId,
+            b.userId as userId,
+            b.userNameMasked as snapshotName,
+            b.userStudentNumberMasked as snapshotStudentNumber,
+            b.applicationRecordId as applicationRecordId
+          from InterviewSchedule s
+          join InterviewBooking b on b.interviewSchedule.id = s.id
+          where s.semester = :semester
+            and s.date = :date
+            and (:track is null or s.track = :track)
+          order by s.track asc, s.startTime asc, s.id asc
+      """)
+  List<AdminInterviewSlotView> findAdminBookedSchedulesBySemesterAndDate(
+      @Param("semester") Long semester, @Param("date") LocalDate date, @Param("track") Track track);
 }
