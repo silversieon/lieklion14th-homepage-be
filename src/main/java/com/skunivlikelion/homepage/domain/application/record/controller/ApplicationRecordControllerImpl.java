@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
+import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationRecordDeleteRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
@@ -119,5 +120,15 @@ public class ApplicationRecordControllerImpl implements ApplicationRecordControl
         applicationRecordService.getApplicationDetail(applicationRecordId);
 
     return ResponseEntity.status(200).body(BaseResponse.success(200, "지원서 조회에 성공했습니다.", response));
+  }
+
+  @Override
+  @PreAuthorize("hasRole('DEVELOPER')")
+  public ResponseEntity<BaseResponse<Void>> deleteApplicationRecords(
+      @Valid @RequestBody ApplicationRecordDeleteRequest request) {
+
+    applicationRecordService.deleteApplicationRecords(request);
+
+    return ResponseEntity.status(200).body(BaseResponse.success(200, "지원서 삭제에 성공했습니다.", null));
   }
 }

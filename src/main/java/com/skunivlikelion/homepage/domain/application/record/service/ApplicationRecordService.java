@@ -6,6 +6,7 @@ package com.skunivlikelion.homepage.domain.application.record.service;
 import java.util.List;
 
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
+import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationRecordDeleteRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
@@ -90,4 +91,11 @@ public interface ApplicationRecordService {
    * @return 사용자 정보 + 공통/트랙 질문/답변
    */
   ApplicationRecordResponse getApplicationDetail(Long applicationRecordId);
+
+  /**
+   * [ 지원서 삭제 ]
+   *
+   * @param request 삭제할 지원서 id
+   */
+  void deleteApplicationRecords(ApplicationRecordDeleteRequest request);
 }

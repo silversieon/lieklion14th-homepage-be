@@ -17,6 +17,7 @@ import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationFor
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
+import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationRecordDeleteRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
@@ -324,6 +325,27 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
 
     return applicationRecordMapper.toAnswersGetResponse(
         record, q.commonQuestions(), q.trackQuestions(), a);
+  }
+
+  @Override
+  @Transactional
+  public void deleteApplicationRecords(ApplicationRecordDeleteRequest request) {
+    List<Long> distinctIds = request.getApplicationRecordIds().stream().distinct().toList();
+
+    List<Long> existingIds = applicationRecordRepository.findExistingIds(distinctIds);
+
+    if (existingIds.isEmpty()) {
+      log.info(
+          "[ApplicationRecord] 관리자 지원서 삭제(내용 없음) - requested={}, deleted=0", distinctIds.size());
+      return;
+    }
+
+    int deleted = applicationRecordRepository.bulkDeleteByIds(existingIds);
+
+    log.info(
+        "[ApplicationRecord] 관리자 지원서 삭제 완료 - requested={}, deleted={}",
+        distinctIds.size(),
+        deleted);
   }
 
   // ========================================================================

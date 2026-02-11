@@ -87,7 +87,7 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
             .orElseThrow(
                 () -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_APPLICATION_RECORD));
 
-    if (!record.isDocumentPassed()) {
+    if (!record.getIsDocumentPassed()) {
       log.warn(
           "[InterviewBooking] 예약 실패 - 서류 미합격 - userId={}, recordId={}", userId, record.getId());
       throw new CustomException(InterviewBookingErrorCode.NOT_PASSED_DOCUMENT);
@@ -449,7 +449,7 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
             .orElseThrow(
                 () -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_APPLICATION_RECORD));
 
-    if (!record.isDocumentPassed()) {
+    if (!record.getIsDocumentPassed()) {
       log.warn(
           "[InterviewBooking] 변경 실패 - 서류 미합격 - userId={}, recordId={}", userId, record.getId());
       throw new CustomException(InterviewBookingErrorCode.NOT_PASSED_DOCUMENT);

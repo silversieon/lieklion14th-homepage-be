@@ -69,19 +69,19 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
     }
 
     if (isDocumentPassed) {
-      record.markDocumentPassed();
+      record.passDocument();
     } else {
-      record.unmarkDocumentPassed();
+      record.failDocument();
     }
 
     log.info(
         "[ApplicationResult] 서류 합격 여부 수정 완료 - recordId={}, isDocumentPassed={}",
         applicationRecordId,
-        record.isDocumentPassed());
+        record.getIsDocumentPassed());
 
     return AdminDocumentResultUpdateResponse.builder()
         .applicationRecordId(record.getId())
-        .isDocumentPassed(record.isDocumentPassed())
+        .isDocumentPassed(record.getIsDocumentPassed())
         .build();
   }
 
@@ -101,7 +101,7 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
       throw new CustomException(ApplicationResultErrorCode.ONLY_SUBMITTED_RECORD_ALLOWED);
     }
 
-    if (!applicationRecord.isDocumentPassed()) {
+    if (!applicationRecord.getIsDocumentPassed()) {
       log.info(
           "[ApplicationResult] 서류 결과가 합격되지 않은 구성원 면접 합격 여부 처리 발생 - recordId={}",
           applicationRecordId);
@@ -114,14 +114,14 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
     }
 
     if (!passed) {
-      applicationRecord.unmarkInterviewPassed();
+      applicationRecord.failInterview();
       log.info("[ApplicationResult] 면접 불합격 처리 - recordId={}", applicationRecordId);
       return AdminApplicationResultConfirmResponse.builder()
           .applicationRecordId(applicationRecord.getId())
-          .passed(applicationRecord.isInterviewPassed())
+          .passed(applicationRecord.getIsInterviewPassed())
           .build();
     } else {
-      applicationRecord.markInterviewPassed();
+      applicationRecord.passInterview();
       User user =
           userRepository
               .findById(applicationRecord.getUser().getId())
@@ -148,7 +148,7 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
           user.getName());
       return AdminApplicationResultConfirmResponse.builder()
           .applicationRecordId(applicationRecord.getId())
-          .passed(applicationRecord.isInterviewPassed())
+          .passed(applicationRecord.getIsInterviewPassed())
           .build();
     }
   }
@@ -186,8 +186,8 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
     }
 
     return MyInterviewResultResponse.builder()
-        .documentPassed(applicationRecord.isDocumentPassed())
-        .interviewPassed(applicationRecord.isInterviewPassed())
+        .documentPassed(applicationRecord.getIsDocumentPassed())
+        .interviewPassed(applicationRecord.getIsInterviewPassed())
         .track(applicationRecord.getTrack())
         .semester(form.getSemester().getSemester())
         .build();

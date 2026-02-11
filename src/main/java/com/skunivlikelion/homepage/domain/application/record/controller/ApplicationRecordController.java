@@ -8,6 +8,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
+import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationRecordDeleteRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
@@ -153,4 +155,15 @@ public interface ApplicationRecordController {
   @GetMapping("/v1/admin/applications/records/{application-record-id}")
   ResponseEntity<BaseResponse<ApplicationRecordResponse>> getApplicationDetail(
       @PathVariable("application-record-id") Long applicationRecordId);
+
+  @Operation(
+      summary = "[ 개발자 | 토큰 O | 지원 내역을 포함한 지원서 삭제 ]",
+      description =
+          """
+              **RequestBody**  \n
+              applicationRecordIds: 삭제할 지원서 식별자 목록
+              """)
+  @DeleteMapping("/v1/dev/applications/records")
+  ResponseEntity<BaseResponse<Void>> deleteApplicationRecords(
+      @Valid @RequestBody ApplicationRecordDeleteRequest request);
 }
