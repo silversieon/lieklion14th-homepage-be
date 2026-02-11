@@ -99,12 +99,14 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
               b.userStudentNumberMasked as snapshotStudentNumber,
               b.applicationRecordId as applicationRecordId
             from InterviewSchedule s
-            left join InterviewBooking b on b.interviewSchedule.id = s.id
+            join InterviewBooking b on b.interviewSchedule.id = s.id
             where s.semester = :semester
-              and s.date = :date
+              and s.date in :dates
               and (:track is null or s.track = :track)
-            order by s.track asc, s.startTime asc, s.id asc
+            order by s.track asc, s.date asc, s.startTime asc, s.id asc
           """)
-  List<AdminInterviewSlotView> findAdminBookingSchedulesBySemesterAndDate(
-      @Param("semester") Long semester, @Param("date") LocalDate date, @Param("track") Track track);
+  List<AdminInterviewSlotView> findAdminBookedSchedulesBySemesterAndDates(
+      @Param("semester") Long semester,
+      @Param("dates") List<LocalDate> dates,
+      @Param("track") Track track);
 }

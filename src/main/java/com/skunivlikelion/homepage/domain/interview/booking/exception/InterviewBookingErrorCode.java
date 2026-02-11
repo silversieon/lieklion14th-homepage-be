@@ -24,9 +24,8 @@ public enum InterviewBookingErrorCode implements BaseErrorCode {
   NOT_FOUND_SCHEDULE("IVTBK4041", "존재하지 않는 면접 일정입니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_APPLICATION_RECORD("IVTBK4042", "지원 내역이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_BOOKING("IVTBK4043", "예약된 면접 일정이 없습니다.", HttpStatus.NOT_FOUND),
-  NOT_FOUND_CURRENT_FORM("IVTBK4044", "현재 모집 중인 공고가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+  APPLICATION_FORM_NOT_FOUND("IVTBK4044", "해당 기수의 모집 공고가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
   BOOKING_NOT_FOUND("IVTBK4045", "삭제할 면접 예약이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
-  APPLICATION_FORM_NOT_FOUND("IVTBK4046", "해당 기수의 모집 공고가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
 
   ALREADY_BOOKED_SCHEDULE("IVTBK4091", "이미 예약된 면접 일정입니다.", HttpStatus.CONFLICT),
   ALREADY_BOOKED_USER("IVTBK4092", "이미 면접 일정을 예약했습니다.", HttpStatus.CONFLICT),

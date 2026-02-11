@@ -4,6 +4,7 @@
 package com.skunivlikelion.homepage.domain.interview.booking.controller;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -42,9 +43,10 @@ public class InterviewBookingControllerImpl implements InterviewBookingControlle
   @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<AdminInterviewBookingResponse>> getAdminBookings(
-      Long semester, LocalDate date, Track track, String search) {
+      Long semester, List<LocalDate> dates, Track track, String search) {
+
     AdminInterviewBookingResponse result =
-        interviewBookingService.getAdminBookings(semester, date, track, search);
+        interviewBookingService.getAdminBookings(semester, dates, track, search);
 
     return ResponseEntity.ok(BaseResponse.success(200, "면접 예약 조회에 성공했습니다.", result));
   }
