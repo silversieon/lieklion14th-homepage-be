@@ -43,6 +43,7 @@ public class InterviewBookingControllerImpl implements InterviewBookingControlle
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<AdminInterviewBookingResponse>> getAdminBookings(
       Long semester, LocalDate date, Track track, String search) {
+
     AdminInterviewBookingResponse result =
         interviewBookingService.getAdminBookings(semester, date, track, search);
 

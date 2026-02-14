@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
+import com.skunivlikelion.homepage.domain.application.question.cache.CachedQuestion;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.question.dto.response.ApplicationQuestionGetResponse;
 import com.skunivlikelion.homepage.domain.application.question.dto.response.ApplicationQuestionUpsertResponse;
@@ -94,25 +95,6 @@ public class ApplicationQuestionMapper {
         .build();
   }
 
-  public ApplicationQuestionGetResponse toGetResponse(
-      Long semester, Track track, List<ApplicationQuestion> questions) {
-    return ApplicationQuestionGetResponse.builder()
-        .semester(semester)
-        .track(track)
-        .questions(
-            questions.stream()
-                .sorted(Comparator.comparing(ApplicationQuestion::getOrderNumber))
-                .map(
-                    q ->
-                        QuestionItemResponse.builder()
-                            .questionId(q.getId())
-                            .orderNumber(q.getOrderNumber())
-                            .content(q.getContent())
-                            .build())
-                .toList())
-        .build();
-  }
-
   public ApplicationSummaryItem toApplicationSummaryItem(ApplicationForm form) {
     Long semester = form.getSemester().getSemester();
     return ApplicationSummaryItem.builder()
@@ -141,6 +123,64 @@ public class ApplicationQuestionMapper {
     return ApplicationSummaryListResponse.builder()
         .inProgress(inProgress)
         .completed(completed)
+        .build();
+  }
+
+  public ApplicationQuestionGetResponse toGetResponseByCache(
+      Long semester, Track track, List<CachedQuestion> questions) {
+
+    return ApplicationQuestionGetResponse.builder()
+        .semester(semester)
+        .track(track)
+        .questions(
+            questions.stream()
+                .sorted(Comparator.comparing(CachedQuestion::orderNumber))
+                .map(
+                    q ->
+                        ApplicationQuestionUpsertResponse.QuestionItemResponse.builder()
+                            .questionId(q.questionId())
+                            .orderNumber(q.orderNumber())
+                            .content(q.content())
+                            .build())
+                .toList())
+        .build();
+  }
+
+  public ApplicationQuestionUpsertResponse toUpsertResponseByCache(
+      ApplicationForm form, List<CachedQuestion> allQuestions) {
+
+    Map<Track, List<QuestionItemResponse>> grouped =
+        Optional.ofNullable(allQuestions).orElse(List.of()).stream()
+            .collect(
+                Collectors.groupingBy(
+                    CachedQuestion::track,
+                    Collectors.mapping(
+                        q ->
+                            QuestionItemResponse.builder()
+                                .questionId(q.questionId())
+                                .orderNumber(q.orderNumber())
+                                .content(q.content())
+                                .build(),
+                        Collectors.toList())));
+
+    List<TrackQuestionGroupResponse> groups =
+        grouped.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey(Comparator.comparing(Enum::name)))
+            .map(
+                e ->
+                    TrackQuestionGroupResponse.builder()
+                        .track(e.getKey())
+                        .questions(
+                            e.getValue().stream()
+                                .sorted(Comparator.comparing(QuestionItemResponse::getOrderNumber))
+                                .toList())
+                        .build())
+            .toList();
+
+    return ApplicationQuestionUpsertResponse.builder()
+        .applicationFormId(form.getId())
+        .semester(form.getSemester().getSemester())
+        .groups(groups)
         .build();
   }
 }

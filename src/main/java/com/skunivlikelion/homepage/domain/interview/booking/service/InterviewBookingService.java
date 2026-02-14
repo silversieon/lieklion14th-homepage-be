@@ -27,21 +27,22 @@ public interface InterviewBookingService {
   /**
    * [ 관리자 | 토큰 O | 면접 예약 일정 조회 ]
    *
-   * <p>조회 단위: - InterviewSchedule(시간 슬롯) 기준
+   * <p>조회 단위: - InterviewSchedule(시간 슬롯) 기준 - 예약된 슬롯만 반환 (예약이 없는 슬롯은 제외)
    *
-   * <p>필수 조건: - semester(기수), date(면접일)
+   * <p>필수 조건: - semester(기수) - date
    *
-   * <p>정렬 기준: - track ASC, startTime ASC, scheduleId ASC
+   * <p>선택 조건: - track: 트랙 필터 (지정 시 해당 트랙만 반환) - search: 이름/학번 검색어
    *
-   * <p>특징: - 예약이 없는 슬롯도 포함하여 반환 (booked=false, bookingInfo=null) - 예약이 있는 슬롯은 booked=true,
-   * bookingInfo 포함 - tracks: 해당 기수 정책 기반 트랙 목록을 모두 반환 - search가 존재하는 경우에도 슬롯은 유지되며 검색어가 이름/학번에 매칭되는
-   * 예약자만 bookingInfo가 채워짐 (매칭되지 않는 예약 슬롯은 booked=true 이지만 bookingInfo=null)
+   * <p>정렬 기준: - track ASC - date ASC - startTime ASC - scheduleId ASC
+   *
+   * <p>search가 존재하는 경우, (기수 + 날짜(+track)) 조건으로 조회된 예약 결과에 대해 이름 또는 학번이 매칭되는 예약만 최종 응답에 포함됨 - track
+   * 필터가 존재하면 tracks 배열에는 해당 트랙만 포함됨
    *
    * @param semester 기수 (필수)
-   * @param date 면접일 (필수)
+   * @param date 면접일 목록 (필수)
    * @param track 트랙 필터 (선택)
    * @param search 이름/학번 검색어 (선택)
-   * @return 관리자 면접 예약일정 조회 응답
+   * @return 관리자 면접 예약 일정 조회 응답
    */
   AdminInterviewBookingResponse getAdminBookings(
       Long semester, LocalDate date, Track track, String search);

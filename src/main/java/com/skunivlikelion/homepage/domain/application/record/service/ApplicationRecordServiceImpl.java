@@ -16,7 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
+import com.skunivlikelion.homepage.domain.application.question.cache.ApplicationQuestionCacheService;
+import com.skunivlikelion.homepage.domain.application.question.cache.CachedQuestion;
+import com.skunivlikelion.homepage.domain.application.question.cache.QuestionsBundle;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
+import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationRecordDeleteRequest;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.AdminApplicantListItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
@@ -28,7 +32,6 @@ import com.skunivlikelion.homepage.domain.application.record.exception.Applicati
 import com.skunivlikelion.homepage.domain.application.record.mapper.ApplicationRecordMapper;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationAnswerRepository;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
-import com.skunivlikelion.homepage.domain.application.record.service.ApplicationRecordDraftHandler.QuestionsBundle;
 import com.skunivlikelion.homepage.domain.application.record.validator.SubmitSnapshotValidator;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.user.entity.User;
@@ -59,6 +62,7 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
   private final ApplicationRecordDraftHandler draftHandler;
 
   private final ApplicationFormService applicationFormService;
+  private final ApplicationQuestionCacheService applicationQuestionCacheService;
 
   @Override
   public ApplicationRecordMeta saveFirstDraft(ApplicationDraftSaveRequest request) {
@@ -159,12 +163,12 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
       throw new CustomException(ApplicationRecordErrorCode.ALREADY_SUBMITTED);
     }
 
-    QuestionsBundle q = draftHandler.loadQuestions(formId, request.getTrack());
-    submitSnapshotValidator.validate(q.commonQuestions(), q.trackQuestions(), request);
+    QuestionsBundle bundle = applicationQuestionCacheService.getQuestionsBundle(formId);
+    submitSnapshotValidator.validate(bundle, request.getTrack(), request);
 
     ApplicationRecord record = getOrCreateRecord(current, user, request.getTrack(), semester);
 
-    draftHandler.applyDraftSave(record, formId, request);
+    draftHandler.applyDraftSave(record, formId, request, bundle);
     record.markSubmitted(now);
 
     log.info(
@@ -192,13 +196,17 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
             .findSubmittedBySemesterAndUserId(current.getSemester().getSemester(), userId)
             .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_RECORD));
 
-    QuestionsBundle q =
-        draftHandler.loadQuestions(record.getApplicationForm().getId(), record.getTrack());
-    Map<Long, ApplicationAnswer> a = draftHandler.loadAnswerMap(record.getId());
+    Long formId = record.getApplicationForm().getId();
+    Track track = record.getTrack();
+
+    QuestionsBundle bundle = applicationQuestionCacheService.getQuestionsBundle(formId);
+    List<CachedQuestion> common = bundle.getQuestions(Track.COMMON);
+    List<CachedQuestion> trackQs = bundle.getQuestions(track);
+
+    Map<Long, ApplicationAnswer> answerMap = draftHandler.loadAnswerMap(record.getId());
 
     ApplicationRecordResponse response =
-        applicationRecordMapper.toAnswersGetResponse(
-            record, q.commonQuestions(), q.trackQuestions(), a);
+        applicationRecordMapper.toAnswersGetResponseByCache(record, common, trackQs, answerMap);
 
     log.info(
         "[ApplicationRecord] submitted answers 반환 - currentFormId={}, semester={}, userId={}, recordId={}",
@@ -318,12 +326,39 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
             .findSubmittedWithUserAndForm(applicationRecordId)
             .orElseThrow(() -> new CustomException(ApplicationRecordErrorCode.NOT_FOUND_RECORD));
 
-    QuestionsBundle q =
-        draftHandler.loadQuestions(record.getApplicationForm().getId(), record.getTrack());
-    Map<Long, ApplicationAnswer> a = draftHandler.loadAnswerMap(record.getId());
+    Long formId = record.getApplicationForm().getId();
+    Track track = record.getTrack();
 
-    return applicationRecordMapper.toAnswersGetResponse(
-        record, q.commonQuestions(), q.trackQuestions(), a);
+    QuestionsBundle bundle = applicationQuestionCacheService.getQuestionsBundle(formId);
+
+    List<CachedQuestion> commonQuestions = bundle.getQuestions(Track.COMMON);
+    List<CachedQuestion> trackQuestions = bundle.getQuestions(track);
+
+    Map<Long, ApplicationAnswer> answerMap = draftHandler.loadAnswerMap(record.getId());
+
+    return applicationRecordMapper.toAnswersGetResponseByCache(
+        record, commonQuestions, trackQuestions, answerMap);
+  }
+
+  @Override
+  @Transactional
+  public void deleteApplicationRecords(ApplicationRecordDeleteRequest request) {
+    List<Long> distinctIds = request.getApplicationRecordIds().stream().distinct().toList();
+
+    List<Long> existingIds = applicationRecordRepository.findExistingIds(distinctIds);
+
+    if (existingIds.isEmpty()) {
+      log.info(
+          "[ApplicationRecord] 관리자 지원서 삭제(내용 없음) - requested={}, deleted=0", distinctIds.size());
+      return;
+    }
+
+    int deleted = applicationRecordRepository.bulkDeleteByIds(existingIds);
+
+    log.info(
+        "[ApplicationRecord] 관리자 지원서 삭제 완료 - requested={}, deleted={}",
+        distinctIds.size(),
+        deleted);
   }
 
   // ========================================================================
@@ -339,7 +374,6 @@ public class ApplicationRecordServiceImpl implements ApplicationRecordService {
     }
   }
 
-  // 최초 임시저장, 임시저장, 임지저장된 답변 조회, 제출에서만 사용
   private ApplicationForm getSubmittableFormOrThrow(LocalDateTime now) {
     return applicationFormRepository
         .findSubmittableApplicationForm(now)

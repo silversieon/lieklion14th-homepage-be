@@ -114,7 +114,7 @@ public interface ApplicationQuestionController {
   ResponseEntity<BaseResponse<ApplicationSummaryListResponse>> getApplicationSummaries();
 
   @Operation(
-      summary = "[ 개발자 | 토큰 O | 특정 기수 질문 전체 조회 ]",
+      summary = "[ 사용자 | 토큰 O | 특정 기수 질문 전체 조회 ]",
       description =
           """
               **Path Parameter**
@@ -123,7 +123,7 @@ public interface ApplicationQuestionController {
               **Returns**
               해당 기수에 등록된 지원서 질문 전체(트랙별, 문항번호 오름차순)
               """)
-  @GetMapping("/v1/dev/applications/questions/{semester}")
+  @GetMapping("/v1/applications/questions/{semester}")
   ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>> getQuestionsBySemesterForDev(
       @PathVariable @Positive Long semester);
 }

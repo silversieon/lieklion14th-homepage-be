@@ -88,7 +88,6 @@ public class ApplicationQuestionControllerImpl implements ApplicationQuestionCon
   }
 
   @Override
-  @PreAuthorize("hasRole('DEVELOPER')")
   public ResponseEntity<BaseResponse<ApplicationQuestionUpsertResponse>>
       getQuestionsBySemesterForDev(@PathVariable @Positive Long semester) {
 

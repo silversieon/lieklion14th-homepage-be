@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -86,4 +87,11 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
   Optional<ApplicationRecord> findSubmittedWithUserAndForm(@Param("recordId") Long recordId);
 
   boolean existsByApplicationFormId(Long applicationFormId);
+
+  @Query("select r.id from ApplicationRecord r where r.id in :recordIds")
+  List<Long> findExistingIds(@Param("recordIds") List<Long> recordIds);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("delete from ApplicationRecord r where r.id in :recordIds")
+  int bulkDeleteByIds(@Param("recordIds") List<Long> recordIds);
 }

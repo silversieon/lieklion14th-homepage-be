@@ -10,10 +10,12 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.skunivlikelion.homepage.domain.application.question.entity.ApplicationQuestion;
+import com.skunivlikelion.homepage.domain.application.question.cache.CachedQuestion;
+import com.skunivlikelion.homepage.domain.application.question.cache.QuestionsBundle;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationAnswerSaveItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
 import com.skunivlikelion.homepage.domain.application.record.exception.ApplicationRecordErrorCode;
+import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 
 @Component
@@ -25,8 +27,8 @@ public class SubmitSnapshotValidator {
    * <p>조건: 모든 questionId가 존재, 중복 questionId 금지, 현재 모집 공고의 질문 집합과 정확히 일치
    */
   public void validate(
-      List<ApplicationQuestion> commonQuestions,
-      List<ApplicationQuestion> trackQuestions,
+      List<CachedQuestion> commonQuestions,
+      List<CachedQuestion> trackQuestions,
       ApplicationDraftSaveRequest request) {
 
     validateSnapshotGroup(commonQuestions, request.getCommonAnswers());
@@ -34,15 +36,22 @@ public class SubmitSnapshotValidator {
     validateSnapshotGroup(trackQuestions, request.getTrackAnswers());
   }
 
+  public void validate(
+      QuestionsBundle bundle, Track requestedTrack, ApplicationDraftSaveRequest request) {
+
+    validateSnapshotGroup(bundle.getQuestions(Track.COMMON), request.getCommonAnswers());
+    validateSnapshotGroup(bundle.getQuestions(requestedTrack), request.getTrackAnswers());
+  }
+
   private void validateSnapshotGroup(
-      List<ApplicationQuestion> expectedQuestions, List<ApplicationAnswerSaveItem> requestAnswers) {
+      List<CachedQuestion> expectedQuestions, List<ApplicationAnswerSaveItem> requestAnswers) {
 
     if (requestAnswers == null || requestAnswers.isEmpty()) {
       throw new CustomException(ApplicationRecordErrorCode.INVALID_SUBMIT_SNAPSHOT);
     }
 
     Set<Long> expectedIds =
-        expectedQuestions.stream().map(ApplicationQuestion::getId).collect(Collectors.toSet());
+        expectedQuestions.stream().map(CachedQuestion::questionId).collect(Collectors.toSet());
 
     Set<Long> requestIds = extractUniqueQuestionIds(requestAnswers);
 

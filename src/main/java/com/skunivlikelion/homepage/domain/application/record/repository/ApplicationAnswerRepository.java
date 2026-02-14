@@ -27,15 +27,6 @@ public interface ApplicationAnswerRepository extends JpaRepository<ApplicationAn
   List<ApplicationAnswer> findAllByRecordIdAndQuestionIds(
       @Param("recordId") Long recordId, @Param("questionIds") List<Long> questionIds);
 
-  @Query(
-      """
-              select distinct q.id
-              from ApplicationAnswer a
-              join a.question q
-              where a.applicationRecord.id = :recordId
-          """)
-  List<Long> findQuestionIdsByRecordId(@Param("recordId") Long recordId);
-
   @Modifying(flushAutomatically = true)
   @Query(
       """
@@ -66,4 +57,27 @@ public interface ApplicationAnswerRepository extends JpaRepository<ApplicationAn
           """)
   List<ApplicationAnswer> findAllWithQuestionByRecordIdAndTrack(
       @Param("recordId") Long recordId, @Param("track") Track track);
+
+  @Modifying(flushAutomatically = true)
+  @Query(
+      value =
+          """
+          insert into application_answer (question_id, application_record_id, content)
+          select q.id, :recordId, ''
+          from application_question q
+          where q.application_form_id = :formId
+            and q.track in (:commonTrack, :track)
+            and not exists (
+              select 1
+              from application_answer a
+              where a.application_record_id = :recordId
+                and a.question_id = q.id
+            )
+          """,
+      nativeQuery = true)
+  int insertMissingAnswersForRecord(
+      @Param("recordId") Long recordId,
+      @Param("formId") Long formId,
+      @Param("commonTrack") String commonTrack,
+      @Param("track") String track);
 }

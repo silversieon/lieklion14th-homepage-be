@@ -58,32 +58,28 @@ public class ApplicationRecord extends BaseTimeEntity {
 
   private LocalDateTime submittedAt;
 
-  @Builder.Default
-  @Column(nullable = false)
-  private boolean isDocumentPassed = false;
+  private Boolean isDocumentPassed;
 
-  @Builder.Default
-  @Column(nullable = false)
-  private boolean isInterviewPassed = false;
+  private Boolean isInterviewPassed;
 
   public void markSubmitted(LocalDateTime submittedAt) {
     this.isSubmitted = true;
     this.submittedAt = submittedAt;
   }
 
-  public void markDocumentPassed() {
+  public void passDocument() {
     this.isDocumentPassed = true;
   }
 
-  public void unmarkDocumentPassed() {
+  public void failDocument() {
     this.isDocumentPassed = false;
   }
 
-  public void markInterviewPassed() {
+  public void passInterview() {
     this.isInterviewPassed = true;
   }
 
-  public void unmarkInterviewPassed() {
+  public void failInterview() {
     this.isInterviewPassed = false;
   }
 
