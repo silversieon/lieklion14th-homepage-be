@@ -7,6 +7,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,6 +61,8 @@ public class S3ServiceImpl implements S3Service {
     String keyName = createKeyName(pathName, WEBP_EXTENSION);
 
     try {
+      byte[] webpBytes = toWebpBytes(file);
+
       s3Client.putObject(
           PutObjectRequest.builder()
               .bucket(awsProperties.getS3().getBucket())
@@ -121,6 +129,37 @@ public class S3ServiceImpl implements S3Service {
     String contentType = file.getContentType();
     if (contentType == null || !contentType.startsWith("image/")) {
       throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
+    }
+  }
+
+  public static byte[] toWebpBytes(MultipartFile file) throws IOException {
+    BufferedImage src;
+    try (InputStream in = file.getInputStream()) {
+      src = ImageIO.read(in);
+    }
+    if (src == null) {
+      throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
+    }
+
+    Iterator<ImageWriter> writers = ImageIO.getImageWritersByMIMEType("image/webp");
+
+    ImageWriter writer = writers.next();
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+
+      writer.setOutput(ios);
+
+      ImageWriteParam param = writer.getDefaultWriteParam();
+      if (param.canWriteCompressed()) {
+        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+      }
+
+      writer.write(null, new IIOImage(src, null, null), param);
+      ios.flush();
+
+      return baos.toByteArray();
+    } finally {
+      writer.dispose();
     }
   }
 
