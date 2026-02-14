@@ -115,7 +115,8 @@ public class UserServiceImpl implements UserService {
           interviewScheduleChangeable = true;
         }
         if (documentSubmitted
-            && applicationRecord.get().getIsDocumentPassed()
+            && (applicationRecord.get().getIsDocumentPassed() != null
+                && applicationRecord.get().getIsDocumentPassed())
             && now.toLocalDate()
                 .isEqual(existingApplicationForm.getFinalResultAt().toLocalDate())) {
           finalResultConfirmation = true;
@@ -491,7 +492,8 @@ public class UserServiceImpl implements UserService {
         LocalDate start = existingApplicationForm.getFinalResultAt().toLocalDate();
         LocalDate end = start.plusDays(INTERVIEW_RESULT_GRACE_DAYS);
         if (documentSubmitted
-            && applicationRecord.get().getIsDocumentPassed()
+            && (applicationRecord.get().getIsDocumentPassed() != null
+                && applicationRecord.get().getIsDocumentPassed())
             && !now.toLocalDate().isBefore(start)
             && !now.toLocalDate().isAfter(end)) {
           finalResultConfirmation = true;
