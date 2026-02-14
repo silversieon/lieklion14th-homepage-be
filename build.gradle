@@ -75,6 +75,10 @@ dependencies {
     // Caffeine Cache
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // webp
+    implementation("com.sksamuel.scrimage:scrimage-core:4.2.0")
+    implementation("com.sksamuel.scrimage:scrimage-webp:4.2.0")
 }
 
 tasks.named('test') {
