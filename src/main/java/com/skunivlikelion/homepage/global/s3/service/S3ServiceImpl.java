@@ -3,7 +3,18 @@
  */
 package com.skunivlikelion.homepage.global.s3.service;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
 import java.util.UUID;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +45,8 @@ public class S3ServiceImpl implements S3Service {
   private static final String INFIX_S3_URL = ".s3.";
   private static final String SUFFIX_S3_URL = ".amazonaws.com/";
 
+  private static final long MAX_BYTES = 5L * 1024 * 1024;
+
   @Override
   public String createKeyName(PathName pathName, String fileType) {
     return getPrefix(pathName) + '/' + UUID.randomUUID() + "." + fileType;
@@ -42,19 +55,24 @@ public class S3ServiceImpl implements S3Service {
   @Override
   public String uploadFile(PathName pathName, MultipartFile file) {
     validateFile(file);
-    String keyName = createKeyName(pathName, file.getOriginalFilename());
+    String keyName = createKeyName(pathName, "webp");
+
     try {
+      byte[] webpBytes = toWebpBytes(file);
+
       s3Client.putObject(
           PutObjectRequest.builder()
               .bucket(awsProperties.getS3().getBucket())
               .key(keyName)
-              .contentType(file.getContentType())
-              .contentLength(file.getSize())
+              .contentType("image/webp")
+              .contentLength((long) webpBytes.length)
               .build(),
-          RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+          RequestBody.fromBytes(webpBytes));
 
       log.info("[S3] 파일 업로드 성공 - keyName: {}", keyName);
       return createBucketImageUrl(keyName);
+    } catch (IOException e) {
+      throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
     } catch (Exception e) {
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     }
@@ -102,13 +120,44 @@ public class S3ServiceImpl implements S3Service {
 
   private void validateFile(MultipartFile file) {
 
-    if (file.getSize() > 5 * 1024 * 1024) {
+    if (file.getSize() > MAX_BYTES) {
       throw new CustomException(S3ErrorCode.FILE_SIZE_INVALID);
     }
 
     String contentType = file.getContentType();
     if (contentType == null || !contentType.startsWith("image/")) {
       throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
+    }
+  }
+
+  public static byte[] toWebpBytes(MultipartFile file) throws IOException {
+    BufferedImage src;
+    try (InputStream in = file.getInputStream()) {
+      src = ImageIO.read(in);
+    }
+    if (src == null) {
+      throw new CustomException(S3ErrorCode.FILE_TYPE_INVALID);
+    }
+
+    Iterator<ImageWriter> writers = ImageIO.getImageWritersByMIMEType("image/webp");
+
+    ImageWriter writer = writers.next();
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+
+      writer.setOutput(ios);
+
+      ImageWriteParam param = writer.getDefaultWriteParam();
+      if (param.canWriteCompressed()) {
+        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+      }
+
+      writer.write(null, new IIOImage(src, null, null), param);
+      ios.flush();
+
+      return baos.toByteArray();
+    } finally {
+      writer.dispose();
     }
   }
 
