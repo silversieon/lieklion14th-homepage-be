@@ -3,8 +3,10 @@
  */
 package com.skunivlikelion.homepage.global.s3.service;
 
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -151,18 +153,30 @@ public class S3ServiceImpl implements S3Service {
   private byte[] convertToWebp(MultipartFile file) {
     try {
       ImmutableImage image = ImmutableImage.loader().fromStream(file.getInputStream());
+
+      BufferedImage src = image.awt();
+      int type =
+          src.getColorModel().hasAlpha()
+              ? BufferedImage.TYPE_INT_ARGB
+              : BufferedImage.TYPE_3BYTE_BGR;
+
+      if (src.getType() != type) {
+        BufferedImage converted = new BufferedImage(src.getWidth(), src.getHeight(), type);
+        Graphics2D g = converted.createGraphics();
+        g.setComposite(AlphaComposite.Src);
+        g.drawImage(src, 0, 0, null);
+        g.dispose();
+        image = ImmutableImage.fromAwt(converted);
+      }
+
       WebpWriter writer = WebpWriter.DEFAULT.withQ(WEBP_QUALITY);
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       image.forWriter(writer).write(baos);
-
       return baos.toByteArray();
 
-    } catch (IOException e) {
-      log.error("[S3] WebP 변환 실패 - filename={}", file.getOriginalFilename(), e);
-      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     } catch (Exception e) {
-      log.error("[S3] WebP 변환 중 예기치 않은 오류 - filename={}", file.getOriginalFilename(), e);
+      log.error("[S3] WebP 변환 실패 - filename={}", file.getOriginalFilename(), e);
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     }
   }
