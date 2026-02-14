@@ -13,5 +13,5 @@ import lombok.Getter;
 public class AdminDocumentResultUpdateResponse {
 
   private final Long applicationRecordId;
-  private final boolean isDocumentPassed;
+  private final Boolean isDocumentPassed;
 }

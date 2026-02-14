@@ -13,5 +13,5 @@ import lombok.Getter;
 public class AdminApplicationResultConfirmResponse {
 
   private final Long applicationRecordId;
-  private final boolean passed;
+  private final Boolean passed;
 }
