@@ -86,4 +86,8 @@ public class ApplicationRecord extends BaseTimeEntity {
   public void changeTrack(Track track) {
     this.track = track;
   }
+
+  public void resetInterviewResult() {
+    this.isInterviewPassed = null;
+  }
 }

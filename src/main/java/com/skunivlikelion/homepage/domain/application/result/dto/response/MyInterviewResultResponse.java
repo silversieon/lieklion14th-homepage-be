@@ -15,10 +15,10 @@ import lombok.Getter;
 public class MyInterviewResultResponse {
 
   @Schema(description = "서류 합격 여부", example = "true")
-  private boolean documentPassed;
+  private Boolean documentPassed;
 
   @Schema(description = "면접 합격 여부", example = "true")
-  private boolean interviewPassed;
+  private Boolean interviewPassed;
 
   @Schema(description = "제출 트랙", example = "PO")
   private Track track;
