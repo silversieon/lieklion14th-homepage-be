@@ -3,7 +3,6 @@
  */
 package com.skunivlikelion.homepage.domain.application.record.service;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,14 +12,14 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.skunivlikelion.homepage.domain.application.question.entity.ApplicationQuestion;
-import com.skunivlikelion.homepage.domain.application.question.repository.ApplicationQuestionRepository;
+import com.skunivlikelion.homepage.domain.application.question.cache.ApplicationQuestionCacheService;
+import com.skunivlikelion.homepage.domain.application.question.cache.CachedQuestion;
+import com.skunivlikelion.homepage.domain.application.question.cache.QuestionsBundle;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationAnswerSaveItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.request.ApplicationDraftSaveRequest;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationAnswer;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
 import com.skunivlikelion.homepage.domain.application.record.exception.ApplicationRecordErrorCode;
-import com.skunivlikelion.homepage.domain.application.record.mapper.ApplicationRecordMapper;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationAnswerRepository;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.global.exception.CustomException;
@@ -35,38 +34,33 @@ public class ApplicationRecordDraftHandler {
 
   private static final int MAX_ANSWER_LENGTH = 500;
 
-  private final ApplicationQuestionRepository applicationQuestionRepository;
   private final ApplicationAnswerRepository applicationAnswerRepository;
-  private final ApplicationRecordMapper applicationRecordMapper;
 
-  // draft 저장(트랙변경/초기화/overwrite) 전체 파이프라인
+  private final ApplicationQuestionCacheService applicationQuestionCacheService;
+
+  // 임시저장 시 사용할 메서드
   public void applyDraftSave(
       ApplicationRecord record, Long formId, ApplicationDraftSaveRequest request) {
-    applyTrackChangeIfNeeded(record, formId, request.getTrack());
-    ensureAnswersInit(record, formId, record.getTrack());
-    overwriteAnswers(record, formId, request);
+
+    QuestionsBundle bundle = applicationQuestionCacheService.getQuestionsBundle(formId);
+    applyDraftSave(record, formId, request, bundle);
   }
 
-  public QuestionsBundle loadQuestions(Long formId, Track track) {
-    List<ApplicationQuestion> all =
-        applicationQuestionRepository.findAllByFormIdAndTracksOrderByTrackAndOrder(
-            formId, List.of(Track.COMMON, track));
+  // 제출 시 사용할 메서드
+  public void applyDraftSave(
+      ApplicationRecord record,
+      Long formId,
+      ApplicationDraftSaveRequest request,
+      QuestionsBundle bundle) {
 
-    List<ApplicationQuestion> common = new ArrayList<>();
-    List<ApplicationQuestion> trackQs = new ArrayList<>();
-    for (ApplicationQuestion q : all) {
-      if (q.getTrack() == Track.COMMON) {
-        common.add(q);
-      } else {
-        trackQs.add(q);
-      }
-    }
-    return new QuestionsBundle(common, trackQs);
+    applyTrackChangeIfNeeded(record, formId, request.getTrack());
+    ensureAnswersInit(record, formId, record.getTrack());
+    overwriteAnswers(record, formId, request, bundle);
   }
 
   public Map<Long, ApplicationAnswer> loadAnswerMap(Long recordId) {
     return applicationAnswerRepository.findAllWithQuestionByRecordId(recordId).stream()
-        .collect(Collectors.toMap(a -> a.getQuestion().getId(), Function.identity()));
+        .collect(Collectors.toMap(a -> a.getQuestion().getId(), Function.identity(), (a, b) -> a));
   }
 
   private void applyTrackChangeIfNeeded(ApplicationRecord record, Long formId, Track requested) {
@@ -101,51 +95,36 @@ public class ApplicationRecordDraftHandler {
 
   private void ensureAnswersInit(ApplicationRecord record, Long formId, Track track) {
 
-    QuestionsBundle questions = loadQuestions(formId, track);
+    int inserted =
+        applicationAnswerRepository.insertMissingAnswersForRecord(
+            record.getId(), formId, Track.COMMON.name(), track.name());
 
-    Set<Long> existingIds =
-        new HashSet<>(applicationAnswerRepository.findQuestionIdsByRecordId(record.getId()));
-
-    List<ApplicationAnswer> toInsert = new ArrayList<>();
-    addMissingAnswers(toInsert, record, questions.commonQuestions(), existingIds);
-    addMissingAnswers(toInsert, record, questions.trackQuestions(), existingIds);
-
-    if (!toInsert.isEmpty()) {
-      applicationAnswerRepository.saveAll(toInsert);
+    if (inserted > 0) {
       log.info(
-          "[ApplicationRecord] 답변 초기화(insert) - recordId={}, formId={}, track={}, insertCount={}",
+          "[ApplicationRecord] 답변 초기화(bulk insert) - recordId={}, formId={}, track={}, insertCount={}",
           record.getId(),
           formId,
           track,
-          toInsert.size());
-    }
-  }
-
-  private void addMissingAnswers(
-      List<ApplicationAnswer> target,
-      ApplicationRecord record,
-      List<ApplicationQuestion> questions,
-      Set<Long> existingIds) {
-
-    for (ApplicationQuestion q : questions) {
-      if (!existingIds.contains(q.getId())) {
-        target.add(applicationRecordMapper.toNewEmptyAnswer(record, q));
-      }
+          inserted);
     }
   }
 
   private void overwriteAnswers(
-      ApplicationRecord record, Long formId, ApplicationDraftSaveRequest request) {
+      ApplicationRecord record,
+      Long formId,
+      ApplicationDraftSaveRequest request,
+      QuestionsBundle bundle) {
 
-    overwriteAnswerItems(record, formId, request.getCommonAnswers(), Track.COMMON);
-    overwriteAnswerItems(record, formId, request.getTrackAnswers(), record.getTrack());
+    overwriteAnswerItems(record, formId, request.getCommonAnswers(), Track.COMMON, bundle);
+    overwriteAnswerItems(record, formId, request.getTrackAnswers(), record.getTrack(), bundle);
   }
 
   private void overwriteAnswerItems(
       ApplicationRecord record,
       Long formId,
       List<ApplicationAnswerSaveItem> items,
-      Track expectedTrack) {
+      Track expectedTrack,
+      QuestionsBundle bundle) {
 
     if (items == null || items.isEmpty()) {
       return;
@@ -153,38 +132,41 @@ public class ApplicationRecordDraftHandler {
 
     validateAnswerItems(record.getId(), expectedTrack, items);
 
+    for (ApplicationAnswerSaveItem item : items) {
+
+      Long qid = item.getQuestionId();
+      CachedQuestion q = bundle.getById(qid);
+
+      if (q == null) {
+        log.warn(
+            "[ApplicationRecord] 답변 저장 실패: 존재하지 않는 questionId - recordId={}, formId={}, expectedTrack={}, questionId={}",
+            record.getId(),
+            formId,
+            expectedTrack,
+            qid);
+        throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_QUESTION_NOT_FOUND);
+      }
+
+      if (q.track() != expectedTrack) {
+        log.warn(
+            "[ApplicationRecord] 답변 저장 실패: track mismatch - recordId={}, formId={}, expectedTrack={}, questionId={}, actualTrack={}",
+            record.getId(),
+            formId,
+            expectedTrack,
+            qid,
+            q.track());
+        throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_TRACK_MISMATCH);
+      }
+    }
+
     List<Long> questionIds = items.stream().map(ApplicationAnswerSaveItem::getQuestionId).toList();
-
-    List<ApplicationQuestion> questions =
-        applicationQuestionRepository.findAllByFormIdAndQuestionIds(formId, questionIds);
-
-    if (questions.size() != questionIds.size()) {
-      log.warn(
-          "[ApplicationRecord] 답변 저장 실패: question mismatch - recordId={}, formId={}, expectedTrack={}, payloadSize={}, loadedQuestionsSize={}",
-          record.getId(),
-          formId,
-          expectedTrack,
-          questionIds.size(),
-          questions.size());
-      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-    }
-
-    boolean hasMismatchedTrack = questions.stream().anyMatch(q -> q.getTrack() != expectedTrack);
-    if (hasMismatchedTrack) {
-      log.warn(
-          "[ApplicationRecord] 답변 저장 실패: track mismatch - recordId={}, formId={}, expectedTrack={}, payloadSize={}",
-          record.getId(),
-          formId,
-          expectedTrack,
-          questionIds.size());
-      throw new CustomException(ApplicationRecordErrorCode.INVALID_ANSWER_PAYLOAD);
-    }
 
     Map<Long, ApplicationAnswer> answerMap =
         applicationAnswerRepository
             .findAllByRecordIdAndQuestionIds(record.getId(), questionIds)
             .stream()
-            .collect(Collectors.toMap(a -> a.getQuestion().getId(), Function.identity()));
+            .collect(
+                Collectors.toMap(a -> a.getQuestion().getId(), Function.identity(), (a, b) -> a));
 
     if (answerMap.size() != questionIds.size()) {
       log.warn(
@@ -212,7 +194,7 @@ public class ApplicationRecordDraftHandler {
     }
 
     log.debug(
-        "[ApplicationRecord] 답변 저장 완료 - recordId={}, formId={}, expectedTrack={}, itemsCount={}",
+        "[ApplicationRecord] 답변 저장 완료(Cache question validation) - recordId={}, formId={}, expectedTrack={}, itemsCount={}",
         record.getId(),
         formId,
         expectedTrack,
@@ -249,6 +231,6 @@ public class ApplicationRecordDraftHandler {
     }
   }
 
-  public record QuestionsBundle(
-      List<ApplicationQuestion> commonQuestions, List<ApplicationQuestion> trackQuestions) {}
+  public record CachedQuestionsBundle(
+      List<CachedQuestion> commonQuestions, List<CachedQuestion> trackQuestions) {}
 }

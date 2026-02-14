@@ -16,6 +16,7 @@ import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationFor
 import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.mapper.ApplicationFormMapper;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
+import com.skunivlikelion.homepage.domain.application.question.cache.ApplicationQuestionCacheService;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
@@ -36,11 +37,14 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
 
   private final ApplicationFormMapper applicationFormMapper;
 
+  private final ApplicationQuestionCacheService applicationQuestionCacheService;
+
   @Override
   public ApplicationFormResponse createApplicationForm(ApplicationFormUpsertRequest request) {
     Long semesterId = request.getSemester();
 
     validateDateRange(request);
+
     validateNoOverlappedFormForCreate(request);
 
     if (semesterId == null) {
@@ -162,6 +166,8 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     }
 
     applicationFormRepository.delete(found);
+    applicationQuestionCacheService.evictQuestions(found.getId());
+
     log.info(
         "[ApplicationForm] 지원 일정 삭제 완료: formId={}, semester={}",
         found.getId(),

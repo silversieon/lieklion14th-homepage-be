@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
+import com.skunivlikelion.homepage.domain.application.question.cache.ApplicationQuestionCacheService;
+import com.skunivlikelion.homepage.domain.application.question.cache.CachedQuestion;
+import com.skunivlikelion.homepage.domain.application.question.cache.QuestionsBundle;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest.QuestionItemRequest;
 import com.skunivlikelion.homepage.domain.application.question.dto.request.ApplicationQuestionUpsertRequest.TrackQuestionGroupRequest;
@@ -48,6 +51,8 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
   private final ApplicationQuestionMapper applicationQuestionMapper;
   private final ApplicationFormService applicationFormService;
 
+  private final ApplicationQuestionCacheService applicationQuestionCacheService;
+
   @Override
   public ApplicationQuestionUpsertResponse createQuestions(
       Long semester, ApplicationQuestionUpsertRequest request) {
@@ -77,6 +82,7 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
         form.getId(),
         saved.size());
 
+    applicationQuestionCacheService.evictQuestions(form.getId());
     return applicationQuestionMapper.toUpsertResponse(form, saved);
   }
 
@@ -102,6 +108,7 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
 
       log.info("[ApplicationQuestion] 질문 수정(빈 상태 저장) 완료 - formId={}", form.getId());
 
+      applicationQuestionCacheService.evictQuestions(form.getId());
       return applicationQuestionMapper.toUpsertResponse(form, List.of());
     }
 
@@ -167,6 +174,7 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
         obsoleteIds.size(),
         refreshed.size());
 
+    applicationQuestionCacheService.evictQuestions(form.getId());
     return applicationQuestionMapper.toUpsertResponse(form, refreshed);
   }
 
@@ -185,12 +193,17 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
       form.unmarkHasQuestions();
     }
 
+    applicationQuestionCacheService.evictQuestions(form.getId());
     log.info("[ApplicationQuestion] 질문 삭제 완료 - formId={}", form.getId());
   }
 
   @Override
   @Transactional(readOnly = true)
   public ApplicationQuestionGetResponse getCurrentQuestionsByTrack(Track track) {
+
+    if (track == null) {
+      throw new CustomException(ApplicationQuestionErrorCode.INVALID_QUESTION_REQUEST);
+    }
 
     ApplicationForm form = applicationFormService.getCurrentApplicationForm();
     Long formId = form.getId();
@@ -200,18 +213,17 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
       throw new CustomException(ApplicationQuestionErrorCode.NOT_CONFIGURED_QUESTIONS);
     }
 
-    List<ApplicationQuestion> questions =
-        applicationQuestionRepository.findAllByApplicationForm_IdAndTrackOrderByOrderNumberAsc(
-            formId, track);
+    QuestionsBundle bundle = applicationQuestionCacheService.getQuestionsBundle(formId);
+    List<CachedQuestion> questions = bundle.getQuestions(track);
 
     log.info(
-        "[ApplicationQuestion] 진행중 공고 질문 조회 완료 - formId={}, semester={}, track={}, count={}",
+        "[ApplicationQuestion] 진행중 공고 질문 조회 완료(Cache) - formId={}, semester={}, track={}, count={}",
         formId,
         form.getSemester().getSemester(),
         track,
         questions.size());
 
-    return applicationQuestionMapper.toGetResponse(
+    return applicationQuestionMapper.toGetResponseByCache(
         form.getSemester().getSemester(), track, questions);
   }
 
@@ -248,17 +260,17 @@ public class ApplicationQuestionServiceImpl implements ApplicationQuestionServic
       throw new CustomException(ApplicationQuestionErrorCode.NOT_CONFIGURED_QUESTIONS);
     }
 
-    List<ApplicationQuestion> questions =
-        applicationQuestionRepository.findAllByApplicationForm_IdOrderByTrackAscOrderNumberAsc(
-            form.getId());
+    Long formId = form.getId();
+    QuestionsBundle bundle = applicationQuestionCacheService.getQuestionsBundle(formId);
+    List<CachedQuestion> all = bundle.getAll();
 
     log.info(
-        "[ApplicationQuestion] 개발자 | 특정 기수 질문 전체 조회 완료 - formId={}, semester={}, count={}",
-        form.getId(),
+        "[ApplicationQuestion] 특정 기수 질문 전체 조회 완료(Cache) - formId={}, semester={}, count={}",
+        formId,
         form.getSemester().getSemester(),
-        questions.size());
+        all.size());
 
-    return applicationQuestionMapper.toUpsertResponse(form, questions);
+    return applicationQuestionMapper.toUpsertResponseByCache(form, all);
   }
 
   private ApplicationForm getFormWithLockById(Long applicationFormId) {

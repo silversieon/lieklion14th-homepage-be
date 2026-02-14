@@ -9,7 +9,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
-import com.skunivlikelion.homepage.domain.application.question.entity.ApplicationQuestion;
+import com.skunivlikelion.homepage.domain.application.question.cache.CachedQuestion;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicantUserInfo;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationAnswerItem;
 import com.skunivlikelion.homepage.domain.application.record.dto.response.ApplicationQuestionAnswerItem;
@@ -27,22 +27,13 @@ public class ApplicationRecordMapper {
     return ApplicationRecord.builder().applicationForm(form).user(user).track(track).build();
   }
 
-  public ApplicationAnswer toNewEmptyAnswer(
-      ApplicationRecord record, ApplicationQuestion question) {
-    return ApplicationAnswer.builder()
-        .applicationRecord(record)
-        .question(question)
-        .content("")
-        .build();
-  }
-
-  public ApplicationRecordResponse toAnswersGetResponse(
+  public ApplicationRecordResponse toAnswersGetResponseByCache(
       ApplicationRecord record,
-      List<ApplicationQuestion> commonQuestions,
-      List<ApplicationQuestion> trackQuestions,
+      List<CachedQuestion> commonQuestions,
+      List<CachedQuestion> trackQuestions,
       Map<Long, ApplicationAnswer> answerMap) {
 
-    QaBundle qa = buildQaBundle(commonQuestions, trackQuestions, answerMap);
+    QaBundle qa = buildQaBundleByCache(commonQuestions, trackQuestions, answerMap);
 
     return ApplicationRecordResponse.builder()
         .meta(toMeta(record))
@@ -81,31 +72,37 @@ public class ApplicationRecordMapper {
         .build();
   }
 
-  private QaBundle buildQaBundle(
-      List<ApplicationQuestion> commonQuestions,
-      List<ApplicationQuestion> trackQuestions,
+  private QaBundle buildQaBundleByCache(
+      List<CachedQuestion> commonQuestions,
+      List<CachedQuestion> trackQuestions,
       Map<Long, ApplicationAnswer> answerMap) {
 
     List<ApplicationQuestionAnswerItem> common =
-        buildQuestionAnswerItems(commonQuestions, answerMap);
-    List<ApplicationQuestionAnswerItem> track = buildQuestionAnswerItems(trackQuestions, answerMap);
+        buildQuestionAnswerItemsByCache(commonQuestions, answerMap);
+    List<ApplicationQuestionAnswerItem> track =
+        buildQuestionAnswerItemsByCache(trackQuestions, answerMap);
 
     return new QaBundle(common, track);
   }
 
-  private List<ApplicationQuestionAnswerItem> buildQuestionAnswerItems(
-      List<ApplicationQuestion> questions, Map<Long, ApplicationAnswer> answerMap) {
+  private List<ApplicationQuestionAnswerItem> buildQuestionAnswerItemsByCache(
+      List<CachedQuestion> questions, Map<Long, ApplicationAnswer> answerMap) {
 
-    return questions.stream().map(q -> toQuestionAnswerItem(q, answerMap.get(q.getId()))).toList();
+    if (questions == null || questions.isEmpty()) {
+      return List.of();
+    }
+    return questions.stream()
+        .map(q -> toQuestionAnswerItemByCache(q, answerMap.get(q.questionId())))
+        .toList();
   }
 
-  private ApplicationQuestionAnswerItem toQuestionAnswerItem(
-      ApplicationQuestion question, ApplicationAnswer answerOrNull) {
+  private ApplicationQuestionAnswerItem toQuestionAnswerItemByCache(
+      CachedQuestion question, ApplicationAnswer answerOrNull) {
 
     return ApplicationQuestionAnswerItem.builder()
-        .questionId(question.getId())
-        .orderNumber(question.getOrderNumber())
-        .question(question.getContent())
+        .questionId(question.questionId())
+        .orderNumber(question.orderNumber())
+        .question(question.content())
         .answer(answerOrNull == null ? "" : answerOrNull.getContent())
         .build();
   }
