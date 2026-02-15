@@ -88,7 +88,7 @@ public interface InterviewBookingController {
 
               **정책**
               - 사용자당 기수별 예약 1건만 존재
-              - 예약이 없으면 404 반환
+              - 예약이 없으면 200 OK + booking=null 반환
               """)
   @PreAuthorize("isAuthenticated()")
   @GetMapping("/v1/interviews/bookings")

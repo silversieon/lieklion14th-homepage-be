@@ -12,7 +12,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(title = "UserInterviewBookingResponse: 사용자 면접 예약 조회 응답 DTO")
 public record UserInterviewBookingResponse(
-    @Schema(description = "기수", example = "13") int semester, Booking booking) {
+    @Schema(description = "기수", example = "13") int semester,
+    @Schema(description = "예약 정보 (예약 없으면 null)") Booking booking) {
 
   @Schema(title = "Booking: 예약 상세")
   public record Booking(

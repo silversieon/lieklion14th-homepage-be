@@ -19,11 +19,9 @@ public enum InterviewScheduleErrorCode implements BaseErrorCode {
   INVALID_TRACK("IVTSCH4004", "track은 필수입니다.", HttpStatus.BAD_REQUEST),
   INTERVIEW_DATE_OUT_OF_RANGE(
       "IVTSCH4005", "면접 일정의 일시는 면접 일정 확정일부터 최종 결과 발표일까지의 기간 내에 있어야 합니다.", HttpStatus.BAD_REQUEST),
-
-  NOT_PASSED_APPLICATION("IVTSCH4011", "서류 합격자만 면접 일정을 조회할 수 있습니다.", HttpStatus.UNAUTHORIZED),
-
   INTERVIEW_SCHEDULE_CREATE_AFTER_CLOSE(
-      "IVTSCH4031", "면접 일정 확정일 이후에는 새로운 면접 일정을 생성할 수 없습니다.", HttpStatus.FORBIDDEN),
+      "IVTSCH4006", "면접 일정 확정일 이후에는 새로운 면접 일정을 생성할 수 없습니다.", HttpStatus.BAD_REQUEST),
+  NOT_PASSED_APPLICATION("IVTSCH4007", "서류 합격자만 면접 일정을 조회할 수 있습니다.", HttpStatus.BAD_REQUEST),
 
   NOT_FOUND_SEMESTER("IVTSCH4041", "존재하지 않는 기수입니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_APPLICATION_RECORD("IVTSCH4042", "지원 내역이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
