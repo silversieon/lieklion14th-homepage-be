@@ -88,7 +88,7 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
             .orElseThrow(
                 () -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_APPLICATION_RECORD));
 
-    if (!record.getIsDocumentPassed()) {
+    if (record.getIsDocumentPassed() == null || !record.getIsDocumentPassed()) {
       log.warn(
           "[InterviewBooking] 예약 실패 - 서류 미합격 - userId={}, recordId={}", userId, record.getId());
       throw new CustomException(InterviewBookingErrorCode.NOT_PASSED_DOCUMENT);
@@ -282,35 +282,37 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
           resolvedSemester);
     }
 
-    InterviewBooking booking =
-        interviewBookingRepository
-            .findBySemesterIdAndApplicantKey(resolvedSemester, applicantKey)
-            .orElseThrow(
-                () -> {
-                  log.warn(
-                      "[InterviewBooking] 예약 조회 실패 - 예약 없음 - userId={}, semester={}",
-                      user.getId(),
-                      resolvedSemester);
-                  return new CustomException(InterviewBookingErrorCode.NOT_FOUND_BOOKING);
-                });
+    return interviewBookingRepository
+        .findBySemesterIdAndApplicantKey(resolvedSemester, applicantKey)
+        .map(
+            booking -> {
+              InterviewSchedule s = booking.getInterviewSchedule();
 
-    InterviewSchedule s = booking.getInterviewSchedule();
+              log.info(
+                  "[InterviewBooking] 예약 조회 성공 - userId={}, bookingId={}, scheduleId={}",
+                  user.getId(),
+                  booking.getId(),
+                  s.getId());
 
-    log.info(
-        "[InterviewBooking] 예약 조회 성공 - userId={}, bookingId={}, scheduleId={}",
-        user.getId(),
-        booking.getId(),
-        s.getId());
+              return new UserInterviewBookingResponse(
+                  resolvedSemester.intValue(),
+                  new UserInterviewBookingResponse.Booking(
+                      booking.getId(),
+                      booking.getTrack(),
+                      s.getId(),
+                      s.getDate(),
+                      s.getStartTime(),
+                      s.getEndTime()));
+            })
+        .orElseGet(
+            () -> {
+              log.info(
+                  "[InterviewBooking] 예약 조회 - 예약 없음 - userId={}, semester={}",
+                  user.getId(),
+                  resolvedSemester);
 
-    return new UserInterviewBookingResponse(
-        resolvedSemester.intValue(),
-        new UserInterviewBookingResponse.Booking(
-            booking.getId(),
-            booking.getTrack(),
-            s.getId(),
-            s.getDate(),
-            s.getStartTime(),
-            s.getEndTime()));
+              return new UserInterviewBookingResponse(resolvedSemester.intValue(), null);
+            });
   }
 
   @Override
@@ -385,7 +387,7 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
             .orElseThrow(
                 () -> new CustomException(InterviewBookingErrorCode.NOT_FOUND_APPLICATION_RECORD));
 
-    if (!record.getIsDocumentPassed()) {
+    if (record.getIsDocumentPassed() == null || !record.getIsDocumentPassed()) {
       log.warn(
           "[InterviewBooking] 변경 실패 - 서류 미합격 - userId={}, recordId={}", userId, record.getId());
       throw new CustomException(InterviewBookingErrorCode.NOT_PASSED_DOCUMENT);

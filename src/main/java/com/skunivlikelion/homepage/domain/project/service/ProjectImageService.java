@@ -5,20 +5,17 @@ package com.skunivlikelion.homepage.domain.project.service;
 
 import java.util.List;
 
-import org.springframework.web.multipart.MultipartFile;
-
-import com.skunivlikelion.homepage.domain.project.entity.Project;
-import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
+import com.skunivlikelion.homepage.domain.project.dto.request.UploadImagePayload;
 
 public interface ProjectImageService {
   /**
    * [ 프로젝트 이미지 업로드 메서드 ]
    *
-   * @param projectImages 업로드할 프로젝트 이미지
-   * @param project 이미지를 가질 프로젝트 객체
+   * @param payloads 업로드할 프로젝트 이미지 페이로드
+   * @param projectId 이미지를 가질 프로젝트 식별자
    * @return 프로젝트 이미지 리스트
    */
-  List<ProjectImage> uploadProjectImages(List<MultipartFile> projectImages, Project project);
+  void uploadProjectImages(List<UploadImagePayload> payloads, Long projectId);
 
   /**
    * [ 프로젝트 이미지 삭제 메서드 ]

@@ -62,9 +62,9 @@ public interface UserController {
             **Returns** \n
             name: 사용자 이름    \n
             email: 사용자 이메일  \n
-            profieImageUrl: 프로필 이미지 URL \n
+            profileImageUrl: 프로필 이미지 URL \n
+            documentActive: 지원서 버튼 활성화 여부 \n
             documentSubmitted: 지원서 제출 여부  \n
-            interviewScheduleSubmitted: 면접 일정 제출 여부 \n
             interviewScheduleChangeable: 면접 일정 변경 가능 여부 \n
             finalResultConfirmation: 최종 결과 확인 가능 여부 \n
             """)
@@ -213,9 +213,9 @@ public interface UserController {
             **Returns** \n
             name: 사용자 이름    \n
             email: 사용자 이메일  \n
-            profieImageUrl: 프로필 이미지 URL \n
+            profileImageUrl: 프로필 이미지 URL \n
+            documentActive: 지원서 버튼 활성화 여부 \n
             documentSubmitted: 지원서 제출 여부  \n
-            interviewScheduleSubmitted: 면접 일정 제출 여부 \n
             interviewScheduleChangeable: 면접 일정 변경 가능 여부 \n
             finalResultConfirmation: 최종 결과 확인 가능 여부 \n
             """)

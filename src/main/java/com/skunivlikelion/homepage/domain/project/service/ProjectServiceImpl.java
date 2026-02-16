@@ -12,11 +12,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
+import com.skunivlikelion.homepage.domain.project.dto.request.UploadImagePayload;
 import com.skunivlikelion.homepage.domain.project.dto.response.*;
 import com.skunivlikelion.homepage.domain.project.entity.Project;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
@@ -36,6 +39,7 @@ import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
 import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
+import io.jsonwebtoken.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -91,18 +95,30 @@ public class ProjectServiceImpl implements ProjectService {
       }
     }
 
-    List<ProjectImage> savedImages =
-        projectImageService.uploadProjectImages(projectImages, savedProject);
+    List<UploadImagePayload> payloads =
+        projectImages.stream()
+            .map(
+                f -> {
+                  try {
+                    return new UploadImagePayload(
+                        f.getOriginalFilename(), f.getContentType(), f.getBytes());
+                  } catch (IOException | java.io.IOException e) {
+                    throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
+                  }
+                })
+            .toList();
 
-    if (savedImages == null || savedImages.isEmpty()) {
-      log.warn("[Project] 프로젝트 생성 실패 - 이미지 저장 실패 projectId={}", savedProject.getId());
-      throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
-    }
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            projectImageService.uploadProjectImages(payloads, savedProject.getId());
+          }
+        });
 
     log.info(
-        "[Project] 프로젝트 생성 완료 - projectId={}, 이미지 수: {}, 멤버 수: {}",
+        "[Project] 프로젝트 생성 완료 - projectId={}, 멤버 수: {}",
         savedProject.getId(),
-        savedImages.size(),
         savedProject.getProjectMembers().size());
 
     return ProjectResponse.builder()
@@ -122,7 +138,7 @@ public class ProjectServiceImpl implements ProjectService {
                             .track(projectMember.getTrack())
                             .build())
                 .toList())
-        .thumbnailUrl(savedProject.getProjectImages().getFirst().getImageUrl())
+        .thumbnailUrl(null)
         .build();
   }
 
@@ -137,9 +153,20 @@ public class ProjectServiceImpl implements ProjectService {
     Semester semester = getSemester(request.getSemesterId());
     ProjectType projectType = getProjectType(request.getProjectTypeId());
 
-    List<ProjectImageResponse> projectImageResponses =
-        projectUpdateService.updateProjectImages(
-            project, request.getRemainingProjectImageIds(), newImages);
+    List<UploadImagePayload> payloads =
+        newImages.stream()
+            .map(
+                f -> {
+                  try {
+                    return new UploadImagePayload(
+                        f.getOriginalFilename(), f.getContentType(), f.getBytes());
+                  } catch (IOException | java.io.IOException e) {
+                    throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
+                  }
+                })
+            .toList();
+    projectUpdateService.updateProjectImages(
+        project, request.getRemainingProjectImageIds(), payloads);
 
     List<ProjectMember> projectMembers =
         projectUpdateService.updateProjectMembers(
@@ -166,8 +193,8 @@ public class ProjectServiceImpl implements ProjectService {
                             .track(projectMember.getTrack())
                             .build())
                 .toList())
-        .thumbnailUrl(projectImageResponses.getFirst().getImageUrl())
-        .projectImageResponses(projectImageResponses)
+        .thumbnailUrl(null)
+        .projectImageResponses(null)
         .build();
   }
 

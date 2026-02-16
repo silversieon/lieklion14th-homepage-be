@@ -8,10 +8,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
-import com.skunivlikelion.homepage.domain.project.dto.response.ProjectImageResponse;
+import com.skunivlikelion.homepage.domain.project.dto.request.UploadImagePayload;
 import com.skunivlikelion.homepage.domain.project.entity.Project;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectMember;
@@ -33,8 +32,8 @@ public class ProjectUpdateServiceImpl implements ProjectUpdateService {
   private final ProjectMemberRepository projectMemberRepository;
 
   @Override
-  public List<ProjectImageResponse> updateProjectImages(
-      Project project, List<Long> remainingImageIds, List<MultipartFile> newImages) {
+  public void updateProjectImages(
+      Project project, List<Long> remainingImageIds, List<UploadImagePayload> payloads) {
     List<ProjectImage> existingImages =
         projectImageRepository.findImagesByProjectId(project.getId());
 
@@ -58,9 +57,9 @@ public class ProjectUpdateServiceImpl implements ProjectUpdateService {
 
     int newImagesCount = 0;
     try {
-      if (newImages != null && !newImages.isEmpty()) {
-        projectImageService.uploadProjectImages(newImages, project);
-        newImagesCount = newImages.size();
+      if (payloads != null && !payloads.isEmpty()) {
+        projectImageService.uploadProjectImages(payloads, project.getId());
+        newImagesCount = payloads.size();
       }
     } catch (Exception e) {
       log.error("[Project] 이미지 업로드 실패 - project={}", project.getId(), e);
@@ -72,14 +71,6 @@ public class ProjectUpdateServiceImpl implements ProjectUpdateService {
         project.getId(),
         deletedCount,
         newImagesCount);
-    return projectImageRepository.findImagesByProjectId(project.getId()).stream()
-        .map(
-            projectImage ->
-                ProjectImageResponse.builder()
-                    .projectImageId(projectImage.getId())
-                    .imageUrl(projectImage.getImageUrl())
-                    .build())
-        .toList();
   }
 
   @Override

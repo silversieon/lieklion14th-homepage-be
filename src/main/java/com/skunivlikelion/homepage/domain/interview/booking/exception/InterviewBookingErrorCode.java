@@ -15,11 +15,11 @@ import lombok.RequiredArgsConstructor;
 public enum InterviewBookingErrorCode implements BaseErrorCode {
   INVALID_REQUEST("IVTBK4001", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST),
 
-  NOT_PASSED_DOCUMENT("IVTBK4031", "서류 합격자만 면접 일정을 예약할 수 있습니다.", HttpStatus.FORBIDDEN),
-  PAST_SCHEDULE("IVTBK4032", "이미 시작된 면접 일정의 예약은 삭제할 수 없습니다.", HttpStatus.FORBIDDEN),
+  NOT_PASSED_DOCUMENT("IVTBK4002", "서류 합격자만 면접 일정을 예약할 수 있습니다.", HttpStatus.BAD_REQUEST),
+  PAST_SCHEDULE("IVTBK4003", "이미 시작된 면접 일정의 예약은 삭제할 수 없습니다.", HttpStatus.BAD_REQUEST),
   BOOKING_WINDOW_CLOSED(
-      "IVTBK4033", "면접 예약/변경은 서류 결과 발표일부터 면접 일정 확정일까지의 기간 내에만 가능합니다.", HttpStatus.FORBIDDEN),
-  PAST_SCHEDULE_BOOKING("IVTBK4034", "이미 시작된 면접 일정은 예약/변경할 수 없습니다.", HttpStatus.FORBIDDEN),
+      "IVTBK4004", "면접 예약/변경은 서류 결과 발표일부터 면접 일정 확정일까지의 기간 내에만 가능합니다.", HttpStatus.BAD_REQUEST),
+  PAST_SCHEDULE_BOOKING("IVTBK4005", "이미 시작된 면접 일정은 예약/변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
 
   NOT_FOUND_SCHEDULE("IVTBK4041", "존재하지 않는 면접 일정입니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_APPLICATION_RECORD("IVTBK4042", "지원 내역이 존재하지 않습니다.", HttpStatus.NOT_FOUND),

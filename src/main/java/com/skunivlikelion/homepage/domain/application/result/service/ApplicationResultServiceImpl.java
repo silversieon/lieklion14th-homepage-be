@@ -72,6 +72,7 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
       record.passDocument();
     } else {
       record.failDocument();
+      record.resetInterviewResult();
     }
 
     log.info(
