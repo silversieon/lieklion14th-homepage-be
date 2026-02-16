@@ -3,7 +3,6 @@
  */
 package com.skunivlikelion.homepage.domain.user.service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,10 +95,9 @@ public class UserServiceImpl implements UserService {
 
     Optional<ApplicationForm> applicationForm =
         applicationFormRepository.findCurrentApplicationForm(now);
-    boolean documentActive = applicationForm.isPresent();
+    boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
-    boolean interviewScheduleSubmitted = false;
     boolean finalResultConfirmation = false;
 
     if (applicationForm.isPresent()) {
@@ -110,22 +108,35 @@ public class UserServiceImpl implements UserService {
 
       if (applicationRecord.isPresent()) {
         documentSubmitted = applicationRecord.get().isSubmitted();
-        if (now.isAfter(existingApplicationForm.getApplicationResultAt())
-            && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt())) {
-          interviewScheduleChangeable = true;
-        }
-        if (documentSubmitted
-            && (applicationRecord.get().getIsDocumentPassed() != null
-                && applicationRecord.get().getIsDocumentPassed())
-            && now.toLocalDate()
-                .isEqual(existingApplicationForm.getFinalResultAt().toLocalDate())) {
-          finalResultConfirmation = true;
-        }
-      }
 
-      interviewScheduleSubmitted =
-          interviewBookingService.existInterviewBookingByUserAndSemester(
-              currentUser, existingApplicationForm.getSemester().getSemester());
+        if (documentSubmitted) {
+          if (applicationRecord.get().getIsDocumentPassed() != null
+              && applicationRecord.get().getIsDocumentPassed()) {
+            boolean interviewScheduleSubmitted =
+                interviewBookingService.existInterviewBookingByUserAndSemester(
+                    currentUser, existingApplicationForm.getSemester().getSemester());
+
+            if (interviewScheduleSubmitted
+                && now.isAfter(existingApplicationForm.getApplicationResultAt())
+                && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt()))
+              interviewScheduleChangeable = true;
+            if (now.toLocalDate().isEqual(existingApplicationForm.getFinalResultAt().toLocalDate()))
+              finalResultConfirmation = true;
+            if (!now.isBefore(existingApplicationForm.getOpenAt())
+                && !now.isAfter(existingApplicationForm.getFinalResultAt())) documentActive = true;
+
+          } else {
+            if (!now.isBefore(existingApplicationForm.getOpenAt())
+                && !now.isAfter(existingApplicationForm.getFinalResultAt())) documentActive = true;
+          }
+        } else {
+          if (!now.isBefore(existingApplicationForm.getOpenAt())
+              && !now.isAfter(existingApplicationForm.getCloseAt())) documentActive = true;
+        }
+      } else {
+        if (!now.isBefore(existingApplicationForm.getOpenAt())
+            && !now.isAfter(existingApplicationForm.getCloseAt())) documentActive = true;
+      }
     }
 
     log.info(
@@ -138,7 +149,6 @@ public class UserServiceImpl implements UserService {
         documentActive,
         documentSubmitted,
         interviewScheduleChangeable,
-        interviewScheduleSubmitted,
         finalResultConfirmation);
   }
 
@@ -471,11 +481,10 @@ public class UserServiceImpl implements UserService {
     LocalDateTime now = LocalDateTime.now();
     Optional<ApplicationForm> applicationForm =
         applicationFormRepository.findCurrentApplicationForm(now);
-    boolean documentActive = applicationForm.isPresent();
+    boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
     boolean finalResultConfirmation = false;
-    boolean interviewScheduleSubmitted = false;
 
     if (applicationForm.isPresent()) {
       ApplicationForm existingApplicationForm = applicationForm.get();
@@ -485,24 +494,35 @@ public class UserServiceImpl implements UserService {
 
       if (applicationRecord.isPresent()) {
         documentSubmitted = applicationRecord.get().isSubmitted();
-        if (now.isAfter(existingApplicationForm.getApplicationResultAt())
-            && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt())) {
-          interviewScheduleChangeable = true;
-        }
-        LocalDate start = existingApplicationForm.getFinalResultAt().toLocalDate();
-        LocalDate end = start.plusDays(INTERVIEW_RESULT_GRACE_DAYS);
-        if (documentSubmitted
-            && (applicationRecord.get().getIsDocumentPassed() != null
-                && applicationRecord.get().getIsDocumentPassed())
-            && !now.toLocalDate().isBefore(start)
-            && !now.toLocalDate().isAfter(end)) {
-          finalResultConfirmation = true;
-        }
-      }
 
-      interviewScheduleSubmitted =
-          interviewBookingService.existInterviewBookingByUserAndSemester(
-              currentUser, existingApplicationForm.getSemester().getSemester());
+        if (documentSubmitted) {
+          if (applicationRecord.get().getIsDocumentPassed() != null
+              && applicationRecord.get().getIsDocumentPassed()) {
+            boolean interviewScheduleSubmitted =
+                interviewBookingService.existInterviewBookingByUserAndSemester(
+                    currentUser, existingApplicationForm.getSemester().getSemester());
+
+            if (interviewScheduleSubmitted
+                && now.isAfter(existingApplicationForm.getApplicationResultAt())
+                && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt()))
+              interviewScheduleChangeable = true;
+            if (now.toLocalDate().isEqual(existingApplicationForm.getFinalResultAt().toLocalDate()))
+              finalResultConfirmation = true;
+            if (!now.isBefore(existingApplicationForm.getOpenAt())
+                && !now.isAfter(existingApplicationForm.getFinalResultAt())) documentActive = true;
+
+          } else {
+            if (!now.isBefore(existingApplicationForm.getOpenAt())
+                && !now.isAfter(existingApplicationForm.getFinalResultAt())) documentActive = true;
+          }
+        } else {
+          if (!now.isBefore(existingApplicationForm.getOpenAt())
+              && !now.isAfter(existingApplicationForm.getCloseAt())) documentActive = true;
+        }
+      } else {
+        if (!now.isBefore(existingApplicationForm.getOpenAt())
+            && !now.isAfter(existingApplicationForm.getCloseAt())) documentActive = true;
+      }
     }
 
     log.info("[User] 프로필 이미지 업로드 성공 - userId: {}", currentUser.getId());
@@ -511,7 +531,6 @@ public class UserServiceImpl implements UserService {
         documentActive,
         documentSubmitted,
         interviewScheduleChangeable,
-        interviewScheduleSubmitted,
         finalResultConfirmation);
   }
 

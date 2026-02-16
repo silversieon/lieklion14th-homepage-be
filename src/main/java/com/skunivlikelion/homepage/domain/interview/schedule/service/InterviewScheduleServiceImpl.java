@@ -203,10 +203,10 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
             .orElseThrow(
                 () -> new CustomException(InterviewScheduleErrorCode.NOT_FOUND_APPLICATION_RECORD));
 
-    boolean documentPassed = record.getIsDocumentPassed();
+    Boolean documentPassed = record.getIsDocumentPassed();
     Track resolvedTrack = record.getTrack();
 
-    if (!documentPassed) {
+    if (documentPassed == null || !documentPassed) {
       return new UserInterviewScheduleResponse(
           resolvedSemester.intValue(), false, resolvedTrack, List.of());
     }

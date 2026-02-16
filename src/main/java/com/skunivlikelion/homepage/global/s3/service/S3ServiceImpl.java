@@ -6,6 +6,7 @@ package com.skunivlikelion.homepage.global.s3.service;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
@@ -71,6 +72,31 @@ public class S3ServiceImpl implements S3Service {
 
     } catch (Exception e) {
       log.error("[S3] WebP 업로드 실패 - keyName: {}", keyName, e);
+      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
+    }
+  }
+
+  @Override
+  public String uploadByte(PathName pathName, byte[] bytes) {
+    byte[] webpBytes = convertToWebp(bytes);
+    String keyName = createKeyName(pathName, WEBP_EXTENSION);
+
+    try {
+      s3Client.putObject(
+          PutObjectRequest.builder()
+              .bucket(awsProperties.getS3().getBucket())
+              .key(keyName)
+              .contentType(WEBP_CONTENT_TYPE)
+              .contentLength((long) webpBytes.length)
+              .build(),
+          RequestBody.fromBytes(webpBytes));
+
+      log.info(
+          "[S3] 바이트 형식을 통한 WebP 업로드 성공 - keyName: {}, size={} bytes", keyName, webpBytes.length);
+      return createBucketImageUrl(keyName);
+
+    } catch (Exception e) {
+      log.error("[S3] 바이트 형식으로 WebP 업로드 실패 - keyName: {}", keyName, e);
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     }
   }
@@ -177,6 +203,41 @@ public class S3ServiceImpl implements S3Service {
 
     } catch (Exception e) {
       log.error("[S3] WebP 변환 실패 - filename={}", file.getOriginalFilename(), e);
+      throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
+    }
+  }
+
+  private byte[] convertToWebp(byte[] originalBytes) {
+    try {
+      ByteArrayInputStream bais = new ByteArrayInputStream(originalBytes);
+
+      ImmutableImage image = ImmutableImage.loader().fromStream(bais);
+      BufferedImage src = image.awt();
+
+      int type =
+          src.getColorModel().hasAlpha()
+              ? BufferedImage.TYPE_INT_ARGB
+              : BufferedImage.TYPE_3BYTE_BGR;
+
+      if (src.getType() != type) {
+        BufferedImage converted = new BufferedImage(src.getWidth(), src.getHeight(), type);
+
+        Graphics2D g = converted.createGraphics();
+        g.setComposite(AlphaComposite.Src);
+        g.drawImage(src, 0, 0, null);
+        g.dispose();
+
+        image = ImmutableImage.fromAwt(converted);
+      }
+
+      WebpWriter writer = WebpWriter.DEFAULT.withQ(WEBP_QUALITY);
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      image.forWriter(writer).write(baos);
+
+      return baos.toByteArray();
+
+    } catch (Exception e) {
       throw new CustomException(S3ErrorCode.FILE_SERVER_ERROR);
     }
   }
