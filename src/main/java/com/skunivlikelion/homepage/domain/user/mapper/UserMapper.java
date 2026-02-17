@@ -36,6 +36,7 @@ public class UserMapper {
       boolean documentActive,
       boolean documentSubmitted,
       boolean interviewScheduleChangeable,
+      boolean interviewScheduleConfirmed,
       boolean finalResultConfirmation) {
     return MyPageResponse.builder()
         .name(user.getName())
@@ -44,6 +45,7 @@ public class UserMapper {
         .documentActive(documentActive)
         .documentSubmitted(documentSubmitted)
         .interviewScheduleChangeable(interviewScheduleChangeable)
+        .interviewScheduleConfirmed(interviewScheduleConfirmed)
         .finalResultConfirmation(finalResultConfirmation)
         .build();
   }

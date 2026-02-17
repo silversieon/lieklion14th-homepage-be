@@ -66,6 +66,7 @@ public interface UserController {
             documentActive: 지원서 버튼 활성화 여부 \n
             documentSubmitted: 지원서 제출 여부  \n
             interviewScheduleChangeable: 면접 일정 변경 가능 여부 \n
+            interviewScheduleConfirmed: 면접 일정 확인 가능 여부  \n
             finalResultConfirmation: 최종 결과 확인 가능 여부 \n
             """)
   @GetMapping("/v1/users/me")
@@ -217,6 +218,7 @@ public interface UserController {
             documentActive: 지원서 버튼 활성화 여부 \n
             documentSubmitted: 지원서 제출 여부  \n
             interviewScheduleChangeable: 면접 일정 변경 가능 여부 \n
+            interviewScheduleConfirmed: 면접 일정 확인 가능 여부  \n
             finalResultConfirmation: 최종 결과 확인 가능 여부 \n
             """)
   @PatchMapping(value = "/v1/users/me/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

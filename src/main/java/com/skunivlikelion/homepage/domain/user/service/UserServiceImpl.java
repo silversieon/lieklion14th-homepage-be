@@ -98,6 +98,7 @@ public class UserServiceImpl implements UserService {
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
+    boolean interviewScheduleConfirmed = false;
     boolean finalResultConfirmation = false;
 
     if (applicationForm.isPresent()) {
@@ -116,10 +117,14 @@ public class UserServiceImpl implements UserService {
                 interviewBookingService.existInterviewBookingByUserAndSemester(
                     currentUser, existingApplicationForm.getSemester().getSemester());
 
-            if (interviewScheduleSubmitted
-                && now.isAfter(existingApplicationForm.getApplicationResultAt())
-                && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt()))
-              interviewScheduleChangeable = true;
+            if (interviewScheduleSubmitted) {
+              if (now.isAfter(existingApplicationForm.getApplicationResultAt())
+                  && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt()))
+                interviewScheduleChangeable = true;
+              if (!now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt())
+                  && !now.isAfter(existingApplicationForm.getFinalResultAt()))
+                interviewScheduleConfirmed = true;
+            }
             if (now.toLocalDate().isEqual(existingApplicationForm.getFinalResultAt().toLocalDate()))
               finalResultConfirmation = true;
             if (!now.isBefore(existingApplicationForm.getOpenAt())
@@ -149,6 +154,7 @@ public class UserServiceImpl implements UserService {
         documentActive,
         documentSubmitted,
         interviewScheduleChangeable,
+        interviewScheduleConfirmed,
         finalResultConfirmation);
   }
 
@@ -484,6 +490,7 @@ public class UserServiceImpl implements UserService {
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
+    boolean interviewScheduleConfirmed = false;
     boolean finalResultConfirmation = false;
 
     if (applicationForm.isPresent()) {
@@ -502,10 +509,14 @@ public class UserServiceImpl implements UserService {
                 interviewBookingService.existInterviewBookingByUserAndSemester(
                     currentUser, existingApplicationForm.getSemester().getSemester());
 
-            if (interviewScheduleSubmitted
-                && now.isAfter(existingApplicationForm.getApplicationResultAt())
-                && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt()))
-              interviewScheduleChangeable = true;
+            if (interviewScheduleSubmitted) {
+              if (now.isAfter(existingApplicationForm.getApplicationResultAt())
+                  && now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt()))
+                interviewScheduleChangeable = true;
+              if (!now.isBefore(existingApplicationForm.getInterviewScheduleConfirmedAt())
+                  && !now.isAfter(existingApplicationForm.getFinalResultAt()))
+                interviewScheduleConfirmed = true;
+            }
             if (now.toLocalDate().isEqual(existingApplicationForm.getFinalResultAt().toLocalDate()))
               finalResultConfirmation = true;
             if (!now.isBefore(existingApplicationForm.getOpenAt())
@@ -531,6 +542,7 @@ public class UserServiceImpl implements UserService {
         documentActive,
         documentSubmitted,
         interviewScheduleChangeable,
+        interviewScheduleConfirmed,
         finalResultConfirmation);
   }
 
