@@ -106,6 +106,16 @@ public interface ApplicationFormController {
   ResponseEntity<BaseResponse<ApplicationFormResponse>> getCurrentApplicationForm();
 
   @Operation(
+      summary = "[ 사용자 | 토큰 X | 가까운 지원 일정 조회 ]",
+      description =
+          """
+              **Returns**  \n
+              가장 최근 모집 공고 정보
+              """)
+  @GetMapping("/v1/applications/nearest-forms")
+  ResponseEntity<BaseResponse<ApplicationFormResponse>> getRecentApplicationForm();
+
+  @Operation(
       summary = "[ 관리자 | 토큰 O | 모집 공고 내림차순 전체 조회 ]",
       description =
           """

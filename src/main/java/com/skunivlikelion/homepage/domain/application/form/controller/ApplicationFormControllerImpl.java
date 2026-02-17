@@ -74,6 +74,15 @@ public class ApplicationFormControllerImpl implements ApplicationFormController 
   }
 
   @Override
+  public ResponseEntity<BaseResponse<ApplicationFormResponse>> getRecentApplicationForm() {
+
+    ApplicationFormResponse response = applicationFormService.getNearestApplicationFormResponse();
+
+    return ResponseEntity.status(200)
+        .body(BaseResponse.success(200, "가장 가까운 일정 조회에 성공했습니다.", response));
+  }
+
+  @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<List<ApplicationFormResponse>>> getAllApplicationForms() {
 

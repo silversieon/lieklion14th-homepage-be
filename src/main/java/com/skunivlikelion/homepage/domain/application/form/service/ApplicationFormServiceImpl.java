@@ -3,9 +3,12 @@
  */
 package com.skunivlikelion.homepage.domain.application.form.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -308,5 +311,41 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
   public ApplicationFormResponse getCurrentApplicationFormResponse() {
     ApplicationForm current = getCurrentApplicationForm();
     return applicationFormMapper.toResponse(current);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ApplicationFormResponse getNearestApplicationFormResponse() {
+    LocalDateTime now = LocalDateTime.now();
+
+    return applicationFormRepository
+        .findCurrentApplicationForm(now)
+        .or(() -> nearestCandidate(now))
+        .map(applicationFormMapper::toResponse)
+        .orElseThrow(
+            () -> {
+              log.info("[ApplicationForm] 조회 가능한 모집 공고 없음 - now={}", now);
+              return new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM);
+            });
+  }
+
+  private Optional<ApplicationForm> nearestCandidate(LocalDateTime now) {
+    ApplicationForm next =
+        firstOrNull(applicationFormRepository.findNextApplicationForm(now, PageRequest.of(0, 1)));
+    ApplicationForm prev =
+        firstOrNull(applicationFormRepository.findPrevApplicationForm(now, PageRequest.of(0, 1)));
+
+    if (next == null) return Optional.ofNullable(prev);
+    if (prev == null) return Optional.of(next);
+
+    long nextDiff = Duration.between(now, next.getOpenAt()).getSeconds(); // next는 now 이후라 abs 불필요
+    long prevDiff =
+        Duration.between(prev.getFinalResultAt(), now).getSeconds(); // prev는 now 이전이라 abs 불필요
+
+    return Optional.of(nextDiff <= prevDiff ? next : prev);
+  }
+
+  private <T> T firstOrNull(List<T> list) {
+    return (list == null || list.isEmpty()) ? null : list.getFirst();
   }
 }
