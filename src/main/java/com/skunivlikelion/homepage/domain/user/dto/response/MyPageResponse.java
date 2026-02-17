@@ -30,6 +30,9 @@ public class MyPageResponse {
   @Schema(description = "면접 일정 변경 가능 여부", example = "false")
   private boolean interviewScheduleChangeable;
 
+  @Schema(description = "면접 일정 확정 여부", example = "false")
+  private boolean interviewScheduleConfirmed;
+
   @Schema(description = "최종 결과 확인 가능 여부", example = "true")
   private boolean finalResultConfirmation;
 }
