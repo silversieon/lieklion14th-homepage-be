@@ -88,9 +88,10 @@ public class UserServiceImpl implements UserService {
   public MyPageResponse getCurrentUserPage() {
     User currentUser = currentUserProvider.getCurrentUser();
     LocalDateTime now = LocalDateTime.now();
+    LocalDateTime threshold = now.plusDays(FINAL_RESULT_GRACE_DAYS);
 
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findCurrentApplicationForm(now);
+        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
@@ -522,7 +523,7 @@ public class UserServiceImpl implements UserService {
     LocalDateTime now = LocalDateTime.now();
 
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findCurrentApplicationForm(now);
+        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
