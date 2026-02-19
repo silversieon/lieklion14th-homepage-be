@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -108,7 +109,26 @@ public interface ApplicationFormRepository extends JpaRepository<ApplicationForm
           """)
   Optional<ApplicationForm> findCurrentApplicationForm(@Param("now") LocalDateTime now);
 
-  // 정각 허용 (자정이라면 closeAt을 23:59로 설정 필요)
+  @Query(
+      """
+      select af
+      from ApplicationForm af
+      join fetch af.semester s
+      where af.openAt > :now
+      order by af.openAt asc
+  """)
+  List<ApplicationForm> findNextApplicationForm(@Param("now") LocalDateTime now, Pageable pageable);
+
+  @Query(
+      """
+      select af
+      from ApplicationForm af
+      join fetch af.semester s
+      where af.finalResultAt < :now
+      order by af.finalResultAt desc
+  """)
+  List<ApplicationForm> findPrevApplicationForm(@Param("now") LocalDateTime now, Pageable pageable);
+
   @Query(
       """
           select af

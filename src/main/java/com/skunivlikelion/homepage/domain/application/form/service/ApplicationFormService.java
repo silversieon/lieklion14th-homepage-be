@@ -70,6 +70,13 @@ public interface ApplicationFormService {
   ApplicationFormResponse getCurrentApplicationFormResponse();
 
   /**
+   * [ 최근 모집 공고 조회 메서드 ]
+   *
+   * @return 최근 모집 공고 응답
+   */
+  ApplicationFormResponse getNearestApplicationFormResponse();
+
+  /**
    * [ 현재 진행중인 모집 공고 기수 조회 메서드 ] 현재 시점 기준으로 진행중인 모집 공고의 기수를 반환
    *
    * @return 현재 진행중인 모집 공고의 기수 값

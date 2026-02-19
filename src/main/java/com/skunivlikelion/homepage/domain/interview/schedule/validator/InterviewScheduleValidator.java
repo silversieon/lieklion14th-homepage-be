@@ -33,12 +33,13 @@ public class InterviewScheduleValidator {
         || request.getEndTime() == null) {
       throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
     }
-    if (!request.getStartTime().isBefore(request.getEndTime())) {
+    if (request.getStartTime().equals(request.getEndTime())) {
       throw new CustomException(InterviewScheduleErrorCode.INVALID_TIME_RANGE);
     }
   }
 
-  public void validateCreateWindow(Long semester, LocalDateTime slotStartAt) {
+  public void validateCreateWindow(
+      Long semester, LocalDateTime slotStartAt, LocalDateTime slotEndAt) {
     ApplicationForm form =
         applicationFormRepository
             .findBySemester(semester)
@@ -52,7 +53,11 @@ public class InterviewScheduleValidator {
       throw new CustomException(InterviewScheduleErrorCode.APPLICATION_FORM_NOT_FOUND);
     }
 
-    if (slotStartAt.isBefore(confirmedAt) || slotStartAt.isAfter(finalResultAt)) {
+    if (slotStartAt.isBefore(confirmedAt)) {
+      throw new CustomException(InterviewScheduleErrorCode.INTERVIEW_DATE_OUT_OF_RANGE);
+    }
+
+    if (slotEndAt.isAfter(finalResultAt)) {
       throw new CustomException(InterviewScheduleErrorCode.INTERVIEW_DATE_OUT_OF_RANGE);
     }
 

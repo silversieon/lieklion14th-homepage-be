@@ -12,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.skunivlikelion.homepage.global.common.BaseResponse;
@@ -160,6 +161,20 @@ public class GlobalExceptionHandler {
     log.warn("IllegalArgumentException 오류 발생: {}", ex.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(BaseResponse.error(400, "유효하지 않은 입력 요청 발생"));
+  }
+
+  /**
+   * 제한 범위를 넘어선 업로드를 처리합니다.
+   *
+   * @param ex 발생한 {@link MaxUploadSizeExceededException}
+   * @return {@link ResponseEntity} 형태의 {@link BaseResponse} 에러 응답
+   */
+  @ExceptionHandler({MaxUploadSizeExceededException.class})
+  public ResponseEntity<BaseResponse<Object>> handleMaxUploadSizeExceededException(
+      MaxUploadSizeExceededException ex) {
+    log.warn("MaxUploadSizeExceededException 오류 발생: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+        .body(BaseResponse.error(413, "이미지 용량 제한을 초과했습니다."));
   }
 
   /**

@@ -119,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
 
       emailSender.send(mimeMessage);
       log.info("[Auth] 인증 코드 전송 완료 - 수신자: {}", email);
-      redisTemplate.opsForValue().set(redisKey, verificationCode, 5, TimeUnit.MINUTES);
+      redisTemplate.opsForValue().set(redisKey, verificationCode, 320, TimeUnit.SECONDS);
 
       return CompletableFuture.completedFuture(true);
     } catch (MessagingException e) {
