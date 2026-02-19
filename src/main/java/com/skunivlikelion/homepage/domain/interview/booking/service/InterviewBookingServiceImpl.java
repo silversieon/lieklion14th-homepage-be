@@ -165,106 +165,99 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
             ? List.of(track.name())
             : Track.getCurrentSemesterTracks(semester).stream().map(Enum::name).toList();
 
+    var scheduledTrackNames =
+        interviewScheduleRepository
+            .findDistinctTracksBySemesterAndDate(semester, date, track)
+            .stream()
+            .map(Enum::name)
+            .collect(Collectors.toSet());
+
     var rows =
         interviewScheduleRepository.findAdminBookedSchedulesBySemesterAndDate(
             semester, date, track);
 
+    Map<String, List<AdminInterviewBookingResponse.TimeSlot>> grouped;
+
     if (rows.isEmpty()) {
+      grouped = Map.of();
+    } else {
 
-      // ✅ "등록된 슬롯"이 있는지 체크 (예약과 무관)
-      boolean hasSchedules =
-          !interviewScheduleRepository
-              .findAdminSchedules(semester, track, date, date) // dateFrom=dateTo=date
-              .isEmpty();
-
-      List<AdminInterviewBookingResponse.TrackGroup> empty =
-          trackNames.stream()
-              .map(
-                  t -> {
-                    if (!hasSchedules) {
-                      return new AdminInterviewBookingResponse.TrackGroup(t, List.of());
-                    }
-
-                    return new AdminInterviewBookingResponse.TrackGroup(
-                        t, List.of(new AdminInterviewBookingResponse.DateGroup(date, List.of())));
-                  })
+      List<Long> userIds =
+          rows.stream()
+              .map(AdminInterviewSlotView::getUserId)
+              .filter(Objects::nonNull)
+              .distinct()
               .toList();
 
-      return new AdminInterviewBookingResponse(semester.intValue(), empty);
+      Map<Long, User> userMap =
+          userRepository.findAllById(userIds).stream()
+              .collect(Collectors.toMap(User::getId, u -> u));
+
+      grouped =
+          rows.stream()
+              .map(
+                  v -> {
+                    User u = (v.getUserId() == null) ? null : userMap.get(v.getUserId());
+
+                    String name;
+                    String studentNumber;
+                    String department = null;
+                    String phone = null;
+
+                    if (u != null) {
+                      name = u.getName();
+                      studentNumber = u.getStudentNumber();
+                      department = u.getDepartment();
+                      phone = u.getPhoneNumber();
+                    } else {
+                      name = v.getSnapshotName();
+                      studentNumber = v.getSnapshotStudentNumber();
+                    }
+
+                    boolean matched =
+                        (normalized == null)
+                            || (name != null && name.toLowerCase().contains(normalized))
+                            || (studentNumber != null
+                                && studentNumber.toLowerCase().contains(normalized));
+
+                    if (!matched) {
+                      return null;
+                    }
+
+                    var info =
+                        new AdminInterviewBookingResponse.BookingInfo(
+                            v.getBookingId(),
+                            name,
+                            department,
+                            studentNumber,
+                            phone,
+                            v.getApplicationRecordId());
+
+                    return Map.entry(
+                        v.getTrack().name(),
+                        new AdminInterviewBookingResponse.TimeSlot(
+                            v.getScheduleId(), v.getStartTime(), v.getEndTime(), info));
+                  })
+              .filter(Objects::nonNull)
+              .collect(
+                  Collectors.groupingBy(
+                      Map.Entry::getKey,
+                      Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
     }
-
-    List<Long> userIds =
-        rows.stream()
-            .map(AdminInterviewSlotView::getUserId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-
-    Map<Long, User> userMap =
-        userRepository.findAllById(userIds).stream().collect(Collectors.toMap(User::getId, u -> u));
-
-    Map<String, List<AdminInterviewBookingResponse.TimeSlot>> grouped =
-        rows.stream()
-            .map(
-                v -> {
-                  User u = (v.getUserId() == null) ? null : userMap.get(v.getUserId());
-
-                  String name;
-                  String studentNumber;
-                  String department = null;
-                  String phone = null;
-
-                  if (u != null) {
-                    name = u.getName();
-                    studentNumber = u.getStudentNumber();
-                    department = u.getDepartment();
-                    phone = u.getPhoneNumber();
-                  } else {
-                    name = v.getSnapshotName();
-                    studentNumber = v.getSnapshotStudentNumber();
-                  }
-
-                  boolean matched =
-                      (normalized == null)
-                          || (name != null && name.toLowerCase().contains(normalized))
-                          || (studentNumber != null
-                              && studentNumber.toLowerCase().contains(normalized));
-
-                  if (!matched) {
-                    return null;
-                  }
-
-                  var info =
-                      new AdminInterviewBookingResponse.BookingInfo(
-                          v.getBookingId(),
-                          name,
-                          department,
-                          studentNumber,
-                          phone,
-                          v.getApplicationRecordId());
-
-                  return Map.entry(
-                      v.getTrack().name(),
-                      new AdminInterviewBookingResponse.TimeSlot(
-                          v.getScheduleId(), v.getStartTime(), v.getEndTime(), info));
-                })
-            .filter(Objects::nonNull)
-            .collect(
-                Collectors.groupingBy(
-                    Map.Entry::getKey,
-                    Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
 
     List<AdminInterviewBookingResponse.TrackGroup> trackGroups =
         trackNames.stream()
             .map(
                 trackName -> {
+                  boolean hasSchedulesForTrack = scheduledTrackNames.contains(trackName);
+
                   List<AdminInterviewBookingResponse.TimeSlot> times =
                       grouped.getOrDefault(trackName, List.of());
 
                   List<AdminInterviewBookingResponse.DateGroup> dates =
-                      times.isEmpty()
-                          ? List.of()
-                          : List.of(new AdminInterviewBookingResponse.DateGroup(date, times));
+                      hasSchedulesForTrack
+                          ? List.of(new AdminInterviewBookingResponse.DateGroup(date, times))
+                          : List.of();
 
                   return new AdminInterviewBookingResponse.TrackGroup(trackName, dates);
                 })

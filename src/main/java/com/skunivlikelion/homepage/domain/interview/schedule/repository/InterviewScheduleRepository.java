@@ -114,4 +114,16 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
       @Param("date") LocalDate date,
       @Param("startTime") LocalTime startTime,
       @Param("endTime") LocalTime endTime);
+
+  @Query(
+      """
+          select distinct s.track
+          from InterviewSchedule s
+          where s.semester = :semester
+            and s.date = :date
+            and (:track is null or s.track = :track)
+          order by s.track asc
+      """)
+  List<Track> findDistinctTracksBySemesterAndDate(
+      @Param("semester") Long semester, @Param("date") LocalDate date, @Param("track") Track track);
 }
