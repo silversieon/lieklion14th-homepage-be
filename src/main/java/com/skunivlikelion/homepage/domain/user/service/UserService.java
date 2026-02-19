@@ -75,6 +75,13 @@ public interface UserService {
       Long semester, Position position, Track track, String keyword);
 
   /**
+   * [ 사용자 지원 상태 여부 조회 메서드 ] 헤더(지원 결과)에서 사용자의 지원 상태를 조회
+   *
+   * @return UserApplicationStatusResponse 객체
+   */
+  UserApplicationStatusResponse getUserApplicationStatus();
+
+  /**
    * [ 구성원 일괄 추가 메서드 ] 사용자 관리 화면 - 게스트에서 구성원 일괄 추가
    *
    * @param request 구성원에 추가할 사용자 식별자 리스트

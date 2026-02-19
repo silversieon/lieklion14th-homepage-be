@@ -90,6 +90,14 @@ public class UserControllerImpl implements UserController {
   }
 
   @Override
+  public ResponseEntity<BaseResponse<UserApplicationStatusResponse>> getUserApplicationStatus() {
+    return ResponseEntity.status(200)
+        .body(
+            BaseResponse.success(
+                200, "사용자의 지원 상태 여부 조회에 성공했습니다.", userService.getUserApplicationStatus()));
+  }
+
+  @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<List<UserInformationResponse>>> addClubMembersFromGuests(
       @RequestBody ChangeMembershipRequest request) {

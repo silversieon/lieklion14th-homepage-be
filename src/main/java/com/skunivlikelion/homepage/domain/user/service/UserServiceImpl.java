@@ -88,10 +88,9 @@ public class UserServiceImpl implements UserService {
   public MyPageResponse getCurrentUserPage() {
     User currentUser = currentUserProvider.getCurrentUser();
     LocalDateTime now = LocalDateTime.now();
-    LocalDateTime threshold = now.plusDays(FINAL_RESULT_GRACE_DAYS);
 
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
+        applicationFormRepository.findCurrentApplicationForm(now);
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
@@ -398,6 +397,45 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public UserApplicationStatusResponse getUserApplicationStatus() {
+    User currentUser = currentUserProvider.getCurrentUser();
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime threshold = now.minusDays(FINAL_RESULT_GRACE_DAYS);
+
+    Optional<ApplicationForm> applicationForm =
+        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
+    boolean documentSubmitted = false;
+    boolean interviewScheduleConfirmed = false;
+
+    if (applicationForm.isPresent()) {
+      ApplicationForm existingApplicationForm = applicationForm.get();
+      Optional<ApplicationRecord> applicationRecord =
+          applicationRecordRepository.findByApplicationFormIdAndUserId(
+              existingApplicationForm.getId(), currentUser.getId());
+
+      if (applicationRecord.isPresent()) {
+        documentSubmitted = applicationRecord.get().isSubmitted();
+
+        if (documentSubmitted) {
+          if (applicationRecord.get().getIsDocumentPassed() != null
+              && applicationRecord.get().getIsDocumentPassed()) {
+            boolean interviewScheduleSubmitted =
+                interviewBookingService.existInterviewBookingByUserAndSemester(
+                    currentUser, existingApplicationForm.getSemester().getSemester());
+            if (interviewScheduleSubmitted) interviewScheduleConfirmed = true;
+          }
+        }
+      }
+    }
+
+    return UserApplicationStatusResponse.builder()
+        .documentSubmitted(documentSubmitted)
+        .interviewScheduleConfirmed(interviewScheduleConfirmed)
+        .build();
+  }
+
+  @Override
   @Transactional
   public List<UserInformationResponse> addClubMembers(ChangeMembershipRequest request) {
     List<User> users = userRepository.findAllByIdIn(request.getUserIds());
@@ -482,10 +520,9 @@ public class UserServiceImpl implements UserService {
     }
 
     LocalDateTime now = LocalDateTime.now();
-    LocalDateTime threshold = now.minusDays(FINAL_RESULT_GRACE_DAYS);
 
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
+        applicationFormRepository.findCurrentApplicationForm(now);
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;

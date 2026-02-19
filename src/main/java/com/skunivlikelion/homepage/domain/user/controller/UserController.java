@@ -146,6 +146,17 @@ public interface UserController {
       @RequestParam(required = false) String keyword);
 
   @Operation(
+      summary = "[ 사용자 | 토큰 O | 사용자의 지원 상태 조회 ]",
+      description =
+          """
+            **Parameters**  \n
+            documentSubmitted: 지원서 제출 여부  \n
+            interviewScheduleConfirmed: 면접 일정 제출 여부  \n
+          """)
+  @GetMapping("/v1/users/application-status")
+  ResponseEntity<BaseResponse<UserApplicationStatusResponse>> getUserApplicationStatus();
+
+  @Operation(
       summary = "[ 관리자 | 토큰 O | 게스트에서 구성원 일괄 추가 (게스트 -> 구성원) ]",
       description =
           """
