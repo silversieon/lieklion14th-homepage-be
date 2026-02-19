@@ -170,9 +170,24 @@ public class InterviewBookingServiceImpl implements InterviewBookingService {
             semester, date, track);
 
     if (rows.isEmpty()) {
+
+      // ✅ "등록된 슬롯"이 있는지 체크 (예약과 무관)
+      boolean hasSchedules =
+          !interviewScheduleRepository
+              .findAdminSchedules(semester, track, date, date) // dateFrom=dateTo=date
+              .isEmpty();
+
       List<AdminInterviewBookingResponse.TrackGroup> empty =
           trackNames.stream()
-              .map(t -> new AdminInterviewBookingResponse.TrackGroup(t, List.of()))
+              .map(
+                  t -> {
+                    if (!hasSchedules) {
+                      return new AdminInterviewBookingResponse.TrackGroup(t, List.of());
+                    }
+
+                    return new AdminInterviewBookingResponse.TrackGroup(
+                        t, List.of(new AdminInterviewBookingResponse.DateGroup(date, List.of())));
+                  })
               .toList();
 
       return new AdminInterviewBookingResponse(semester.intValue(), empty);
