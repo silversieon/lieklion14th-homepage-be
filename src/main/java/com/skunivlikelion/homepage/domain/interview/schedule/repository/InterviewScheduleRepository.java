@@ -23,23 +23,6 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
 
   @Query(
       """
-          select count(s) > 0
-          from InterviewSchedule s
-          where s.semester = :semester
-            and s.track = :track
-            and s.date = :date
-            and :startTime < s.endTime
-            and :endTime > s.startTime
-          """)
-  boolean existsOverlappingSchedule(
-      @Param("semester") Long semester,
-      @Param("track") Track track,
-      @Param("date") LocalDate date,
-      @Param("startTime") LocalTime startTime,
-      @Param("endTime") LocalTime endTime);
-
-  @Query(
-      """
           select s
           from InterviewSchedule s
           where s.semester = :semester
@@ -86,25 +69,49 @@ public interface InterviewScheduleRepository extends JpaRepository<InterviewSche
 
   @Query(
       """
-          select
-            s.id as scheduleId,
-            s.track as track,
-            s.date as date,
-            s.startTime as startTime,
-            s.endTime as endTime,
+              select
+                s.id as scheduleId,
+                s.track as track,
+                s.date as date,
+                s.startTime as startTime,
+                s.endTime as endTime,
 
-            b.id as bookingId,
-            b.userId as userId,
-            b.userNameMasked as snapshotName,
-            b.userStudentNumberMasked as snapshotStudentNumber,
-            b.applicationRecordId as applicationRecordId
-          from InterviewSchedule s
-          join InterviewBooking b on b.interviewSchedule.id = s.id
-          where s.semester = :semester
-            and s.date = :date
-            and (:track is null or s.track = :track)
-          order by s.track asc, s.startTime asc, s.id asc
-      """)
+                b.id as bookingId,
+                b.userId as userId,
+                b.userNameMasked as snapshotName,
+                b.userStudentNumberMasked as snapshotStudentNumber,
+                b.applicationRecordId as applicationRecordId
+              from InterviewSchedule s
+              join InterviewBooking b on b.interviewSchedule.id = s.id
+              where s.semester = :semester
+                and s.date = :date
+                and (:track is null or s.track = :track)
+              order by s.track asc, s.startTime asc, s.id asc
+          """)
   List<AdminInterviewSlotView> findAdminBookedSchedulesBySemesterAndDate(
       @Param("semester") Long semester, @Param("date") LocalDate date, @Param("track") Track track);
+
+  @Query(
+      value =
+          """
+                select count(1)
+                from interview_schedule s
+                where s.semester = :semester
+                  and s.track = :track
+                  and s.date between date_sub(:date, interval 1 day) and date_add(:date, interval 1 day)
+                  and (
+                    timestamp(:date, :startTime)
+                      < timestamp(date_add(s.date, interval case when s.end_time < s.start_time then 1 else 0 end day), s.end_time)
+                    and
+                    timestamp(date_add(:date, interval case when :endTime < :startTime then 1 else 0 end day), :endTime)
+                      > timestamp(s.date, s.start_time)
+                  )
+              """,
+      nativeQuery = true)
+  Long countOverlappingScheduleOvernight(
+      @Param("semester") Long semester,
+      @Param("track") String track,
+      @Param("date") LocalDate date,
+      @Param("startTime") LocalTime startTime,
+      @Param("endTime") LocalTime endTime);
 }

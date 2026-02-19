@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -67,13 +66,26 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     interviewScheduleValidator.validateCreateRequest(semester, track, request);
 
-    LocalDateTime slotStartAt =
-        LocalDateTime.of(Objects.requireNonNull(request).getDate(), request.getStartTime());
-    interviewScheduleValidator.validateCreateWindow(semester, slotStartAt);
+    LocalDateTime slotStartAt = LocalDateTime.of(request.getDate(), request.getStartTime());
 
-    boolean overlap =
-        interviewScheduleRepository.existsOverlappingSchedule(
-            semester, track, request.getDate(), request.getStartTime(), request.getEndTime());
+    LocalDateTime slotEndAt = LocalDateTime.of(request.getDate(), request.getEndTime());
+
+    // endTime이 startTime보다 이르면 다음날 종료로 간주
+    if (request.getEndTime().isBefore(request.getStartTime())) {
+      slotEndAt = slotEndAt.plusDays(1);
+    }
+
+    interviewScheduleValidator.validateCreateWindow(semester, slotStartAt, slotEndAt);
+
+    Long overlapCount =
+        interviewScheduleRepository.countOverlappingScheduleOvernight(
+            semester,
+            track.name(),
+            request.getDate(),
+            request.getStartTime(),
+            request.getEndTime());
+
+    boolean overlap = overlapCount != null && overlapCount > 0;
 
     if (overlap) {
       log.info(
