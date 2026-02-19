@@ -114,6 +114,7 @@ public class SecurityConfig {
                     "/api/v1/users/club-members/**",
                     "/api/v1/semesters",
                     "/api/v1/applications/current-forms",
+                    "/api/v1/applications/nearest-forms",
                     "/api/v1/projects/**",
                     "/api/v1/project-types")
                 .permitAll()
