@@ -21,12 +21,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
-import com.skunivlikelion.homepage.domain.application.form.service.ApplicationFormService;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
 import com.skunivlikelion.homepage.domain.common.enums.Track;
-import com.skunivlikelion.homepage.domain.interview.booking.repository.InterviewBookingRepository;
 import com.skunivlikelion.homepage.domain.interview.booking.service.InterviewBookingService;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
@@ -68,12 +66,10 @@ public class UserServiceImpl implements UserService {
   private final PasswordEncoder passwordEncoder;
   private final S3Service s3Service;
   private final InfiniteMapper infiniteMapper;
-  private final ApplicationFormService applicationFormService;
   private final ApplicationRecordRepository applicationRecordRepository;
   private final InterviewBookingService interviewBookingService;
-  private final InterviewBookingRepository interviewBookingRepository;
 
-  private static final long INTERVIEW_RESULT_GRACE_DAYS = 7L;
+  private static final long FINAL_RESULT_GRACE_DAYS = 7L;
 
   @Override
   @Transactional(readOnly = true)
@@ -92,9 +88,10 @@ public class UserServiceImpl implements UserService {
   public MyPageResponse getCurrentUserPage() {
     User currentUser = currentUserProvider.getCurrentUser();
     LocalDateTime now = LocalDateTime.now();
+    LocalDateTime threshold = now.plusDays(FINAL_RESULT_GRACE_DAYS);
 
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findCurrentApplicationForm(now);
+        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
@@ -485,8 +482,10 @@ public class UserServiceImpl implements UserService {
     }
 
     LocalDateTime now = LocalDateTime.now();
+    LocalDateTime threshold = now.minusDays(FINAL_RESULT_GRACE_DAYS);
+
     Optional<ApplicationForm> applicationForm =
-        applicationFormRepository.findCurrentApplicationForm(now);
+        applicationFormRepository.findCurrentOrGraceApplicationForm(now, threshold);
     boolean documentActive = false;
     boolean documentSubmitted = false;
     boolean interviewScheduleChangeable = false;
