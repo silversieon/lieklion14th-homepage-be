@@ -61,7 +61,7 @@ public interface InterviewBookingController {
           """
               **필수 Query**
               - semester: 기수
-              - dates: 면접일 (yyyy-MM-dd)
+              - date: 면접일 (yyyy-MM-dd)
 
               **선택 Query**
               - track: 트랙 필터
@@ -69,9 +69,9 @@ public interface InterviewBookingController {
 
               **정책**
               - track 지정 시 해당 트랙만 반환
-              - 예약된 슬롯(booked=true)만 반환
-              - 해당 날짜에 등록된 면접 슬롯이 존재하나 예약이 없으면 dates는 포함되고 times는 빈 배열
-              - 해당 날짜에 등록된 면접 슬롯이 없으면 dates는 빈 배열
+              - 예약이 존재하는 슬롯만 times에 포함됨
+              - (트랙별) 해당 날짜에 등록된 면접 슬롯이 존재하나 예약이 없으면 dates는 포함되고 times는 빈 배열
+              - (트랙별) 해당 날짜에 등록된 면접 슬롯이 없으면 dates는 빈 배열
               """)
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/v1/admin/interviews/bookings")
