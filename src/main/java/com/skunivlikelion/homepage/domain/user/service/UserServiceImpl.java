@@ -504,6 +504,24 @@ public class UserServiceImpl implements UserService {
 
   @Override
   @Transactional
+  public UserInformationResponse updateUserInformation(
+      Long userId, UpdateUserInformationRequest request) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    user.updateUserInformation(
+        request.getName(),
+        request.getDepartment(),
+        request.getStudentNumber(),
+        request.getPhoneNumber());
+    log.info("[User] 사용자 정보 변경 성공 - userId: {}", userId);
+    return userMapper.toUserInformationResponse(user);
+  }
+
+  @Override
+  @Transactional
   public MyPageResponse updateProfileImage(MultipartFile profileImage) {
     Long currentUserId = currentUserProvider.getCurrentUserId();
     User currentUser =

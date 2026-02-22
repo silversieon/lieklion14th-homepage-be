@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -217,6 +218,28 @@ public interface UserController {
   @PostMapping("/v1/dev/users")
   ResponseEntity<BaseResponse<CreateUserResponse>> createUser(
       @Valid @RequestBody CreateUserRequest request);
+
+  @Operation(
+      summary = "[ 개발자, 관리자 | 토큰 O | 임의의 사용자 정보 변경 ]",
+      description =
+          """
+          **Parameters**  \n
+          name: 사용자 이름  \n
+          department: 사용자 학과  \n
+          studentNumber: 사용자 학번 \n
+          phoneNumber: 사용자 휴대전화 번호  \n
+
+          **Returns** \n
+          userId: 사용자 식별자 \n
+          name: 사용자 이름  \n
+          department: 사용자 학과  \n
+          studentNumber: 사용자 학번 \n
+          phoneNumber: 사용자 휴대전화 번호  \n
+          """)
+  @PutMapping("/v1/dev/users/{user-id}")
+  ResponseEntity<BaseResponse<UserInformationResponse>> updateUserInformation(
+      @PathVariable(value = "user-id") Long userId,
+      @RequestBody UpdateUserInformationRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 O | 마이페이지 이미지 변경 ]",

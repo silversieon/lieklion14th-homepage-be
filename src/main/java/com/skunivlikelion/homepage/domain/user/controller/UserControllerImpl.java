@@ -116,6 +116,17 @@ public class UserControllerImpl implements UserController {
   }
 
   @Override
+  @PreAuthorize("hasAnyRole('DEVELOPER', 'ADMIN')")
+  public ResponseEntity<BaseResponse<UserInformationResponse>> updateUserInformation(
+      @PathVariable(value = "user-id") Long userId,
+      @RequestBody UpdateUserInformationRequest request) {
+    return ResponseEntity.status(200)
+        .body(
+            BaseResponse.success(
+                200, "사용자 정보 변경에 성공했습니다.", userService.updateUserInformation(userId, request)));
+  }
+
+  @Override
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<BaseResponse<ClubMemberInformationResponse>> addClubMemberRecord(
       @PathVariable(value = "user-id") Long userId,

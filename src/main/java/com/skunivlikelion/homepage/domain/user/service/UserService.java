@@ -110,6 +110,15 @@ public interface UserService {
       Long userId, Long semester, Position position, Track track);
 
   /**
+   * [ 사용자 정보 변경 메서드 ] 개발자용
+   *
+   * @param userId 사용자 식별자
+   * @param request 변경할 사용자 정보 DTO
+   * @return 변경된 사용자 정보 객체
+   */
+  UserInformationResponse updateUserInformation(Long userId, UpdateUserInformationRequest request);
+
+  /**
    * [ 사용자 프로필 이미지 변경 메서드 ]
    *
    * @param profileImage 프로필 이미지 파일
