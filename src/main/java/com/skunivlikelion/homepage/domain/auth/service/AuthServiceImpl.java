@@ -36,6 +36,7 @@ import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
 import com.skunivlikelion.homepage.domain.auth.util.AuthGenerator;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.annotation.TimeTrace;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
 import com.skunivlikelion.homepage.global.security.jwt.TokenType;
@@ -62,6 +63,9 @@ public class AuthServiceImpl implements AuthService {
   private static final String VERIFIED_EMAIL_CODE = "VerifiedEmail:";
 
   @Override
+  @TimeTrace(
+      methodName = "인증 코드 전송",
+      env = {"local", "dev", "prod"})
   @Async("emailExecutor")
   public CompletableFuture<Boolean> sendVerificationEmail(String email) {
     try {
