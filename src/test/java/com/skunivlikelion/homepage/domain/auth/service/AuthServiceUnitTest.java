@@ -1,11 +1,17 @@
 /* 
  * Copyright (c) SKU LIKELION 
  */
-package com.skunivlikelion.homepage.auth;
+package com.skunivlikelion.homepage.domain.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.Optional;
 
@@ -32,7 +38,6 @@ import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueRespo
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
-import com.skunivlikelion.homepage.domain.auth.service.AuthServiceImpl;
 import com.skunivlikelion.homepage.domain.auth.util.AuthGenerator;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;

@@ -6,11 +6,9 @@ package com.skunivlikelion.homepage.global.common;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @AllArgsConstructor
-@NoArgsConstructor
 @Schema(title = "BaseResponse DTO", description = "공통 API 응답 형식")
 public class BaseResponse<T> {
 

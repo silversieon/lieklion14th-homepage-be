@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.skunivlikelion.homepage.domain.application.form.entity.ApplicationForm;
-import com.skunivlikelion.homepage.domain.application.form.exception.ApplicationFormErrorCode;
 import com.skunivlikelion.homepage.domain.application.form.repository.ApplicationFormRepository;
 import com.skunivlikelion.homepage.domain.application.record.entity.ApplicationRecord;
 import com.skunivlikelion.homepage.domain.application.record.repository.ApplicationRecordRepository;
@@ -17,10 +16,11 @@ import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminA
 import com.skunivlikelion.homepage.domain.application.result.dto.response.AdminDocumentResultUpdateResponse;
 import com.skunivlikelion.homepage.domain.application.result.dto.response.MyInterviewResultResponse;
 import com.skunivlikelion.homepage.domain.application.result.exception.ApplicationResultErrorCode;
+import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
-import com.skunivlikelion.homepage.domain.user.exception.UserErrorCode;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
@@ -96,6 +96,8 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
             .findById(applicationRecordId)
             .orElseThrow(() -> new CustomException(ApplicationResultErrorCode.NOT_FOUND_RECORD));
 
+    ApplicationForm applicationForm = applicationRecord.getApplicationForm();
+
     if (!applicationRecord.isSubmitted()) {
       log.warn(
           "[ApplicationResult] 제출되어 있지 않은 지원서를 임의로 합격 처리 발생 - recordId={}", applicationRecordId);
@@ -109,13 +111,21 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
       throw new CustomException(ApplicationResultErrorCode.ONLY_PASSED_DOCUMENT_ALLOWED);
     }
     LocalDateTime now = LocalDateTime.now();
-    if (applicationRecord.getApplicationForm().getFinalResultAt().isBefore(now)) {
+    if (applicationForm.getFinalResultAt().isBefore(now)) {
       log.warn("[ApplicationResult] 최종 결과 이후 면접 결과 수정 시도 - recordId={}", applicationRecordId);
       throw new CustomException(ApplicationResultErrorCode.FINAL_RESULT_ALREADY_ANNOUNCED);
     }
 
     if (!passed) {
       applicationRecord.failInterview();
+
+      Semester semester = applicationForm.getSemester();
+      Long userId = applicationRecord.getUser().getId();
+      Track track = applicationRecord.getTrack();
+      if (clubMemberRepository.existsByUser_IdAndSemesterAndTrack(userId, semester, track)) {
+        clubMemberRepository.deleteByUser_IdAndSemesterAndTrack(userId, semester, track);
+      }
+
       log.info("[ApplicationResult] 면접 불합격 처리 - recordId={}", applicationRecordId);
       return AdminApplicationResultConfirmResponse.builder()
           .applicationRecordId(applicationRecord.getId())
@@ -123,16 +133,8 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
           .build();
     } else {
       applicationRecord.passInterview();
-      User user =
-          userRepository
-              .findById(applicationRecord.getUser().getId())
-              .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
-      ApplicationForm applicationForm =
-          applicationFormRepository
-              .findById(applicationRecord.getApplicationForm().getId())
-              .orElseThrow(
-                  () -> new CustomException(ApplicationFormErrorCode.NOT_FOUND_APPLICATION_FORM));
 
+      User user = applicationRecord.getUser();
       ClubMember newClubMember =
           ClubMember.builder()
               .position(Position.BABYLION)
