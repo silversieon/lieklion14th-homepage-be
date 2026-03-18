@@ -22,7 +22,6 @@ import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
-import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.CurrentUserProvider;
 
@@ -40,7 +39,6 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
   private final ApplicationRecordRepository applicationRecordRepository;
   private final CurrentUserProvider currentUserProvider;
   private final ClubMemberRepository clubMemberRepository;
-  private final UserRepository userRepository;
   private final ApplicationFormRepository applicationFormRepository;
 
   @Override
@@ -159,9 +157,6 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
   @Override
   @Transactional(readOnly = true)
   public MyInterviewResultResponse getCurrentUserInterviewResult() {
-
-    User currentUser = currentUserProvider.getCurrentUser();
-
     LocalDateTime now = LocalDateTime.now();
     LocalDateTime threshold = now.minusDays(INTERVIEW_RESULT_GRACE_DAYS);
 
@@ -178,6 +173,8 @@ public class ApplicationResultServiceImpl implements ApplicationResultService {
                   return new CustomException(
                       ApplicationResultErrorCode.INTERVIEW_RESULT_VIEW_PERIOD_EXPIRED);
                 });
+
+    User currentUser = currentUserProvider.getCurrentUser();
 
     ApplicationRecord applicationRecord =
         applicationRecordRepository
