@@ -39,6 +39,7 @@ import com.skunivlikelion.homepage.domain.user.mapper.UserMapper;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberCountRow;
 import com.skunivlikelion.homepage.domain.user.repository.ClubMemberRepository;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.annotation.TimeTrace;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.exception.GlobalErrorCode;
 import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
@@ -376,6 +377,9 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
+  @TimeTrace(
+      methodName = "관리자용 구성원 조회",
+      env = {"local", "dev"})
   @Transactional(readOnly = true)
   public List<ClubMemberInformationResponse> getClubMemberManagementList(
       Long semester, Position position, Track track, String keyword) {
