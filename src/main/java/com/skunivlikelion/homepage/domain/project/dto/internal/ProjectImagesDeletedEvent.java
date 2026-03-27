@@ -3,4 +3,6 @@
  */
 package com.skunivlikelion.homepage.domain.project.dto.internal;
 
-public record UploadImagePayload(String originalFilename, String contentType, byte[] bytes) {}
+import java.util.List;
+
+public record ProjectImagesDeletedEvent(List<String> deletedImageUrls) {}
