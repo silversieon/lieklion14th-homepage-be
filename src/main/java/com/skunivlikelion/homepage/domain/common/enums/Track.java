@@ -11,15 +11,16 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Track {
-  COMMON("COMMON"),
-  PO("PO"),
-  FRONTEND("FRONTEND"),
-  BACKEND("BACKEND"),
-  PM("PM"),
-  DESIGN("DESIGN"),
-  PMDESIGN("PM&DESIGN");
+  COMMON("COMMON", 7),
+  PO("PO", 1),
+  FRONTEND("FRONTEND", 5),
+  BACKEND("BACKEND", 6),
+  PM("PM", 3),
+  DESIGN("DESIGN", 4),
+  PMDESIGN("PM&DESIGN", 2);
 
   private final String name;
+  private final int priority;
 
   public static List<Track> getCurrentSemesterTracks(Long semester) {
     if (semester == 14) {
@@ -31,9 +32,5 @@ public enum Track {
     } else {
       return List.of(PO, FRONTEND, BACKEND);
     }
-  }
-
-  public static List<Track> getTracksByPriority() {
-    return List.of(PO, PMDESIGN, PM, DESIGN, FRONTEND, BACKEND);
   }
 }
