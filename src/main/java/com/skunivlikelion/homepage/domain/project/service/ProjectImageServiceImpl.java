@@ -3,16 +3,16 @@
  */
 package com.skunivlikelion.homepage.domain.project.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.skunivlikelion.homepage.domain.project.dto.request.UploadImagePayload;
+import com.skunivlikelion.homepage.domain.project.dto.internal.UploadImagePayload;
 import com.skunivlikelion.homepage.domain.project.entity.Project;
 import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
 import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
@@ -46,13 +46,8 @@ public class ProjectImageServiceImpl implements ProjectImageService {
 
   @Override
   @Transactional
-  @Async("projectExecutor")
-  public void uploadProjectImages(List<UploadImagePayload> payloads, Long projectId) {
-
-    Project project =
-        projectRepository
-            .findById(projectId)
-            .orElseThrow(() -> new CustomException(ProjectErrorCode.NOT_FOUND_PROJECT));
+  public void uploadProjectImages(Long projectId, List<UploadImagePayload> payloads) {
+    Project project = getProjectById(projectId);
 
     try {
       List<CompletableFuture<String>> futures =
@@ -65,15 +60,24 @@ public class ProjectImageServiceImpl implements ProjectImageService {
               .toList();
 
       List<String> urls = futures.stream().map(CompletableFuture::join).toList();
-
-      for (String url : urls) {
-        ProjectImage img = ProjectImage.builder().project(project).imageUrl(url).build();
-        projectImageRepository.save(img);
-      }
+      List<ProjectImage> projectImages =
+          urls.stream()
+              .map(url -> ProjectImage.builder().project(project).imageUrl(url).build())
+              .toList();
+      projectImageRepository.saveAll(projectImages);
       log.info(
-          "[Project] 프로젝트 이미지 전체 업로드 성공 - projectId = {}, 이미지 수= {}", projectId, payloads.size());
+          "[Project] 프로젝트 이미지 전체 업로드 성공 - projectId = {}, 이미지 수= {}",
+          project.getId(),
+          payloads.size());
     } catch (Exception e) {
       throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_UPLOAD_FAIL);
+    }
+  }
+
+  @Override
+  public void deleteProjectImagesByUrl(List<String> deletedImageUrls) {
+    for (String deletedImageUrl : deletedImageUrls) {
+      deleteProjectImageByUrl(deletedImageUrl);
     }
   }
 
@@ -86,5 +90,28 @@ public class ProjectImageServiceImpl implements ProjectImageService {
       log.error("[Project] 이미지 삭제 실패 - project={}", imageUrl, e);
       throw new CustomException(ProjectErrorCode.PROJECT_IMAGE_DELETE_FAIL);
     }
+  }
+
+  @Override
+  public List<String> preDeleteProjectImages(Project project, List<Long> remainingImageIds) {
+    List<String> deletedImageUrls = new ArrayList<>();
+    project
+        .getProjectImages()
+        .removeIf(
+            pi -> {
+              boolean remove = !remainingImageIds.contains(pi.getId());
+              if (remove) {
+                deletedImageUrls.add(pi.getImageUrl());
+                pi.setProject(null);
+              }
+              return remove;
+            });
+    return deletedImageUrls;
+  }
+
+  private Project getProjectById(Long projectId) {
+    return projectRepository
+        .findById(projectId)
+        .orElseThrow(() -> new CustomException(ProjectErrorCode.NOT_FOUND_PROJECT));
   }
 }
