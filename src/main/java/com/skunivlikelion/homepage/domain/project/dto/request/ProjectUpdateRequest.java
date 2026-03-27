@@ -29,14 +29,14 @@ public class ProjectUpdateRequest {
   @Schema(description = "프로젝트 제목", example = "2025 서경대학교 대동제 축제 안내 페이지")
   private String title;
 
-  @Schema(description = "기수식별자", example = "14")
-  @NotNull(message = "semesterId는 필수입니다.") @Positive private Long semesterId;
+  @NotNull(message = "semesterId는 필수입니다.") @Positive @Schema(description = "기수식별자", example = "14")
+  private Long semesterId;
 
-  @Schema(description = "수상여부", example = "false")
-  private boolean award;
+  @NotNull(message = "수상 여부는 필수입니다.") @Schema(description = "수상여부", example = "false")
+  private Boolean award;
 
-  @Schema(description = "프로젝트 타입 ID", example = "1")
-  @NotNull(message = "projectTypeId는 필수입니다.") @Positive private Long projectTypeId;
+  @NotNull(message = "projectTypeId는 필수입니다.") @Positive @Schema(description = "프로젝트 타입 ID", example = "1")
+  private Long projectTypeId;
 
   @NotBlank(message = "content는 필수입니다.")
   @Size(max = 300, message = "content은 300자 이내여야 합니다.")
