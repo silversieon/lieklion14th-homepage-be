@@ -13,15 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectCreateRequest;
-import com.skunivlikelion.homepage.domain.project.dto.request.ProjectTypeRequest;
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
 import com.skunivlikelion.homepage.domain.project.dto.response.*;
+import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
 import com.skunivlikelion.homepage.domain.project.service.ProjectService;
-import com.skunivlikelion.homepage.domain.project.service.ProjectTypeService;
 import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.page.exception.PageErrorStatus;
-import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
 import com.skunivlikelion.homepage.global.page.response.InfiniteResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +35,10 @@ public class ProjectControllerImpl implements ProjectController {
   public ResponseEntity<BaseResponse<ProjectResponse>> createProject(
       @Valid @RequestPart("request") ProjectCreateRequest request,
       @RequestPart(value = "projectImages", required = false) MultipartFile[] projectImages) {
-    List<MultipartFile> images = (projectImages == null) ? List.of() : List.of(projectImages);
+    if (projectImages == null || projectImages.length == 0)
+      throw new CustomException(ProjectErrorCode.INVALID_PROJECT_REQUEST);
+
+    List<MultipartFile> images = List.of(projectImages);
     ProjectResponse response = projectService.createProject(request, images);
     return ResponseEntity.status(201).body(BaseResponse.success(201, "프로젝트 생성을 성공했습니다.", response));
   }
