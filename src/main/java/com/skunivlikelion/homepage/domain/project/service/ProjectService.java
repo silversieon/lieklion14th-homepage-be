@@ -36,13 +36,13 @@ public interface ProjectService {
   /**
    * [프로젝트 수정 메소드] 성공 여부에 따라 ProjectUpdateResponse 객체에 성공 여부를 담아 반환
    *
-   * @param id 수정할 프로젝트 값
+   * @param projectId 수정할 프로젝트 값
    * @param request 프로젝트 수정 요청을 위한 프로젝트 정보를 담은 요청 객체
    * @param newImages 새로운 이미지들의 모음
    * @return 수정된 프로젝트 정보를 담은 ProjectUpdateResponse 객체
    */
   ProjectUpdateResponse updateProject(
-      Long id, ProjectUpdateRequest request, List<MultipartFile> newImages);
+      Long projectId, ProjectUpdateRequest request, List<MultipartFile> newImages);
 
   /**
    * [ 프로젝트 삭제 메서드 ] 프로젝트 삭제
