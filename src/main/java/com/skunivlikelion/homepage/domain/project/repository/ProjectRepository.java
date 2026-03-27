@@ -4,17 +4,21 @@
 package com.skunivlikelion.homepage.domain.project.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.skunivlikelion.homepage.domain.project.entity.Project;
-import com.skunivlikelion.homepage.domain.project.entity.ProjectType;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+
+  @EntityGraph(attributePaths = "projectType")
+  Optional<Project> findById(@Param("projectId") Long projectId);
 
   @Query(
       value =
@@ -46,12 +50,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
       @Param("semester") Long semester,
       @Param("search") String search,
       Pageable pageable);
-
-  boolean existsByTitleAndSemester_SemesterAndProjectType(
-      String title, Long semester, ProjectType projectType);
-
-  boolean existsByTitleAndSemester_SemesterAndProjectTypeAndIdNot(
-      String title, Long semester, ProjectType projectType, Long id);
 
   @Query(
       """
