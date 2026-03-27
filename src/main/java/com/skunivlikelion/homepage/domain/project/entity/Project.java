@@ -54,30 +54,16 @@ public class Project extends BaseTimeEntity {
   @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ProjectImage> projectImages = new ArrayList<>();
 
-  public void update(ProjectUpdateRequest request) {
-    if (request == null) return;
-
-    if (request.getTitle() != null) {
-      this.title = request.getTitle();
-    }
-    if (request.getContent() != null) {
-      this.content = request.getContent();
-    }
-    this.award = request.isAward();
-  }
-
   public void update(ProjectUpdateRequest request, Semester semester, ProjectType projectType) {
-    update(request);
-
+    if (request.getTitle() != null) this.title = request.getTitle();
+    if (request.getContent() != null) this.content = request.getContent();
+    if (request.getAward() != null) this.award = request.getAward();
     if (semester != null) this.semester = semester;
     if (projectType != null) this.projectType = projectType;
   }
 
   public void addProjectMember(ProjectMember projectMember) {
     this.projectMembers.add(projectMember);
-  }
-
-  public void addProjectImage(ProjectImage projectImage) {
-    this.projectImages.add(projectImage);
+    projectMember.setProject(this);
   }
 }

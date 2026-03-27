@@ -39,4 +39,8 @@ public class ProjectMember {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "project_id")
   private Project project;
+
+  public void setProject(Project project) {
+    this.project = project;
+  }
 }
