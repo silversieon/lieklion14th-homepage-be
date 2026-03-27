@@ -3,13 +3,17 @@
  */
 package com.skunivlikelion.homepage.domain.auth.service;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -36,6 +40,7 @@ import com.skunivlikelion.homepage.domain.auth.mapper.AuthMapper;
 import com.skunivlikelion.homepage.domain.auth.util.AuthGenerator;
 import com.skunivlikelion.homepage.domain.user.entity.User;
 import com.skunivlikelion.homepage.domain.user.repository.UserRepository;
+import com.skunivlikelion.homepage.global.annotation.TimeTrace;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.jwt.JwtProvider;
 import com.skunivlikelion.homepage.global.security.jwt.TokenType;
@@ -60,8 +65,13 @@ public class AuthServiceImpl implements AuthService {
 
   private static final String EMAIL_VERIFICATION_CODE = "EmailVerification:";
   private static final String VERIFIED_EMAIL_CODE = "VerifiedEmail:";
+  private static final Integer EMAIL_TIMEOUT = 320;
+  private static final TimeUnit EMAIL_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
   @Override
+  @TimeTrace(
+      methodName = "인증 코드 전송",
+      env = {"local", "dev", "prod"})
   @Async("emailExecutor")
   public CompletableFuture<Boolean> sendVerificationEmail(String email) {
     try {
@@ -75,59 +85,23 @@ public class AuthServiceImpl implements AuthService {
       helper.setTo(email);
       helper.setSubject("서경대학교 멋쟁이사자처럼 : 본인확인 인증코드");
 
-      String htmlContent =
-          """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                </head>
-                <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
-                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; font-family: Arial, sans-serif;">
-                        <div style="text-align: center; padding: 20px;">
-                            <h1 style="color: #64A672; margin: 0;">서경대학교<br>멋쟁이사자처럼</h1>
-                            <p style="color: #666666; margin-top: 10px;">이메일 인증</p>
-                        </div>
-
-                        <div style="padding: 20px; background-color: #f8f9fa; border-radius: 5px; margin: 20px 0;">
-                            <p style="color: #333333; margin-bottom: 20px;">
-                                안녕하세요.<br>
-                                서경대학교 멋쟁이사자처럼 본인확인을 위한 코드입니다.<br>
-                                아래의 인증 코드를 입력해주세요.<br>
-                                유효기간은 5분입니다.
-                            </p>
-
-                            <div style="background-color: #ffffff; padding: 15px; border-radius: 5px; text-align: center; border: 1px solid #dee2e6;">
-                                <h2 style="color: #64A672; letter-spacing: 5px; margin: 0;">%s</h2>
-                            </div>
-
-                            <p style="color: #666666; font-size: 14px; margin-top: 20px; text-align: center;">
-                                인증 코드는 5분간 유효합니다.
-                            </p>
-                        </div>
-
-                        <div style="text-align: center; padding: 20px; color: #999999; font-size: 12px;">
-                            <p>본 메일은 발신전용 메일입니다.</p>
-                            <p>© 2026 서경대학교 멋쟁이사자처럼. All rights reserved.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
-              .formatted(verificationCode);
+      String htmlContent = getHtmlContent();
+      htmlContent = htmlContent.replace("${verificationCode}", verificationCode);
       helper.setText(htmlContent, true);
 
-      emailSender.send(mimeMessage);
-      log.info("[Auth] 인증 코드 전송 완료 - 수신자: {}", email);
-      redisTemplate.opsForValue().set(redisKey, verificationCode, 320, TimeUnit.SECONDS);
+      redisTemplate
+          .opsForValue()
+          .set(redisKey, verificationCode, EMAIL_TIMEOUT, EMAIL_TIMEOUT_UNIT);
 
+      log.info("[Auth] 인증 코드 전송 완료 - 수신자: {}", email);
+      emailSender.send(mimeMessage);
       return CompletableFuture.completedFuture(true);
-    } catch (MessagingException e) {
-      log.error("[Auth] 인증 코드 전송 실패 - 수신자: {}, 에러 메시지: {}", email, e.getMessage());
+    } catch (IOException e) {
+      log.error("[Auth] html 파일 읽기 실패 - 에러 메시지: {}", e.getMessage());
       return CompletableFuture.completedFuture(false);
     } catch (Exception e) {
       log.error(
-          "Redis 저장 과정 실패 - 수신자: {}, 에러 메시지: {}, 에러 타입: {}",
+          "[Auth] Redis 저장 실패 - 수신자: {}, 에러 메시지: {}, 에러 타입: {}",
           email,
           e.getMessage(),
           e.getClass().getSimpleName());
@@ -276,6 +250,12 @@ public class AuthServiceImpl implements AuthService {
   public void verifyOptionEmail(String email) {
     redisTemplate.opsForValue().set(VERIFIED_EMAIL_CODE + email, "true", 24, TimeUnit.HOURS);
     log.info("[Auth] 임의의 이메일 검증 성공 - 인증된 이메일: {}", email);
+  }
+
+  protected String getHtmlContent() throws IOException {
+    ClassPathResource resource = new ClassPathResource("templates/MailForm.html");
+    byte[] encoded = Files.readAllBytes(Paths.get(resource.getURI()));
+    return new String(encoded, StandardCharsets.UTF_8);
   }
 
   private void validateRefreshToken(String refreshToken) {

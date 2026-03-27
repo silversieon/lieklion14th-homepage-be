@@ -48,8 +48,7 @@ public interface AuthController {
             인증 코드 전송 성공/실패 여부   \n
             """)
   @PostMapping("/v1/auth/email/verify/request")
-  ResponseEntity<BaseResponse<Void>> requestVerification(
-      @Valid @RequestBody EmailVerificationSendRequest request);
+  Void requestVerification(@Valid @RequestBody EmailVerificationSendRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 X | 이메일 인증 코드 검증 ]",
@@ -99,7 +98,7 @@ public interface AuthController {
           회원가입 성공 여부
           """)
   @PostMapping("/v1/auth/register")
-  ResponseEntity<BaseResponse<Void>> register(@Valid @RequestBody SignUpRequest request);
+  Void register(@Valid @RequestBody SignUpRequest request);
 
   @Operation(
       summary = "[ 사용자 | 토큰 X | 로그인 ]",
@@ -130,7 +129,7 @@ public interface AuthController {
           newPassword: 임시 발급된 비밀번호  \n
           """)
   @PostMapping("/v1/auth/password/reissue")
-  ResponseEntity<BaseResponse<PasswordReissueResponse>> reissuePassword(
+  PasswordReissueResponse reissuePassword(
       @Valid @RequestBody EmailVerificationConfirmReqeust request);
 
   @Operation(
@@ -163,6 +162,5 @@ public interface AuthController {
           email: 인증을 받을 사람의 이메일 주소 (임의로 입력)  \n
           """)
   @PostMapping("/v1/admin/auth/email/verify/option")
-  ResponseEntity<BaseResponse<Void>> verifyOptionEmail(
-      @Valid @RequestBody EmailVerificationSendRequest request);
+  Void verifyOptionEmail(@Valid @RequestBody EmailVerificationSendRequest request);
 }

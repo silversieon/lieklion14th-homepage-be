@@ -17,9 +17,10 @@ import com.skunivlikelion.homepage.domain.project.entity.ProjectType;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
   @Query(
-      """
+      value =
+          """
         SELECT p
-        From Project p
+        From Project p join fetch p.projectType
         WHERE (:projectTypeId IS NULL OR p.projectType.id = :projectTypeId)
           AND (:semester IS NULL OR p.semester.semester = :semester)
           AND (
@@ -28,7 +29,18 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 OR LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%'))
               )
           ORDER BY p.createdAt DESC
-        """)
+        """,
+      countQuery =
+          """
+    select count(p) from Project p
+        WHERE (:projectTypeId IS NULL OR p.projectType.id = :projectTypeId)
+          AND (:semester IS NULL OR p.semester.semester = :semester)
+          AND (
+                :search IS NULL OR :search = ''
+                OR LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%'))
+              )
+    """)
   Page<Project> findProjectsByFilters(
       @Param("projectTypeId") Long projectTypeId,
       @Param("semester") Long semester,

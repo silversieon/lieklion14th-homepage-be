@@ -21,6 +21,7 @@ import com.skunivlikelion.homepage.domain.auth.dto.response.PasswordReissueRespo
 import com.skunivlikelion.homepage.domain.auth.dto.response.TokenResponse;
 import com.skunivlikelion.homepage.domain.auth.exception.AuthErrorCode;
 import com.skunivlikelion.homepage.domain.auth.service.AuthService;
+import com.skunivlikelion.homepage.global.annotation.ApiBaseResponse;
 import com.skunivlikelion.homepage.global.common.BaseResponse;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.security.jwt.JwtCookieWriter;
@@ -40,12 +41,12 @@ public class AuthControllerImpl implements AuthController {
   private final JwtProvider jwtProvider;
 
   @Override
-  public ResponseEntity<BaseResponse<Void>> requestVerification(
-      @Valid @RequestBody EmailVerificationSendRequest request) {
+  @ApiBaseResponse(code = 201, message = "인증 코드 전송에 성공했습니다.")
+  public Void requestVerification(@Valid @RequestBody EmailVerificationSendRequest request) {
     try {
       authService.sendVerificationEmail(request.getEmail()).get();
 
-      return ResponseEntity.status(201).body(BaseResponse.success(201, "인증 코드 전송에 성공했습니다.", null));
+      return null;
     } catch (Exception e) {
       log.error("[Auth] 인증 코드 전송 최종 실패 - 에러: {}", e.getMessage());
       throw new CustomException(AuthErrorCode.INTERNAL_SERVER_ERROR_EMAIL);
@@ -78,9 +79,10 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<Void>> register(@Valid @RequestBody SignUpRequest request) {
+  @ApiBaseResponse(code = 201, message = "회원가입에 성공했습니다.")
+  public Void register(@Valid @RequestBody SignUpRequest request) {
     authService.signUp(request);
-    return ResponseEntity.status(201).body(BaseResponse.success(201, "회원가입에 성공했습니다.", null));
+    return null;
   }
 
   @Override
@@ -99,10 +101,10 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
-  public ResponseEntity<BaseResponse<PasswordReissueResponse>> reissuePassword(
+  @ApiBaseResponse(message = "비밀번호 찾기에 성공했습니다.")
+  public PasswordReissueResponse reissuePassword(
       @Valid @RequestBody EmailVerificationConfirmReqeust request) {
-    return ResponseEntity.status(200)
-        .body(BaseResponse.success(200, "비밀번호 찾기에 성공했습니다.", authService.reissuePassword(request)));
+    return authService.reissuePassword(request);
   }
 
   @Override
@@ -139,11 +141,10 @@ public class AuthControllerImpl implements AuthController {
   }
 
   @Override
+  @ApiBaseResponse(code = 201, message = "해당 메일 인증에 성공했습니다.")
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<BaseResponse<Void>> verifyOptionEmail(
-      @Valid @RequestBody EmailVerificationSendRequest request) {
+  public Void verifyOptionEmail(@Valid @RequestBody EmailVerificationSendRequest request) {
     authService.verifyOptionEmail(request.getEmail());
-    return ResponseEntity.status(200)
-        .body(BaseResponse.success(200, "해당 메일 인증에 성공했습니다. (회원가입 가능)", null));
+    return null;
   }
 }

@@ -8,6 +8,8 @@ import java.util.List;
 
 import jakarta.persistence.*;
 
+import org.hibernate.annotations.BatchSize;
+
 import com.skunivlikelion.homepage.domain.project.dto.request.ProjectUpdateRequest;
 import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.global.common.BaseTimeEntity;
@@ -48,6 +50,7 @@ public class Project extends BaseTimeEntity {
   private List<ProjectMember> projectMembers = new ArrayList<>();
 
   @Builder.Default
+  @BatchSize(size = 100)
   @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ProjectImage> projectImages = new ArrayList<>();
 

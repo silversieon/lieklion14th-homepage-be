@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.skunivlikelion.homepage.domain.common.enums.Track;
+import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.user.entity.ClubMember;
 import com.skunivlikelion.homepage.domain.user.enums.Position;
 
@@ -83,4 +84,8 @@ where cm.semester.semester = :semester
 group by cm.position, cm.track
 """)
   List<ClubMemberCountRow> countByPositionTrack(@Param("semester") Long semester);
+
+  boolean existsByUser_IdAndSemesterAndTrack(Long userId, Semester semester, Track track);
+
+  void deleteByUser_IdAndSemesterAndTrack(Long userId, Semester semester, Track track);
 }

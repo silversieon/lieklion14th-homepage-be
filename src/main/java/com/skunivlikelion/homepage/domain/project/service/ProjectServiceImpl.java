@@ -34,6 +34,7 @@ import com.skunivlikelion.homepage.domain.semester.entity.Semester;
 import com.skunivlikelion.homepage.domain.semester.exception.SemesterErrorCode;
 import com.skunivlikelion.homepage.domain.semester.repository.SemesterRepository;
 import com.skunivlikelion.homepage.domain.semester.service.SemesterService;
+import com.skunivlikelion.homepage.global.annotation.TimeTrace;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.page.mapper.InfiniteMapper;
 import com.skunivlikelion.homepage.global.page.mapper.PageMapper;
@@ -199,6 +200,9 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
+  @TimeTrace(
+      methodName = "프로젝트 페이지 조회",
+      env = {"local", "dev"})
   @Transactional(readOnly = true)
   public ProjectPageWrapperResponse<ProjectPageResponse>
       getProjectByPageAndSemesterAndTypeAndSearch(
