@@ -31,32 +31,6 @@ import lombok.RequiredArgsConstructor;
 public class ProjectControllerImpl implements ProjectController {
 
   private final ProjectService projectService;
-  private final ProjectTypeService projectTypeService;
-  private final PageMapper pageMapper;
-
-  @Override
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<BaseResponse<ProjectTypeResponse>> createProjectType(
-      @Valid @RequestBody ProjectTypeRequest request) {
-    ProjectTypeResponse response = projectTypeService.createProjectType(request);
-    return ResponseEntity.status(201)
-        .body(BaseResponse.success(201, "프로젝트 타입 생성에 성공했습니다.", response));
-  }
-
-  @Override
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<BaseResponse<Void>> deleteProjectType(
-      @PathVariable("project-type-id") Long projectTypeId) {
-    projectTypeService.deleteProjectType(projectTypeId);
-    return ResponseEntity.status(200).body(BaseResponse.success(200, "프로젝트 타입 삭제에 성공했습니다.", null));
-  }
-
-  @Override
-  public ResponseEntity<BaseResponse<List<ProjectTypeResponse>>> getAllProjectTypes() {
-    List<ProjectTypeResponse> response = projectTypeService.getAllProjectTypes();
-    return ResponseEntity.status(200)
-        .body(BaseResponse.success(200, "프로젝트 타입 목록 조회에 성공했습니다.", response));
-  }
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
