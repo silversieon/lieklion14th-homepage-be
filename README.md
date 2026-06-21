@@ -2,7 +2,7 @@
 
 
 1. [Intro](#intro)
-2. [System Architecture](#system_archiecture)
+2. [System Architecture](#system_architecture)
 3. [ERD](#erd)
 4. [Package Structure](#package_structure)
 5. [Assigned Tasks](#assigned_tasks)
