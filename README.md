@@ -14,13 +14,12 @@
 ![image](https://github.com/user-attachments/assets/5bda78f9-a15c-48c9-894f-96a97c830165)
 ![image](https://github.com/user-attachments/assets/6bf51202-d3a0-46dc-bc1b-23bd6e398d9f)
 ![image](https://github.com/user-attachments/assets/9d0f3532-daf9-48d6-b150-66523b74ecbd)
-![image](https://github.com/user-attachments/assets/0911acd0-1e6f-4e3c-84fe-e993dfe85928)
 ![image](https://github.com/user-attachments/assets/7dfcee63-a060-4ee7-97a9-804d3597eefe)
 ![image](https://github.com/user-attachments/assets/6b575fb4-191f-477c-90e9-56d7dc5a800c)
 
 ---
 
-## System Architecture
+## System_Architecture
 ![image](https://github.com/user-attachments/assets/18729cb4-d2ac-4dfd-b15b-0c06187cfe8b)
 
 ---
@@ -31,7 +30,7 @@
 
 ---
 
-## Package Structure
+## Package_Structure
 ```
 com.skunivlikelion.homepage
 ├── domain
@@ -65,7 +64,7 @@ com.skunivlikelion.homepage
 
 ---
 
-## Assigned Tasks
+## Assigned_Tasks
 
 | Feature  | BE assignee                                    |
 |----------|------------------------------------------------|
@@ -82,7 +81,7 @@ com.skunivlikelion.homepage
 
 ---
 
-## API Documentation
+## API_Documentation
 > 자세한 API 및 역할 분담 확인하기 >
 > [Notion API 명세서](https://zest-property-53e.notion.site/14-API-386be78085748067be9df0e8526a54f9?pvs=74)
 
