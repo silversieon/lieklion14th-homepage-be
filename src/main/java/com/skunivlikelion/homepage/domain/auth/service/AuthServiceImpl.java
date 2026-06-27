@@ -73,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
       methodName = "인증 코드 전송",
       env = {"local", "dev", "prod"})
   @Async("emailExecutor")
-  public CompletableFuture<Boolean> sendVerificationEmail(String email) {
+  public void sendVerificationEmail(String email) {
     try {
       String verificationCode = authGenerator.generateVerificationCode();
       String redisKey = EMAIL_VERIFICATION_CODE + email;
@@ -95,17 +95,14 @@ public class AuthServiceImpl implements AuthService {
 
       log.info("[Auth] 인증 코드 전송 완료 - 수신자: {}", email);
       emailSender.send(mimeMessage);
-      return CompletableFuture.completedFuture(true);
     } catch (IOException e) {
       log.error("[Auth] html 파일 읽기 실패 - 에러 메시지: {}", e.getMessage());
-      return CompletableFuture.completedFuture(false);
     } catch (Exception e) {
       log.error(
           "[Auth] Redis 저장 실패 - 수신자: {}, 에러 메시지: {}, 에러 타입: {}",
           email,
           e.getMessage(),
           e.getClass().getSimpleName());
-      return CompletableFuture.completedFuture(false);
     }
   }
 

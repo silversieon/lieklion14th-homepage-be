@@ -27,7 +27,7 @@ public interface AuthService {
    * @param email 인증 코드를 받을 이메일 문자열
    * @return 성공 여부를 담은 CompletableFuture 객체
    */
-  CompletableFuture<Boolean> sendVerificationEmail(String email);
+  void sendVerificationEmail(String email);
 
   /**
    * [ 인증 코드 검증 메서드 ] 성공 여부에 따라 boolean 값을 반환
