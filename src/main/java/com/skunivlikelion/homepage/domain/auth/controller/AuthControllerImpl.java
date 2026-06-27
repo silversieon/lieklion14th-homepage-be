@@ -44,8 +44,7 @@ public class AuthControllerImpl implements AuthController {
   @ApiBaseResponse(code = 201, message = "인증 코드 전송에 성공했습니다.")
   public Void requestVerification(@Valid @RequestBody EmailVerificationSendRequest request) {
     try {
-      authService.sendVerificationEmail(request.getEmail()).get();
-
+      authService.sendVerificationEmail(request.getEmail());
       return null;
     } catch (Exception e) {
       log.error("[Auth] 인증 코드 전송 최종 실패 - 에러: {}", e.getMessage());
