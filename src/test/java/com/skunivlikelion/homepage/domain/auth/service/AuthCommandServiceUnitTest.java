@@ -97,18 +97,12 @@ public class AuthCommandServiceUnitTest {
     when(authGenerator.generateVerificationCode()).thenReturn(verificationCode);
     MimeMessage mimeMessage = mock(MimeMessage.class);
     when(emailSender.createMimeMessage()).thenReturn(mimeMessage);
-    MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-    helper.setFrom("skunivlikelion@gmail.com");
-    helper.setTo(email);
-    helper.setSubject("서경대학교 멋쟁이사자처럼 : 본인확인 인증코드");
-
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
     // when
-    CompletableFuture<Boolean> result = authService.sendVerificationEmail(email);
+    authService.sendVerificationEmail(email);
 
     // then
-    assertThat(result.join()).isTrue();
     verify(authGenerator).generateVerificationCode();
     verify(emailSender).createMimeMessage();
     verify(emailSender).send(mimeMessage);
@@ -132,11 +126,9 @@ public class AuthCommandServiceUnitTest {
     doThrow(new IOException("html 읽기 실패")).when(spyAuthService).getHtmlContent();
 
     // when
-    CompletableFuture<Boolean> result = spyAuthService.sendVerificationEmail(email);
+    spyAuthService.sendVerificationEmail(email);
 
     // then
-    assertThat(result.join()).isFalse();
-
     verify(emailSender).createMimeMessage();
     verify(emailSender, never()).send(any(MimeMessage.class));
     verify(valueOperations, never()).set(anyString(), anyString(), anyLong(), any(TimeUnit.class));
@@ -159,11 +151,9 @@ public class AuthCommandServiceUnitTest {
         .set(redisKey, verificationCode, EMAIL_TIMEOUT, EMAIL_TIMEOUT_UNIT);
 
     // when
-    CompletableFuture<Boolean> result = authService.sendVerificationEmail(email);
+    authService.sendVerificationEmail(email);
 
     // then
-    assertThat(result.join()).isFalse();
-
     verify(emailSender).createMimeMessage();
     verify(emailSender, never()).send(any(MimeMessage.class));
     verify(redisTemplate).opsForValue();
