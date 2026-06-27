@@ -224,7 +224,11 @@ public class ProjectServiceImpl implements ProjectService {
                     .semester(project.getSemester().getSemester())
                     .projectTypeName(project.getProjectType().getProjectTypeName())
                     .content(project.getContent())
-                    .thumbnailUrl(project.getProjectImages().getFirst().getImageUrl())
+                    .thumbnailUrl(
+                        project.getProjectImages().stream()
+                            .findFirst()
+                            .map(ProjectImage::getImageUrl)
+                            .orElse(null))
                     .build());
 
     return pageMapper.toProjectPageWrapperResponse(projectPage, allProjectIdsByFilters);
