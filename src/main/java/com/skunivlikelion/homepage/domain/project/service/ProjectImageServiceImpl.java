@@ -18,6 +18,7 @@ import com.skunivlikelion.homepage.domain.project.entity.ProjectImage;
 import com.skunivlikelion.homepage.domain.project.exception.ProjectErrorCode;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectImageRepository;
 import com.skunivlikelion.homepage.domain.project.repository.ProjectRepository;
+import com.skunivlikelion.homepage.global.annotation.TimeTrace;
 import com.skunivlikelion.homepage.global.exception.CustomException;
 import com.skunivlikelion.homepage.global.s3.enums.PathName;
 import com.skunivlikelion.homepage.global.s3.service.S3Service;
@@ -47,6 +48,7 @@ public class ProjectImageServiceImpl implements ProjectImageService {
   @Override
   @Transactional
   @Async("projectExecutor")
+  @TimeTrace(methodName = "이미지 리스트 업로드")
   public void uploadProjectImages(List<UploadImagePayload> payloads, Long projectId) {
 
     Project project =
