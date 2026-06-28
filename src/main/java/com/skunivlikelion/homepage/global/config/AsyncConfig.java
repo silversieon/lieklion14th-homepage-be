@@ -30,7 +30,7 @@ public class AsyncConfig {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(2);
     executor.setMaxPoolSize(2);
-    executor.setQueueCapacity(200);
+    executor.setQueueCapacity(10);
     executor.setThreadNamePrefix("project-async-");
     executor.initialize();
     return executor;
@@ -39,9 +39,9 @@ public class AsyncConfig {
   @Bean(name = "projectParallel")
   public Executor projectParallel() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(2);
-    executor.setMaxPoolSize(2);
-    executor.setQueueCapacity(200);
+    executor.setCorePoolSize(3);
+    executor.setMaxPoolSize(3);
+    executor.setQueueCapacity(40);
     executor.setThreadNamePrefix("project-parallel-");
     executor.initialize();
     return executor;
