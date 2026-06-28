@@ -3,8 +3,6 @@
  */
 package com.skunivlikelion.homepage.domain.auth.service;
 
-import java.util.concurrent.CompletableFuture;
-
 import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationConfirmReqeust;
 import com.skunivlikelion.homepage.domain.auth.dto.request.EmailVerificationStatusRequest;
 import com.skunivlikelion.homepage.domain.auth.dto.request.LoginRequest;
