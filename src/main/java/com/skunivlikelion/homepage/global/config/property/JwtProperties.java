@@ -20,4 +20,5 @@ public class JwtProperties {
   private String sameSite;
   private String refreshTokenPrefix;
   private String blackListPrefix;
+  private String allowedSite;
 }
