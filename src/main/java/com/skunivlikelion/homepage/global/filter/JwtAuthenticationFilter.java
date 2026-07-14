@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         || pathMatcher.match("/api/**/auth/register", uri)
         || pathMatcher.match("/api/**/auth/email/verify/request", uri)
         || pathMatcher.match("/api/**/auth/email/verify/confirm", uri)
-            || "/error".equals(uri);
+        || "/error".equals(uri);
   }
 
   /**
@@ -118,9 +118,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
   /**
-   * [ JwtAuthenticationFilter 도중 예외 처리 메서드 ]
-   * ControllerAdvice를 통한 전역 예외 처리 범위 밖이기 때문에
-   * 임의의 메서드를 통해 공통 응답 반환
+   * [ JwtAuthenticationFilter 도중 예외 처리 메서드 ] ControllerAdvice를 통한 전역 예외 처리 범위 밖이기 때문에 임의의 메서드를 통해
+   * 공통 응답 반환
    *
    * @param response 서버 응답 객체
    * @param errorCode 인증 에러 코드

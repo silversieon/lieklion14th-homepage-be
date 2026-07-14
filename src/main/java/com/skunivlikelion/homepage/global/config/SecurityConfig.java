@@ -22,7 +22,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
@@ -55,11 +54,11 @@ public class SecurityConfig {
   /** 필터와 기본 설정 */
   private void configureFilters(HttpSecurity http) throws Exception {
     http.formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
-            .logout(AbstractHttpConfigurer::disable)
-            .rememberMe(AbstractHttpConfigurer::disable)
-            .anonymous(AbstractHttpConfigurer::disable)
-            .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
+        .httpBasic(AbstractHttpConfigurer::disable)
+        .logout(AbstractHttpConfigurer::disable)
+        .rememberMe(AbstractHttpConfigurer::disable)
+        .anonymous(AbstractHttpConfigurer::disable)
+        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
         .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
