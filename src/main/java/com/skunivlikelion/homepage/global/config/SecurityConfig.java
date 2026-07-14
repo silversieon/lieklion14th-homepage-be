@@ -22,7 +22,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 import com.skunivlikelion.homepage.global.common.BaseResponse;
@@ -41,7 +40,6 @@ public class SecurityConfig {
   private final CorsConfig corsConfig;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final ObjectMapper objectMapper;
-  private final CsrfTokenRepository csrfTokenRepository;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,7 +56,7 @@ public class SecurityConfig {
         .logout(AbstractHttpConfigurer::disable)
         .rememberMe(AbstractHttpConfigurer::disable)
         .anonymous(AbstractHttpConfigurer::disable)
-        .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
+        .csrf(AbstractHttpConfigurer::disable)
         .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
